@@ -336,6 +336,9 @@ private fun App(
     // The idea form opens from Customize and from App Settings, and returns
     // to whichever one opened it.
     var ideaFrom by rememberSaveable { mutableStateOf(Screen.CUSTOMIZE) }
+    // Places opens from the glance's place name and from App Settings, and
+    // goes back to whichever one opened it.
+    var placesFrom by rememberSaveable { mutableStateOf(Screen.HOME) }
 
     // Keep "next sunrise / next sunset" actually next. The value decays with
     // the clock rather than with the data, so nothing about a fetch would
@@ -369,7 +372,10 @@ private fun App(
                     onRefresh = homeViewModel::refresh,
                     onSetMode = homeViewModel::setForecastMode,
                     onResizeModule = homeViewModel::resizeModule,
-                    onPlaces = { screen = Screen.PLACES },
+                    onPlaces = {
+                        placesFrom = Screen.HOME
+                        screen = Screen.PLACES
+                    },
                     onMoveModule = homeViewModel::moveModule,
                     onAppSettings = { screen = Screen.APP_SETTINGS },
                     onCustomize = { screen = Screen.CUSTOMIZE },
@@ -429,6 +435,12 @@ private fun App(
             val regionSummary =
                 listOfNotNull(inForce?.region?.name, "${reading.temperature.label}, ${reading.wind.label}")
                     .joinToString(" · ")
+            val savedPlaces by placesViewModel.saved.collectAsStateWithLifecycle()
+            val placesSummary =
+                listOfNotNull(
+                    "Showing " + (savedPlaces.current?.label ?: "my location"),
+                    savedPlaces.places.size.takeIf { it > 0 }?.let { "$it saved" },
+                ).joinToString(" · ")
             AppSettingsScreen(
                 gadgetbridgeEnabled = gadgetbridgeEnabled,
                 onSetGadgetbridgeEnabled = appSettingsViewModel::setGadgetbridgeEnabled,
@@ -436,6 +448,11 @@ private fun App(
                 canShowAds = canShowAds,
                 privacyOptionsRequired = privacyOptionsRequired,
                 onPrivacyChoices = onPrivacyChoices,
+                placesSummary = placesSummary,
+                onPlaces = {
+                    placesFrom = Screen.APP_SETTINGS
+                    screen = Screen.PLACES
+                },
                 regionSummary = regionSummary,
                 onRegion = { screen = Screen.REGION },
                 removeAdsPrice = removeAdsOffer?.formattedPrice,
@@ -504,7 +521,10 @@ private fun App(
         }
 
         Screen.PLACES -> {
-            BackHandler { screen = Screen.HOME }
+            BackHandler {
+                screen = placesFrom
+                homeViewModel.refresh()
+            }
             val saved by placesViewModel.saved.collectAsStateWithLifecycle()
             val results by placesViewModel.results.collectAsStateWithLifecycle()
             val loading by placesViewModel.loading.collectAsStateWithLifecycle()
@@ -526,7 +546,7 @@ private fun App(
                 onSelect = placesViewModel::select,
                 onRemove = placesViewModel::remove,
                 onDone = {
-                    screen = Screen.HOME
+                    screen = placesFrom
                     // The place decides which coordinates every fetch uses, so
                     // coming back has to re-ask rather than keep showing the
                     // last place's weather under the new place's name.

@@ -1,6 +1,7 @@
 package io.raylytics.justmyweather.ui.home
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -9,10 +10,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,8 +30,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -224,16 +229,38 @@ private fun GlanceView(
         // you want to change beats a fourth button in the action bar, which is
         // already the busiest part of a screen built around calm — and it puts
         // the control where someone looks when they notice the wrong city.
-        Text(
-            text = snapshot.locationLabel.uppercase(Locale.getDefault()),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        // Bare text did not read as tappable, so it wears the tiles' border
+        // (same colour, same corner) and a chooser caret: the one boxed thing
+        // above the grid, and the box says "this opens something".
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier =
                 Modifier
-                    .clickable(onClick = onPlaces)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(TILE_CORNER))
+                    .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(TILE_CORNER))
+                    .clickable(onClickLabel = "Change place", onClick = onPlaces)
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
                     .testTag("locationLabel"),
-        )
+        ) {
+            Text(
+                text = snapshot.locationLabel.uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // The caret keeps its room when a long name has to give way.
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            // Its own Text, so the name stays exactly the name for tests and
+            // for TalkBack (the click label already says what a tap does).
+            Text(
+                text = "▾",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        }
 
         // The glance: every module the user has on, the forecast among them,
         // as tiles on one grid. The screen answers "right now" AND "ahead"

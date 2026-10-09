@@ -45,6 +45,9 @@ fun AppSettingsScreen(
     /** Where a consent form applies, the user must be able to reopen it. */
     privacyOptionsRequired: Boolean,
     onPrivacyChoices: () -> Unit,
+    /** "Showing Louisville, KY · 3 saved" — the Places row's second line. */
+    placesSummary: String,
+    onPlaces: () -> Unit,
     /** "United Kingdom · °C, mph" — the Region & units row's second line. */
     regionSummary: String,
     onRegion: () -> Unit,
@@ -75,6 +78,16 @@ fun AppSettingsScreen(
                 TextButton(onClick = onDone) { Text("Done") }
             }
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                // The glance's place name opens the same screen; this is the
+                // entry for someone who looks for locations among the settings.
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                    Text("Location", style = MaterialTheme.typography.labelMedium)
+                    AboutLink(title = "Places", detail = placesSummary, onClick = onPlaces)
+                }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
                     Text("Region", style = MaterialTheme.typography.labelMedium)
                     AboutLink(title = "Region & units", detail = regionSummary, onClick = onRegion)
