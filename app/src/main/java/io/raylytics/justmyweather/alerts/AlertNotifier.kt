@@ -23,7 +23,7 @@ import io.raylytics.justmyweather.data.nws.ActiveAlert
  */
 class AlertNotifier(
     private val context: Context,
-) {
+) : AlertNotifications {
     fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -48,7 +48,7 @@ class AlertNotifier(
     }
 
     /** Post the alert. [silent] routes to the no-sound channel (quiet hours). */
-    fun notify(rule: AlertRule, decision: FireDecision, silent: Boolean = false) {
+    override fun notify(rule: AlertRule, decision: FireDecision, silent: Boolean) {
         if (!hasPermission()) return
         val channel = if (silent) QUIET_CHANNEL_ID else CHANNEL_ID
         val notification =
@@ -72,7 +72,7 @@ class AlertNotifier(
      * entire point, and silencing it would turn a comfort feature into a
      * hazard. Personal rules stay hushed; these do not.
      */
-    fun notifySafety(alert: ActiveAlert) {
+    override fun notifySafety(alert: ActiveAlert) {
         if (!hasPermission()) return
         // NWS sometimes sends no headline; the event name is the one thing
         // always present, so it stands in rather than posting an empty body

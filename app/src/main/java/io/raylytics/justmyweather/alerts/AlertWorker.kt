@@ -10,134 +10,24 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import io.raylytics.justmyweather.AppContainer
 import io.raylytics.justmyweather.JustMyWeatherApp
-import io.raylytics.justmyweather.data.AlertRulesRepository
-import kotlinx.coroutines.flow.first
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import java.io.IOException
 import java.util.concurrent.TimeUnit
-import kotlin.time.Clock
 
 /**
- * The background half of alerting: on each tick, evaluate every enabled rule
- * against fresh weather and notify only the rules that just *entered* their
- * fired state (transition dedup via the persisted firing set). A quiet install
- * has no rules, so this returns immediately — nothing nags.
- *
- * Pure decisions live in [AlertEvaluator]; this worker is only the I/O shell
- * that fetches, calls the evaluator, and dispatches notifications.
+ * When the alert check runs on Android: periodically through WorkManager while
+ * there is anything to watch, and once on launch or a rule change. The check
+ * itself — fetch, evaluate, dedupe, notify — is [AlertCheck], shared with the
+ * iOS app's background refresh.
  */
 class AlertWorker(
     context: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result {
-        val container = (applicationContext as JustMyWeatherApp).container
-        val repository = container.alertRulesRepository
-
-        val rules = repository.rules.first()
-        val settings = container.alertSettingsRepository.current()
-        // Safety alerts are independent of personal rules: someone can want
-        // tornado warnings and no rules at all. The old early return here
-        // would have skipped them entirely.
-        if (rules.none { it.enabled }) {
-            repository.setFiringIds(emptySet())
-            if (settings.safetyNotifications) notifySafetyAlerts(container, repository)
-            return Result.success()
+    override suspend fun doWork(): Result =
+        when ((applicationContext as JustMyWeatherApp).container.alertCheck.run()) {
+            AlertCheck.Outcome.DONE -> Result.success()
+            AlertCheck.Outcome.RETRY -> Result.retry()
         }
-
-        // Through the resolver, never a bare fallback: this worker runs in the
-        // background, where the platform hands a foreground-only app no
-        // location at all, and the old `?: DEFAULT` here quietly evaluated
-        // every rule against New York. remember=false still, because the
-        // reading the home screen opens on belongs to the foreground — a poll
-        // working from a remembered location should not overwrite it.
-        val location = container.locationResolver.resolve()
-        val snapshot =
-            try {
-                container.weatherRepository.load(location, remember = false)
-            } catch (_: IOException) {
-                return Result.retry() // transient network — try again next backoff
-            } catch (_: Exception) {
-                return Result.success() // don't hammer on a non-transient failure
-            }
-
-        // The forecast is only fetched when a rule actually needs it, and is
-        // best-effort: if it fails, current-conditions rules still evaluate and
-        // forecast-window rules simply hold until the next tick.
-        val forecast =
-            if (rules.any { it.enabled && it.window.isForecast }) {
-                runCatching { container.weatherRepository.loadForecast(location) }.getOrDefault(emptyList())
-            } else {
-                emptyList()
-            }
-
-        // Pure transition-dedup: notify only rules that just entered fired. The
-        // clock and zone are read here at the edge and handed to the pure path.
-        val zone = TimeZone.currentSystemDefault()
-        val now = Clock.System.now()
-        // The notification reads in the user's units; the comparison never
-        // depends on them (thresholds are stored canonical).
-        runCatching { container.regionRepository.refresh(container.locationResolver.resolveKnown()) }
-        val conventions = runCatching { container.regionRepository.currentConventions() }.getOrNull()
-        val context =
-            if (conventions != null) {
-                WeatherContext(snapshot, now, forecast, zone, conventions)
-            } else {
-                WeatherContext(snapshot, now, forecast, zone)
-            }
-        val outcome = AlertTransitions.compute(rules, context, repository.firingIds())
-        // Quiet hours hush the delivery (silent channel), they don't drop alerts.
-        val silent = settings.isQuietAt(now.toLocalDateTime(zone).hour)
-        outcome.toNotify.forEach { container.alertNotifier.notify(it.rule, it.decision, silent) }
-        repository.setFiringIds(outcome.nowFiring)
-        // Fire counts moved on, and a rule that just reached its limit is now
-        // off. Applied as per-rule deltas inside one atomic update, never as a
-        // write-back of the list read before the fetch: that read is seconds
-        // stale by now, and saving it wholesale would resurrect a rule the user
-        // deleted meanwhile or drop one they added. A rule the user removed or
-        // switched off during the fetch is left alone. A rule switching itself
-        // off is not re-synced with WorkManager from in here (cancelling the
-        // periodic work from inside its own run is not worth the subtlety); the
-        // next launch or edit re-syncs, and until then a poll with nothing
-        // enabled returns at the top of doWork.
-        val fired = outcome.toNotify.map { it.rule.id }.toSet()
-        if (fired.isNotEmpty()) {
-            repository.update { current ->
-                current.map { if (it.id in fired && it.enabled && !it.isSpent) it.afterFiring() else it }
-            }
-        }
-        if (settings.safetyNotifications) notifySafetyAlerts(container, repository)
-        return Result.success()
-    }
-
-    /**
-     * Notify official safety alerts that are NEW since the last tick.
-     *
-     * Same transition idea as personal rules: a tornado warning standing for
-     * six hours should interrupt once, not at every poll. Ids that are no
-     * longer active drop out of the set, so a warning that clears and is
-     * re-issued notifies again — which is correct, that is a new warning.
-     *
-     * Best-effort throughout: a failed fetch leaves the stored set untouched
-     * rather than clearing it, because clearing would make every standing
-     * alert look new on the next successful poll and fire a burst of
-     * notifications for hazards the user was already told about.
-     */
-    private suspend fun notifySafetyAlerts(
-        container: AppContainer,
-        repository: AlertRulesRepository,
-    ) {
-        val location = container.locationResolver.resolve()
-        val active =
-            runCatching { SafetyAlerts.filter(container.weatherRepository.loadActiveAlerts(location)) }
-                .getOrNull() ?: return
-        val previously = repository.notifiedSafetyIds()
-        active.filter { it.id !in previously }.forEach { container.alertNotifier.notifySafety(it) }
-        repository.setNotifiedSafetyIds(active.map { it.id }.toSet())
-    }
 
     companion object {
         private const val UNIQUE_NAME = "personal-alerts"
