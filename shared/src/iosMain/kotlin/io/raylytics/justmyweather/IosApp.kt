@@ -209,11 +209,11 @@ private class StoreKitGateway(private val store: StoreBridge) : BillingGateway {
     init {
         // Changes that happen outside the sheet. A late approval is a
         // purchase like any other; a revocation asks the manager to re-read
-        // what the account owns (the AlreadyOwned path is that resync).
+        // what the account owns, without a word to the user.
         store.onTransactionUpdate { productId, revoked ->
             outcomes.tryEmit(
                 if (revoked) {
-                    BillingEvent.AlreadyOwned
+                    BillingEvent.EntitlementChanged
                 } else {
                     BillingEvent.Purchases(listOf(PurchaseRecord(listOf(productId), true, true, productId)))
                 },

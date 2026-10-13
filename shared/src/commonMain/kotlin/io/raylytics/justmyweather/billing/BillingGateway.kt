@@ -36,6 +36,11 @@ sealed interface BillingEvent {
      * leaves empty. */
     data object AlreadyOwned : BillingEvent
 
+    /** What the account owns changed outside any sheet — a refund, a family
+     * share ending. The store must be asked again, quietly: nobody asked to
+     * restore, so nothing is said. (iOS's Transaction.updates sends this.) */
+    data object EntitlementChanged : BillingEvent
+
     data class Failed(val message: String) : BillingEvent
 }
 

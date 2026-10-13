@@ -200,7 +200,7 @@ and MET Norway and keeps everything else on the device.
 | Price | USD 0.99 |
 | Display name (en-US) | Remove ads |
 | Description (en-US) | One purchase removes the banner for good. |
-| Review screenshot | App Settings with the Remove Ads row, from the simulator (the local StoreKit configuration shows the /bin/zsh.99 price). |
+| Review screenshot | App Settings with the Remove Ads row, from the simulator (the local StoreKit configuration shows the $0.99 price). |
 | Family Sharing | Off (as in `Products.storekit`). **TBD** whether to turn it on. |
 
 The first submission must include the in-app purchase with the version, or
@@ -244,7 +244,7 @@ Just My Weather is a weather app that shows only the data points the user picks,
 
 5. ADS AND TRACKING. One AdMob banner at the bottom of the main screen. Google's consent form (UMP) runs first where required; Apple's tracking prompt follows only where ads may run. The ad is never given the user's places, rules or weather.
 
-6. IN-APP PURCHASE. "Remove ads" (remove_ads), a /bin/zsh.99 non-consumable in App Settings, removes the banner. "Restore purchase" sits under it.
+6. IN-APP PURCHASE. "Remove ads" (remove_ads), a $0.99 non-consumable in App Settings, removes the banner. "Restore purchase" sits under it.
 
 Demo video: <link>
 Contact: dev@raylytics.io

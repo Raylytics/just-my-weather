@@ -186,6 +186,31 @@ class RemoveAdsManagerTest {
     }
 
     @Test
+    fun `an entitlement change re-reads the store quietly`() = runTest(dispatcher) {
+        val (manager, gateway, entitlement) = harness()
+        gateway.owned = listOf(owned())
+        manager.start()
+        runCurrent()
+        assertTrue(entitlement.adsRemoved.first())
+
+        // Refunded meanwhile: ownership follows the store, and nothing is said
+        // — no "No purchase found" for a restore nobody asked for.
+        gateway.owned = emptyList()
+        gateway.events.emit(BillingEvent.EntitlementChanged)
+        runCurrent()
+        assertFalse(entitlement.adsRemoved.first())
+        assertEquals(RemoveAdsStatus.Idle, manager.status.value)
+
+        // Nor does it overwrite a sheet in progress.
+        manager.buy(FAKE_ACTIVITY)
+        runCurrent()
+        val during = manager.status.value
+        gateway.events.emit(BillingEvent.EntitlementChanged)
+        runCurrent()
+        assertEquals(during, manager.status.value)
+    }
+
+    @Test
     fun `a pending purchase from the sheet grants nothing yet and revokes nothing`() = runTest(dispatcher) {
         val (manager, gateway, entitlement) = harness()
         entitlement.setAdsRemoved(true)

@@ -155,6 +155,9 @@ class RemoveAdsManager(
                 _status.value = RemoveAdsStatus.Restoring
                 _status.value = restoreStatus()
             }
+            // A quiet re-read: the entitlement follows the store, and the
+            // status — perhaps a sheet the user is in — is left alone.
+            BillingEvent.EntitlementChanged -> syncWithPlay()
             is BillingEvent.Failed -> _status.value = RemoveAdsStatus.Failed(event.message)
         }
     }

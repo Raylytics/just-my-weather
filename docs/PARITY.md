@@ -155,7 +155,7 @@ the App Store wording (`onStore`).
 
 | Where | Divergence | Verdict |
 |---|---|---|
-| `.maestro/*.yaml` | `checked:` assertions on switches and `hideKeyboard` run on Android only (`when: platform: Android`). iOS reports no switch state to Maestro, and its number pad has no dismiss key. Each flow still checks the switch's visible effect on both platforms. | **Justified.** |
+| `.maestro/*.yaml` | `checked:` assertions on switches and `hideKeyboard` run on Android only (`when: platform: Android`): iOS reports no switch state to Maestro, and its number pad has no dismiss key (the Add button beside the field is tapped instead — justified). On iOS, 01-customize and 07-forecast still check their switch's visible effect, but the switch taps in 02-alerts (rule on/off, quiet hours) and 05-safety-alerts (the opt-in default) go **unchecked**. | **Open** — just-my-weather-nyt.14. |
 | `.maestro/07-forecast.yaml` | Back closes a sheet on Android; on iPhone a tap on the scrim above it does. | **Justified.** |
 | `.maestro/03-gadgetbridge.yaml` | Tagged `android-only`; `scripts/e2e.sh ios` excludes the tag. | **Justified** (part 4). |
 | Store wording | The App Settings strings that name the store have an `_ios` variant (App Store, Apple Account), chosen by `onStore`. The privacy policy URL differs: `/justmyweather/privacy` vs `/justmyweather/privacy-ios`. | **Justified.** |
