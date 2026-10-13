@@ -9,9 +9,6 @@ explains what data the app accesses and what happens to it.
 
 Canonical URL: https://raylytics.io/justmyweather/privacy-ios
 
-(The Android app has its own policy, at https://raylytics.io/justmyweather/privacy.
-The two apps handle data the same way; this one describes the iPhone.)
-
 ## Summary
 
 **Just My Weather does not sell your personal information, and the developer
