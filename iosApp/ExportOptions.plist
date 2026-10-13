@@ -2,10 +2,11 @@
 <!--
 ExportOptions for `xcodebuild -exportArchive`.
 
-`scripts/ios/setup-team.sh` injects teamID from iosApp/team.properties
-on first run (replacing REPLACE_WITH_TEAM_ID). `scripts/ios/export-ipa.sh
---method <m>` writes a temporary copy with the requested method, so this
-file is not churned per release.
+REPLACE_WITH_TEAM_ID stays as committed: `scripts/ios/export-ipa.sh
+--method <m>` writes a temporary copy with the requested method and this
+machine's team (from the gitignored Config/Team.xcconfig that
+`scripts/ios/setup-team.sh` writes). So no one's team id is committed, and
+this file is never churned by a setup or a release.
 
 Committed as the release path: method app-store-connect with MANUAL
 signing. export-ipa.sh pins the "Just My Weather App Store" profile into

@@ -47,6 +47,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.raylytics.justmyweather
         PRODUCT_NAME: JustMyWeather
         INFOPLIST_FILE: JustMyWeather/Info.plist
+        CODE_SIGN_ENTITLEMENTS: JustMyWeather/JustMyWeather.entitlements
         TARGETED_DEVICE_FAMILY: "1" # iPhone only for now (decision 5)
         SWIFT_VERSION: "5.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

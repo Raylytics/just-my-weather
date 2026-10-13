@@ -42,18 +42,15 @@ if [ ! -d "$ARCHIVE_PATH" ]; then
   die "archive not found at $ARCHIVE_PATH — run scripts/ios/archive.sh first"
 fi
 
-# Build a temporary ExportOptions plist with the requested method.
-# We start from the committed file (which has teamID injected by
-# setup-team.sh) and just rewrite the <method> / <signingStyle> values.
-load_team_properties
-require_vars IOS_TEAM_ID
-
+# Build a temporary ExportOptions plist with the requested method and this
+# machine's team. The committed file keeps its REPLACE_WITH_TEAM_ID
+# placeholder on purpose (no developer's team id in the repo, and a release
+# tree that stays clean); the team comes from Team.xcconfig, which
+# setup-team.sh writes and the archive was signed with.
 if [ ! -f "$EXPORT_OPTIONS" ]; then die "$EXPORT_OPTIONS not found"; fi
-
-current_team=$(awk '/<key>teamID<\/key>/ {getline; gsub(/.*<string>|<\/string>.*/, ""); print; exit}' "$EXPORT_OPTIONS")
-if [ "$current_team" = "REPLACE_WITH_TEAM_ID" ]; then
-  die "ExportOptions.plist still has the placeholder team ID. \
-Run: scripts/ios/setup-team.sh"
+team="$(read_team_xcconfig)"
+if [ -z "$team" ] || [ "$team" = "REPLACE_WITH_TEAM_ID" ]; then
+  die "no signing team in $TEAM_XCCONFIG. Run: scripts/ios/setup-team.sh"
 fi
 
 tmp_options=$(mktemp -t justmyweather-export-options.XXXXXX)
@@ -81,7 +78,8 @@ trap "rm -f '$tmp_options'" EXIT
 # profile (it carries a device list) and would fail at export. Until this
 # project has one, ad-hoc goes the automatic route with development.
 if [ "$method" = "app-store-connect" ]; then
-  awk -v method="$method" -v profile="$IOS_APP_STORE_PROFILE_NAME" -v bundle="$APP_ID" '
+  awk -v method="$method" -v profile="$IOS_APP_STORE_PROFILE_NAME" -v bundle="$APP_ID" -v team="$team" '
+    /<key>teamID<\/key>/ { print; getline; sub(/<string>[^<]*<\/string>/, "<string>" team "</string>"); print; next }
     /<key>signingStyle<\/key>/ { print; getline; sub(/<string>[^<]*<\/string>/, "<string>manual</string>"); print; next }
     /<key>method<\/key>/ {
       print; getline; sub(/<string>[^<]*<\/string>/, "<string>" method "</string>"); print
@@ -113,14 +111,18 @@ if [ "$method" = "app-store-connect" ]; then
 else
   # The committed file says manual (for the release path); manual with no
   # pinned profile cannot export development/ad-hoc, so flip it to automatic.
-  awk -v method="$method" '
+  awk -v method="$method" -v team="$team" '
+    /<key>teamID<\/key>/ { print; getline; sub(/<string>[^<]*<\/string>/, "<string>" team "</string>"); print; next }
     /<key>signingStyle<\/key>/ { print; getline; sub(/<string>[^<]*<\/string>/, "<string>automatic</string>"); print; next }
     /<key>method<\/key>/ { print; getline; sub(/<string>[^<]*<\/string>/, "<string>" method "</string>"); print; next }
     { print }
   ' "$EXPORT_OPTIONS" > "$tmp_options"
 fi
 
-# Verify the method substitution landed in either branch.
+# Verify the team and method substitutions landed in either branch.
+if ! grep -q "<string>$team</string>" "$tmp_options"; then
+  die "failed to set <teamID> = $team in temporary export options"
+fi
 if ! grep -q "<string>$method</string>" "$tmp_options"; then
   die "failed to set <method> = $method in temporary export options"
 fi

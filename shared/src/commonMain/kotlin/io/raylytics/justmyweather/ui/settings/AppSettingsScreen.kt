@@ -66,6 +66,10 @@ import io.raylytics.justmyweather.resources.settings_remove_ads
 import io.raylytics.justmyweather.resources.settings_remove_ads_2
 import io.raylytics.justmyweather.resources.settings_send_gadgetbridge
 import io.raylytics.justmyweather.resources.settings_something_wrong_email_developer
+import io.raylytics.justmyweather.resources.settings_store_unavailable
+import io.raylytics.justmyweather.resources.settings_store_unavailable_ios
+import io.raylytics.justmyweather.resources.settings_store_unreachable
+import io.raylytics.justmyweather.resources.settings_store_unreachable_ios
 import io.raylytics.justmyweather.resources.settings_submit_idea_developer
 import io.raylytics.justmyweather.resources.settings_thank_banner_gone
 import io.raylytics.justmyweather.resources.settings_thank_banner_gone_ios
@@ -308,6 +312,14 @@ private fun AdsSection(
                             Res.string.settings_purchase_pending_banner_ios,
                         ),
                     )
+                RemoveAdsStatus.Unavailable ->
+                    stringResource(
+                        onStore(Res.string.settings_store_unavailable, Res.string.settings_store_unavailable_ios),
+                    )
+                RemoveAdsStatus.Unreachable ->
+                    stringResource(
+                        onStore(Res.string.settings_store_unreachable, Res.string.settings_store_unreachable_ios),
+                    )
                 is RemoveAdsStatus.Failed -> status.message
                 RemoveAdsStatus.NothingToRestore ->
                     stringResource(
@@ -322,7 +334,10 @@ private fun AdsSection(
                 text = note,
                 style = MaterialTheme.typography.bodySmall,
                 color =
-                    if (status is RemoveAdsStatus.Failed) {
+                    if (status is RemoveAdsStatus.Failed ||
+                        status == RemoveAdsStatus.Unavailable ||
+                        status == RemoveAdsStatus.Unreachable
+                    ) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant

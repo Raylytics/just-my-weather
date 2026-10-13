@@ -30,8 +30,16 @@ final class IosPlatformImpl: NSObject, IosPlatform {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
     }
 
+    /// The listing's review page. requestReview is quota-limited and silent
+    /// in TestFlight, so it can't answer a tap; it is only the fallback while
+    /// the App Store id isn't set yet (Info.plist JMWAppStoreID, from the
+    /// App Store Connect record).
     func openStoreListing() {
-        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+        let id = Bundle.main.object(forInfoDictionaryKey: "JMWAppStoreID") as? String ?? ""
+        if !id.isEmpty, let url = URL(string: "https://apps.apple.com/app/id\(id)?action=write-review") {
+            UIApplication.shared.open(url)
+        } else if let scene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
             SKStoreReviewController.requestReview(in: scene)
         }
     }

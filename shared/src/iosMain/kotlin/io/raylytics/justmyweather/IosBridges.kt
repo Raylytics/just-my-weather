@@ -27,6 +27,11 @@ interface StoreBridge {
 
     /** The storefront's ISO alpha-3 country ("GBR"), read at launch; null if unknown. */
     fun storefrontCountryCode(): String?
+
+    /** Calls [handler] for every verified transaction that changes outside the
+     * purchase sheet — an Ask to Buy approved later, a refund — with its
+     * product id and whether it was revoked. */
+    fun onTransactionUpdate(handler: (productId: String, revoked: Boolean) -> Unit)
 }
 
 /** How a purchase sheet ended. */

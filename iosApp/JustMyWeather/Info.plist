@@ -30,9 +30,13 @@
 	<string>$(ADMOB_APP_ID)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>JMWAppStoreID</key>
+	<string></string>
 	<key>JMWBannerUnitID</key>
 	<string>$(ADMOB_BANNER_UNIT_ID)</string>
 	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSLocationDefaultAccuracyReduced</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your approximate location shows the weather where you are. It is sent only as forecast coordinates to the weather services, never to the developer or the ad.</string>

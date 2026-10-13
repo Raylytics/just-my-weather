@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         AlertRefresh.register(app: Self.app)
         UNUserNotificationCenter.current().delegate = self
         Self.platform.storeService.start()
+        Self.platform.locationService.onFirstFix = { Self.app.locationGranted() }
         Self.platform.locationService.start()
         Self.app.start()
         return true

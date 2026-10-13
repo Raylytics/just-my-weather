@@ -2,3 +2,7 @@
 // nothing (clicking one's own live ads gets an AdMob account suspended).
 ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
 ADMOB_BANNER_UNIT_ID = ca-app-pub-3940256099942544/2435281174
+
+// Signing team, per machine: scripts/ios/setup-team.sh writes Team.xcconfig
+// (gitignored). The ? makes a clone without one build unsigned as before.
+#include? "Team.xcconfig"

@@ -12,7 +12,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.raylytics.justmyweather.AppGraph
+import io.raylytics.justmyweather.Platform
 import io.raylytics.justmyweather.alerts.BackgroundAlerts
+import io.raylytics.justmyweather.currentPlatform
 import io.raylytics.justmyweather.ui.alerts.AlertsViewModel
 import io.raylytics.justmyweather.ui.customize.CustomizeViewModel
 import io.raylytics.justmyweather.ui.home.HomeUiState
@@ -67,7 +69,7 @@ fun AppRoot(
     /** The app's resolved mood, for a host whose system bars must follow it. */
     onDarkChanged: (Boolean) -> Unit = {},
     /** How dependably background alert checks run (iOS can't promise). */
-    backgroundAlerts: StateFlow<BackgroundAlerts> = MutableStateFlow(BackgroundAlerts.RELIABLE),
+    backgroundAlerts: StateFlow<BackgroundAlerts> = AlwaysReliable,
 ) {
     val alertsReliability by backgroundAlerts.collectAsStateWithLifecycle()
     val themeConfig by viewModels.theme.config.collectAsStateWithLifecycle()
@@ -140,12 +142,21 @@ internal suspend fun bugReportState(graph: AppGraph, home: HomeViewModel): List<
         withTimeoutOrNull(GLANCE_WAIT_MS) {
             home.state.first { it !is HomeUiState.Loading }
         }
-    return listOf(
+    return listOfNotNull(
         "Glance" to (glance?.describe() ?: "Loading (still, after ${GLANCE_WAIT_MS}ms)"),
         "Location permission" to graph.locationSource.hasPermission().toString(),
         "Visible modules" to config.visible.size.toString(),
         "Density" to config.density.name,
         "Theme" to graph.themeConfigRepository.config.first().toString(),
-        "Gadgetbridge" to graph.gadgetbridgeSettingsRepository.enabled.first().toString(),
+        // An Android-only hand-off; on iPhone the line would only ever say false.
+        if (currentPlatform == Platform.ANDROID) {
+            "Gadgetbridge" to graph.gadgetbridgeSettingsRepository.enabled.first().toString()
+        } else {
+            null
+        },
     )
 }
+
+/** Android's answer, made once: a default built in the parameter list would be
+ * a new flow on every recomposition, restarting its collector each time. */
+private val AlwaysReliable: StateFlow<BackgroundAlerts> = MutableStateFlow(BackgroundAlerts.RELIABLE)

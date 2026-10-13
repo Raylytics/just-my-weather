@@ -8,19 +8,29 @@ import StoreKit
 final class StoreService: NSObject, StoreBridge {
     private var storefront: String?
     private var updates: Task<Void, Never>?
+    private var updateHandler: ((String, KotlinBoolean) -> Void)?
 
     /// At launch: read the storefront (a region clue) and listen for
     /// transactions finished outside the app (Ask to Buy, a refund).
     func start() {
         Task { storefront = await Storefront.current?.countryCode }
-        updates = Task.detached {
+        updates = Task.detached { [weak self] in
             for await result in Transaction.updates {
-                if case .verified(let transaction) = result { await transaction.finish() }
+                guard case .verified(let transaction) = result else { continue }
+                await transaction.finish()
+                let revoked = transaction.revocationDate != nil
+                await MainActor.run {
+                    self?.updateHandler?(transaction.productID, KotlinBoolean(value: revoked))
+                }
             }
         }
     }
 
     func storefrontCountryCode() -> String? { storefront }
+
+    func onTransactionUpdate(handler: @escaping (String, KotlinBoolean) -> Void) {
+        updateHandler = handler
+    }
 
     func offer(productId: String, completion: @escaping (ProductOffer?) -> Void) {
         Task {

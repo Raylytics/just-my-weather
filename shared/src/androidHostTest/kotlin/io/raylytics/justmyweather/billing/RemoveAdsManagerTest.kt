@@ -132,7 +132,7 @@ class RemoveAdsManagerTest {
         manager.restore()
         assertEquals(RemoveAdsStatus.Restoring, manager.status.value)
         runCurrent()
-        assertTrue(manager.status.value is RemoveAdsStatus.Failed, "unreachable on a restore is said so")
+        assertEquals(RemoveAdsStatus.Unreachable, manager.status.value, "unreachable on a restore is said so")
     }
 
     @Test
@@ -206,7 +206,7 @@ class RemoveAdsManagerTest {
         runCurrent()
         manager.buy(FAKE_ACTIVITY)
         runCurrent()
-        assertTrue(manager.status.value is RemoveAdsStatus.Failed)
+        assertEquals(RemoveAdsStatus.Unavailable, manager.status.value)
         assertTrue(gateway.launched.isEmpty())
     }
 

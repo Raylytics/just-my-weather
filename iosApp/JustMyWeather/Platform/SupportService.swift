@@ -23,7 +23,7 @@ final class SupportService: NSObject, SupportHost, MFMailComposeViewControllerDe
     /// reads its own OSLogStore. Best effort: empty if the system won't say.
     func recentLogLines() -> [String] {
         guard let store = try? OSLogStore(scope: .currentProcessIdentifier),
-              let entries = try? store.getEntries(at: store.position(timeIntervalSinceLatestBoot: -3600))
+              let entries = try? store.getEntries(at: store.position(date: Date().addingTimeInterval(-3600)))
         else { return [] }
         return entries.compactMap { $0 as? OSLogEntryLog }.suffix(50).map { "\($0.date) \($0.composedMessage)" }
     }

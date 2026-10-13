@@ -128,6 +128,10 @@
     <string name="settings_remove_ads_2">Remove ads</string>
     <string name="settings_send_gadgetbridge">Send to Gadgetbridge</string>
     <string name="settings_something_wrong_email_developer">Something wrong? Email the developer, with your app version and device attached.</string>
+    <string name="settings_store_unavailable">Google Play isn't available right now. Try again later.</string>
+    <string name="settings_store_unavailable_ios">The App Store isn't available right now. Try again later.</string>
+    <string name="settings_store_unreachable">Couldn't reach Google Play. Check your connection and try again.</string>
+    <string name="settings_store_unreachable_ios">Couldn't reach the App Store. Check your connection and try again.</string>
     <string name="settings_submit_idea_developer">Submit your idea to the developer</string>
     <string name="settings_thank_banner_gone">Thank you. The banner is gone on every phone signed in to this Google account.</string>
     <string name="settings_thank_banner_gone_ios">Thank you. The banner is gone on every device signed in to this Apple Account.</string>

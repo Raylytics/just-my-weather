@@ -93,6 +93,10 @@ if [ -z "$sha" ]; then
   echo "$PARITY's '## Last iOS build' section has no 'shared-commit: <sha>' line — no baseline to diff."
   exit 0
 fi
+if [ "$sha" = "none" ]; then
+  echo "No iOS build has shipped yet (shared-commit: none) — everything in shared/ is unshipped on iOS."
+  exit 0
+fi
 if ! git rev-parse --verify --quiet "$sha^{commit}" >/dev/null; then
   echo "shared-commit '$sha' in $PARITY is not a commit in this repo (typo, or not fetched?) — no baseline to diff."
   exit 0

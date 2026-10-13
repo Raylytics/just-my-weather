@@ -12,29 +12,53 @@ enum AlertRefresh {
     private static var enabled = false
 
     static func register(app: IosApp) {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) { task in
+        // A queue of its own: the handler runs on it, and so does schedule(),
+        // which the shared code calls from a background thread.
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: queue) { task in
             guard let task = task as? BGAppRefreshTask else { return }
             // The next one first, so a slow or killed run never ends the chain.
             submit()
-            task.expirationHandler = { task.setTaskCompleted(success: false) }
-            app.runAlertCheck { done in task.setTaskCompleted(success: done.boolValue) }
+            // Expiry and the check can both finish the task; only the first may.
+            let finish = Once { success in task.setTaskCompleted(success: success) }
+            task.expirationHandler = { finish(false) }
+            app.runAlertCheck { done in finish(done.boolValue) }
         }
     }
 
     static func schedule(enabled: Bool, everyMinutes: Int) {
-        self.enabled = enabled
-        interval = TimeInterval(max(everyMinutes, 15) * 60)
-        if enabled {
-            submit()
-        } else {
-            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: identifier)
+        queue.async {
+            self.enabled = enabled
+            interval = TimeInterval(max(everyMinutes, 15) * 60)
+            if enabled {
+                submit()
+            } else {
+                BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: identifier)
+            }
         }
     }
+
+    private static let queue = DispatchQueue(label: "io.raylytics.justmyweather.alert-refresh")
 
     private static func submit() {
         guard enabled else { return }
         let request = BGAppRefreshTaskRequest(identifier: identifier)
         request.earliestBeginDate = Date(timeIntervalSinceNow: interval)
         try? BGTaskScheduler.shared.submit(request)
+    }
+}
+
+/// Runs its action the first time it is called, and never again.
+private final class Once {
+    private let lock = NSLock()
+    private var action: ((Bool) -> Void)?
+
+    init(_ action: @escaping (Bool) -> Void) { self.action = action }
+
+    func callAsFunction(_ value: Bool) {
+        lock.lock()
+        let pending = action
+        action = nil
+        lock.unlock()
+        pending?(value)
     }
 }

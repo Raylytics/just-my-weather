@@ -123,6 +123,12 @@ class IosApp(private val platform: IosPlatform) {
         refreshBackgroundAlerts()
     }
 
+    /** The location twin has its first fix after the user granted access:
+     * the glance re-asks, as Android's permission callback does. */
+    fun locationGranted() {
+        viewModels.home.refresh()
+    }
+
     /** Called by the host when the app comes to the foreground. */
     fun refreshBackgroundAlerts() {
         backgroundAlerts.value =
@@ -199,6 +205,21 @@ private fun Banner(platform: IosPlatform) {
  */
 private class StoreKitGateway(private val store: StoreBridge) : BillingGateway {
     private val outcomes = MutableSharedFlow<BillingEvent>(extraBufferCapacity = 4)
+
+    init {
+        // Changes that happen outside the sheet. A late approval is a
+        // purchase like any other; a revocation asks the manager to re-read
+        // what the account owns (the AlreadyOwned path is that resync).
+        store.onTransactionUpdate { productId, revoked ->
+            outcomes.tryEmit(
+                if (revoked) {
+                    BillingEvent.AlreadyOwned
+                } else {
+                    BillingEvent.Purchases(listOf(PurchaseRecord(listOf(productId), true, true, productId)))
+                },
+            )
+        }
+    }
 
     override val events: Flow<BillingEvent> = outcomes
 

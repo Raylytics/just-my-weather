@@ -28,6 +28,14 @@ sealed interface RemoveAdsStatus {
      * ownership arrives later through the purchase listener. */
     data object Pending : RemoveAdsStatus
 
+    /** The store can't sell right now (no offer loaded). Typed, not text,
+     * so each platform names its own store (App Settings words it). */
+    data object Unavailable : RemoveAdsStatus
+
+    /** The store couldn't be asked what the account owns. */
+    data object Unreachable : RemoveAdsStatus
+
+    /** The store's own failure, in the store's words. */
     data class Failed(val message: String) : RemoveAdsStatus
 
     /** A restore ran and Play reported no purchase on this account. */
@@ -81,7 +89,7 @@ class RemoveAdsManager(
         scope.launch {
             if (_offer.value == null) loadOffer()
             if (_offer.value == null) {
-                _status.value = RemoveAdsStatus.Failed("Google Play isn't available right now. Try again later.")
+                _status.value = RemoveAdsStatus.Unavailable
                 return@launch
             }
             withContext(mainDispatcher) { gateway.launchPurchase(activity, REMOVE_ADS_PRODUCT_ID) }
@@ -99,7 +107,7 @@ class RemoveAdsManager(
     private suspend fun restoreStatus(): RemoveAdsStatus {
         val purchases =
             runCatching { gateway.ownedPurchases() }.getOrNull()
-                ?: return RemoveAdsStatus.Failed("Couldn't reach Google Play. Check your connection and try again.")
+                ?: return RemoveAdsStatus.Unreachable
         return when {
             record(purchases) -> RemoveAdsStatus.Idle
             purchases.any { REMOVE_ADS_PRODUCT_ID in it.products && !it.purchased } -> RemoveAdsStatus.Pending
