@@ -16,6 +16,9 @@ kotlin {
         namespace = "io.raylytics.justmyweather.shared"
         compileSdk = 36
         minSdk = 24
+        // Compose resources (the shared string catalog) ride in the Android
+        // library's assets; the KMP library plugin leaves those off by default.
+        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
 
         // The pure-logic suites moved here from app/src/test unchanged, so
         // they keep running on the JVM under JUnit 5 exactly as before.
@@ -99,4 +102,12 @@ ktlint {
     reporters {
         reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
     }
+}
+
+// The shared string catalog: shared/src/commonMain/composeResources/values/strings.xml,
+// read as Res.string.* (decision 9: one translation per language, both apps).
+compose.resources {
+    packageOfResClass = "io.raylytics.justmyweather.resources"
+    publicResClass = false
+    generateResClass = always
 }

@@ -18,6 +18,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_forecast
+import io.raylytics.justmyweather.resources.customize_daily_shows_1_day
+import io.raylytics.justmyweather.resources.customize_daily_shows_days
+import io.raylytics.justmyweather.resources.customize_density
+import io.raylytics.justmyweather.resources.customize_each_day_shows
+import io.raylytics.justmyweather.resources.customize_hourly_shows_hours
+import io.raylytics.justmyweather.resources.customize_look
+import io.raylytics.justmyweather.resources.customize_off_forecast_hours_sun
+import io.raylytics.justmyweather.resources.customize_opens
+import io.raylytics.justmyweather.resources.customize_show_times_place
+import io.raylytics.justmyweather.resources.customize_sun_shows_1_day
+import io.raylytics.justmyweather.resources.customize_sun_shows_days
+import io.raylytics.justmyweather.resources.customize_sun_times
+import io.raylytics.justmyweather.resources.customize_tile_layout
+import io.raylytics.justmyweather.resources.customize_tiles_show
 import io.raylytics.justmyweather.ui.theme.accentColor
 import io.raylytics.justmyweather.ui.theme.chipBorder
 import io.raylytics.justmyweather.ui.theme.onAccent
@@ -34,6 +50,7 @@ import io.raylytics.justmyweather.view.ThemeConfig
 import io.raylytics.justmyweather.view.ThemeMood
 import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.TypeChoice
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /*
@@ -53,7 +70,7 @@ fun ThemePicker(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Look", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.customize_look), style = MaterialTheme.typography.labelMedium)
         ChipRow(
             options = ThemeMood.entries,
             selected = theme.mood,
@@ -155,7 +172,7 @@ fun DensityPicker(
     onSelect: (Density) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Density", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.customize_density), style = MaterialTheme.typography.labelMedium)
         // Shares the one FilterChip loop with the theme rows, so spacing and
         // wrap behaviour can't drift between the two.
         ChipRow(
@@ -180,9 +197,9 @@ fun TimesInPicker(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Show times in the place's local time", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(Res.string.customize_show_times_place), style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = "Off: the forecast hours, sun times and observed time read in this phone's clock",
+                text = stringResource(Res.string.customize_off_forecast_hours_sun),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -212,9 +229,14 @@ fun SunPicker(
         modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("Sun times", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.customize_sun_times), style = MaterialTheme.typography.labelMedium)
         Text(
-            text = if (sunDays == 1) "Sun shows 1 day" else "Sun shows $sunDays days",
+            text =
+                if (sunDays == 1) {
+                    stringResource(Res.string.customize_sun_shows_1_day)
+                } else {
+                    stringResource(Res.string.customize_sun_shows_days, sunDays)
+                },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
@@ -256,9 +278,9 @@ fun ForecastPicker(
         modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("Forecast", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.common_forecast), style = MaterialTheme.typography.labelMedium)
         Text(
-            text = "Opens on",
+            text = stringResource(Res.string.customize_opens),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -275,7 +297,7 @@ fun ForecastPicker(
         // moves in fours and says its value in words, since a thumb on a
         // range of 164 cannot be read from the track alone.
         Text(
-            text = "Hourly shows $hourlyHours hours",
+            text = stringResource(Res.string.customize_hourly_shows_hours, hourlyHours),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
@@ -292,7 +314,12 @@ fun ForecastPicker(
         // The Daily framing's reach, in days. Seven stops is few enough for
         // the slider's own ticks to read as stops rather than a dotted line.
         Text(
-            text = if (dailyDays == 1) "Daily shows 1 day" else "Daily shows $dailyDays days",
+            text =
+                if (dailyDays == 1) {
+                    stringResource(Res.string.customize_daily_shows_1_day)
+                } else {
+                    stringResource(Res.string.customize_daily_shows_days, dailyDays)
+                },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
@@ -308,7 +335,7 @@ fun ForecastPicker(
         // are independent, and a tile with none of them is a legal, calm
         // choice — the hour and the number.
         Text(
-            text = "Tiles show",
+            text = stringResource(Res.string.customize_tiles_show),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
@@ -323,7 +350,7 @@ fun ForecastPicker(
         // How a tile arranges what it shows: zones pinned to the edges so a
         // row reads straight across, or one block in the middle.
         Text(
-            text = "Tile layout",
+            text = stringResource(Res.string.customize_tile_layout),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
@@ -336,7 +363,7 @@ fun ForecastPicker(
             tag = { "tile_layout_${it.key}" },
         )
         Text(
-            text = "Each day shows",
+            text = stringResource(Res.string.customize_each_day_shows),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),

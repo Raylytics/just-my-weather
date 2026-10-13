@@ -17,12 +17,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.data.SunDay
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_sunrise
+import io.raylytics.justmyweather.resources.common_sunset
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.TimePattern
 import io.raylytics.justmyweather.view.format
 import kotlinx.datetime.TimeZone
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Instant
 
 /*
@@ -102,14 +106,14 @@ fun SunTimesTable(
         // outweigh the times they label.
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Text(
-                text = "Sunrise",
+                text = stringResource(Res.string.common_sunrise),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,
                 modifier = Modifier.width(SUN_COLUMN_WIDTH),
             )
             Text(
-                text = "Sunset",
+                text = stringResource(Res.string.common_sunset),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,
@@ -147,8 +151,18 @@ private fun SunPair(day: SunDay, zone: TimeZone) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        SunPairLine("Sunrise", day.sunrise, zone, MaterialTheme.colorScheme.onBackground)
-        SunPairLine("Sunset", day.sunset, zone, MaterialTheme.colorScheme.onSurfaceVariant)
+        SunPairLine(
+            stringResource(Res.string.common_sunrise),
+            day.sunrise,
+            zone,
+            MaterialTheme.colorScheme.onBackground,
+        )
+        SunPairLine(
+            stringResource(Res.string.common_sunset),
+            day.sunset,
+            zone,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -170,10 +184,22 @@ private fun SunPairRow(day: SunDay, zone: TimeZone) {
     ) {
         val timeStyle = MaterialTheme.typography.bodyLarge
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-            SunPairLine("Sunrise", day.sunrise, zone, MaterialTheme.colorScheme.onBackground, timeStyle)
+            SunPairLine(
+                stringResource(Res.string.common_sunrise),
+                day.sunrise,
+                zone,
+                MaterialTheme.colorScheme.onBackground,
+                timeStyle,
+            )
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-            SunPairLine("Sunset", day.sunset, zone, MaterialTheme.colorScheme.onSurfaceVariant, timeStyle)
+            SunPairLine(
+                stringResource(Res.string.common_sunset),
+                day.sunset,
+                zone,
+                MaterialTheme.colorScheme.onSurfaceVariant,
+                timeStyle,
+            )
         }
     }
 }

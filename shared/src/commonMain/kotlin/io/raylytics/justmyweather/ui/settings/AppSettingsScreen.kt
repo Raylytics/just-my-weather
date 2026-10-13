@@ -27,7 +27,47 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.billing.RemoveAdsStatus
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_done
+import io.raylytics.justmyweather.resources.common_places
+import io.raylytics.justmyweather.resources.common_region
+import io.raylytics.justmyweather.resources.common_region_units
+import io.raylytics.justmyweather.resources.common_report_bug
+import io.raylytics.justmyweather.resources.settings_about
+import io.raylytics.justmyweather.resources.settings_ads
+import io.raylytics.justmyweather.resources.settings_ads_removed
+import io.raylytics.justmyweather.resources.settings_advanced
+import io.raylytics.justmyweather.resources.settings_already_bought_restore_purchase
+import io.raylytics.justmyweather.resources.settings_app_settings
+import io.raylytics.justmyweather.resources.settings_banner_appears_once_app
+import io.raylytics.justmyweather.resources.settings_change_what_agreed_about
+import io.raylytics.justmyweather.resources.settings_checking_google_play
+import io.raylytics.justmyweather.resources.settings_hands_each_new_reading
+import io.raylytics.justmyweather.resources.settings_help
+import io.raylytics.justmyweather.resources.settings_if_has_earned_place
+import io.raylytics.justmyweather.resources.settings_location
+import io.raylytics.justmyweather.resources.settings_no_accounts_what_leaves
+import io.raylytics.justmyweather.resources.settings_no_ads_now
+import io.raylytics.justmyweather.resources.settings_no_purchase_found_google
+import io.raylytics.justmyweather.resources.settings_one_time_purchase_no
+import io.raylytics.justmyweather.resources.settings_opening_google_play
+import io.raylytics.justmyweather.resources.settings_privacy_choices
+import io.raylytics.justmyweather.resources.settings_privacy_policy
+import io.raylytics.justmyweather.resources.settings_purchase_pending_banner
+import io.raylytics.justmyweather.resources.settings_rate_just_my_weather
+import io.raylytics.justmyweather.resources.settings_remove_ads
+import io.raylytics.justmyweather.resources.settings_remove_ads_2
+import io.raylytics.justmyweather.resources.settings_send_gadgetbridge
+import io.raylytics.justmyweather.resources.settings_something_wrong_email_developer
+import io.raylytics.justmyweather.resources.settings_submit_idea_developer
+import io.raylytics.justmyweather.resources.settings_thank_banner_gone
+import io.raylytics.justmyweather.resources.settings_tile_alert_or
+import io.raylytics.justmyweather.resources.settings_version
+import io.raylytics.justmyweather.resources.settings_waiting_google_play_confirm
+import io.raylytics.justmyweather.resources.settings_weather_data_from_us
+import io.raylytics.justmyweather.resources.settings_where_law_asks_first
 import io.raylytics.justmyweather.ui.theme.textButtonColors
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Settings that are about the app, not the canvas. Customize is for what the
@@ -75,23 +115,31 @@ fun AppSettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("App settings", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onDone) { Text("Done") }
+                Text(stringResource(Res.string.settings_app_settings), style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = onDone) { Text(stringResource(Res.string.common_done)) }
             }
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 // The glance's place name opens the same screen; this is the
                 // entry for someone who looks for locations among the settings.
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                    Text("Location", style = MaterialTheme.typography.labelMedium)
-                    AboutLink(title = "Places", detail = placesSummary, onClick = onPlaces)
+                    Text(stringResource(Res.string.settings_location), style = MaterialTheme.typography.labelMedium)
+                    AboutLink(
+                        title = stringResource(Res.string.common_places),
+                        detail = placesSummary,
+                        onClick = onPlaces,
+                    )
                 }
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                    Text("Region", style = MaterialTheme.typography.labelMedium)
-                    AboutLink(title = "Region & units", detail = regionSummary, onClick = onRegion)
+                    Text(stringResource(Res.string.common_region), style = MaterialTheme.typography.labelMedium)
+                    AboutLink(
+                        title = stringResource(Res.string.common_region_units),
+                        detail = regionSummary,
+                        onClick = onRegion,
+                    )
                 }
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -150,12 +198,12 @@ private fun AdsSection(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text("Ads", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.settings_ads), style = MaterialTheme.typography.labelMedium)
         if (adsRemoved) {
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                Text("Ads removed", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(Res.string.settings_ads_removed), style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = "Thank you. The banner is gone on every phone signed in to this Google account.",
+                    text = stringResource(Res.string.settings_thank_banner_gone),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -166,8 +214,8 @@ private fun AdsSection(
         // Google requires the entry, and it belongs beside the ads it governs.
         if (privacyOptionsRequired) {
             AboutLink(
-                title = "Privacy choices",
-                detail = "Change what you agreed to about ads.",
+                title = stringResource(Res.string.settings_privacy_choices),
+                detail = stringResource(Res.string.settings_change_what_agreed_about),
                 onClick = onPrivacyChoices,
             )
         }
@@ -175,15 +223,15 @@ private fun AdsSection(
             // Nothing to remove: selling Remove Ads where no banner is shown
             // would be selling nothing.
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                Text("No ads for now", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(Res.string.settings_no_ads_now), style = MaterialTheme.typography.bodyLarge)
                 Text(
                     // Consent wording only where a form applies; a first launch
                     // offline, anywhere, just hasn't reached Google yet (roborev 5436).
                     text =
                         if (privacyOptionsRequired) {
-                            "Where the law asks first, the banner waits for your choice in the consent form."
+                            stringResource(Res.string.settings_where_law_asks_first)
                         } else {
-                            "The banner appears once the app has reached Google."
+                            stringResource(Res.string.settings_banner_appears_once_app)
                         },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -201,15 +249,20 @@ private fun AdsSection(
                     .testTag("remove-ads"),
         ) {
             Text(
-                text = if (price != null) "Remove ads · $price" else "Remove ads",
+                text =
+                    if (price != null) {
+                        stringResource(Res.string.settings_remove_ads, price)
+                    } else {
+                        stringResource(Res.string.settings_remove_ads_2)
+                    },
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
                 text =
                     if (price != null) {
-                        "A one-time purchase, no subscription. Removes the banner at the foot of the glance."
+                        stringResource(Res.string.settings_one_time_purchase_no)
                     } else {
-                        "Waiting for Google Play to confirm the price…"
+                        stringResource(Res.string.settings_waiting_google_play_confirm)
                     },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -218,12 +271,12 @@ private fun AdsSection(
         val note =
             when (status) {
                 RemoveAdsStatus.Idle -> null
-                RemoveAdsStatus.Busy -> "Opening Google Play…"
-                RemoveAdsStatus.Restoring -> "Checking with Google Play…"
+                RemoveAdsStatus.Busy -> stringResource(Res.string.settings_opening_google_play)
+                RemoveAdsStatus.Restoring -> stringResource(Res.string.settings_checking_google_play)
                 RemoveAdsStatus.Pending ->
-                    "Your purchase is pending. The banner goes once Google Play confirms the payment."
+                    stringResource(Res.string.settings_purchase_pending_banner)
                 is RemoveAdsStatus.Failed -> status.message
-                RemoveAdsStatus.NothingToRestore -> "No purchase found for this Google account."
+                RemoveAdsStatus.NothingToRestore -> stringResource(Res.string.settings_no_purchase_found_google)
             }
         if (note != null) {
             Text(
@@ -243,7 +296,7 @@ private fun AdsSection(
             colors = textButtonColors(),
             modifier = Modifier.testTag("restore-purchase"),
         ) {
-            Text("Already bought it? Restore purchase")
+            Text(stringResource(Res.string.settings_already_bought_restore_purchase))
         }
     }
 }
@@ -269,7 +322,7 @@ private fun AdvancedSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Advanced", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(Res.string.settings_advanced), style = MaterialTheme.typography.labelMedium)
             Switch(
                 checked = expanded,
                 onCheckedChange = { expanded = it },
@@ -301,7 +354,7 @@ private fun GadgetbridgeToggle(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Send to Gadgetbridge", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(Res.string.settings_send_gadgetbridge), style = MaterialTheme.typography.bodyLarge)
             Switch(
                 checked = enabled,
                 onCheckedChange = onChange,
@@ -309,8 +362,7 @@ private fun GadgetbridgeToggle(
             )
         }
         Text(
-            text = "Hands each new reading to Gadgetbridge, which passes it to a paired watch. " +
-                "Does nothing if Gadgetbridge isn't installed.",
+            text = stringResource(Res.string.settings_hands_each_new_reading),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -333,7 +385,7 @@ private fun HelpSection(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text("Help", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.settings_help), style = MaterialTheme.typography.labelMedium)
         Column(
             modifier =
                 Modifier
@@ -341,9 +393,9 @@ private fun HelpSection(
                     .clickable(onClick = onReportBug)
                     .padding(vertical = 8.dp),
         ) {
-            Text("Report a bug", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(Res.string.common_report_bug), style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = "Something wrong? Email the developer, with your app version and device attached.",
+                text = stringResource(Res.string.settings_something_wrong_email_developer),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -356,10 +408,9 @@ private fun HelpSection(
                     .padding(vertical = 8.dp)
                     .testTag("submit-idea"),
         ) {
-            Text("Submit your idea to the developer", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(Res.string.settings_submit_idea_developer), style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = "A tile, an alert or an option you wish it had. " +
-                    "Only the app version and phone model go with it.",
+                text = stringResource(Res.string.settings_tile_alert_or),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -372,9 +423,9 @@ private fun HelpSection(
                     .padding(vertical = 8.dp)
                     .testTag("rate-app"),
         ) {
-            Text("Rate Just My Weather", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(Res.string.settings_rate_just_my_weather), style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = "If it has earned a place on your phone, a rating on Google Play helps others find it.",
+                text = stringResource(Res.string.settings_if_has_earned_place),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -398,23 +449,21 @@ private fun AboutSection(version: String) {
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text("About", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.settings_about), style = MaterialTheme.typography.labelMedium)
         Text(
             // The screen already says which app this is; the line names what
             // a bug reply would ask for.
-            text = "Version $version",
+            text = stringResource(Res.string.settings_version, version),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(vertical = 8.dp).testTag("about-version"),
         )
         AboutLink(
-            title = "Privacy policy",
-            detail = "No accounts. What leaves your phone, the ad included, and why.",
+            title = stringResource(Res.string.settings_privacy_policy),
+            detail = stringResource(Res.string.settings_no_accounts_what_leaves),
             onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) },
         )
         Text(
-            text = "Weather data from the US National Weather Service (public domain) in the United " +
-                "States, and from MET Norway (CC BY 4.0) everywhere else and for days eight and nine. " +
-                "Places from the US Census Gazetteer (public domain) and GeoNames (CC BY 4.0).",
+            text = stringResource(Res.string.settings_weather_data_from_us),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),

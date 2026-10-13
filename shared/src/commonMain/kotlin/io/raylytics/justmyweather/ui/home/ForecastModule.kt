@@ -34,6 +34,11 @@ import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_forecast
+import io.raylytics.justmyweather.resources.forecast_dew
+import io.raylytics.justmyweather.resources.forecast_no_forecast_available
+import io.raylytics.justmyweather.resources.forecast_rh
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.view.DailyStyle
@@ -46,6 +51,7 @@ import io.raylytics.justmyweather.view.ModuleContent
 import io.raylytics.justmyweather.view.format
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /*
@@ -296,7 +302,7 @@ private fun ForecastHeader(
     ) {
         if (showLabel) {
             Text(
-                text = "Forecast",
+                text = stringResource(Res.string.common_forecast),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -685,9 +691,11 @@ private fun ElementLines(
 ) {
     val conventions = LocalConventions.current
     if (ForecastElement.WIND in elements && windMph != null) QuietLine(conventions.wind(windMph, windDirection))
-    if (ForecastElement.HUMIDITY in elements && humidity != null) QuietLine("RH ${humidity.roundToInt()}%")
+    if (ForecastElement.HUMIDITY in elements && humidity != null) {
+        QuietLine(stringResource(Res.string.forecast_rh, humidity.roundToInt()))
+    }
     if (ForecastElement.DEW_POINT in elements && dewpointF != null) {
-        QuietLine("Dew ${conventions.temperature(dewpointF)}")
+        QuietLine(stringResource(Res.string.forecast_dew, conventions.temperature(dewpointF)))
     }
 }
 
@@ -723,7 +731,7 @@ private fun <T> ForecastFrame(
         items != null ->
             // Fetched fine, but NWS had nothing for this framing.
             Text(
-                text = "No forecast available.",
+                text = stringResource(Res.string.forecast_no_forecast_available),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 8.dp),

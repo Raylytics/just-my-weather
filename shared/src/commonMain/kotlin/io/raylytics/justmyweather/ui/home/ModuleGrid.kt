@@ -47,6 +47,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.home_details
+import io.raylytics.justmyweather.resources.home_move_down
+import io.raylytics.justmyweather.resources.home_move_up
+import io.raylytics.justmyweather.resources.home_narrower
+import io.raylytics.justmyweather.resources.home_shorter
+import io.raylytics.justmyweather.resources.home_taller
+import io.raylytics.justmyweather.resources.home_wider
 import io.raylytics.justmyweather.view.Detail
 import io.raylytics.justmyweather.view.ForecastMode
 import io.raylytics.justmyweather.view.ModuleContent
@@ -57,6 +65,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /*
@@ -690,6 +699,17 @@ private fun ModuleTile(
     onOpenDetail: ((Detail) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    // The screen-reader actions' names, read here because the semantics block
+    // below is not composable.
+    val a11y = TileActionLabels(
+        details = stringResource(Res.string.home_details),
+        moveUp = stringResource(Res.string.home_move_up),
+        moveDown = stringResource(Res.string.home_move_down),
+        wider = stringResource(Res.string.home_wider),
+        narrower = stringResource(Res.string.home_narrower),
+        taller = stringResource(Res.string.home_taller),
+        shorter = stringResource(Res.string.home_shorter),
+    )
     val borderColor =
         if (arranging) {
             // The accent marks "these are editable now" — the one moment the
@@ -751,7 +771,7 @@ private fun ModuleTile(
                             // clickable nodes and need no action here.
                             if (onOpenModule != null && module.content !is ModuleContent.Forecast) {
                                 add(
-                                    CustomAccessibilityAction("Details") {
+                                    CustomAccessibilityAction(a11y.details) {
                                         onOpenModule(module)
                                         true
                                     },
@@ -759,7 +779,7 @@ private fun ModuleTile(
                             }
                             if (index > 0) {
                                 add(
-                                    CustomAccessibilityAction("Move up") {
+                                    CustomAccessibilityAction(a11y.moveUp) {
                                         onMove(module.module, index - 1)
                                         true
                                     },
@@ -767,7 +787,7 @@ private fun ModuleTile(
                             }
                             if (index < lastIndex) {
                                 add(
-                                    CustomAccessibilityAction("Move down") {
+                                    CustomAccessibilityAction(a11y.moveDown) {
                                         onMove(module.module, index + 1)
                                         true
                                     },
@@ -780,7 +800,7 @@ private fun ModuleTile(
                             // that would do nothing is absent, not ignored.
                             if (size.columns < ModuleSize.COLUMNS) {
                                 add(
-                                    CustomAccessibilityAction("Wider") {
+                                    CustomAccessibilityAction(a11y.wider) {
                                         onResize(module.module, size.wider())
                                         true
                                     },
@@ -788,7 +808,7 @@ private fun ModuleTile(
                             }
                             if (size.columns > min.columns) {
                                 add(
-                                    CustomAccessibilityAction("Narrower") {
+                                    CustomAccessibilityAction(a11y.narrower) {
                                         onResize(module.module, size.narrower())
                                         true
                                     },
@@ -796,7 +816,7 @@ private fun ModuleTile(
                             }
                             if (size.rows < ModuleSize.MAX_ROWS) {
                                 add(
-                                    CustomAccessibilityAction("Taller") {
+                                    CustomAccessibilityAction(a11y.taller) {
                                         onResize(module.module, size.taller())
                                         true
                                     },
@@ -804,7 +824,7 @@ private fun ModuleTile(
                             }
                             if (size.rows > min.rows) {
                                 add(
-                                    CustomAccessibilityAction("Shorter") {
+                                    CustomAccessibilityAction(a11y.shorter) {
                                         onResize(module.module, size.shorter())
                                         true
                                     },
@@ -898,3 +918,14 @@ private fun wiggleAngle(active: Boolean, phase: Int): State<Float> {
         label = "wiggleAngle",
     )
 }
+
+/** The custom actions a tile offers a screen reader, by name. */
+private class TileActionLabels(
+    val details: String,
+    val moveUp: String,
+    val moveDown: String,
+    val wider: String,
+    val narrower: String,
+    val taller: String,
+    val shorter: String,
+)

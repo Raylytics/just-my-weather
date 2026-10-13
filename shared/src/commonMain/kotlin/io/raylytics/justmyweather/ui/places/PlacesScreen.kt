@@ -32,9 +32,29 @@ import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.data.WeatherLocation
 import io.raylytics.justmyweather.data.places.Place
 import io.raylytics.justmyweather.data.places.SavedPlaces
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_cancel
+import io.raylytics.justmyweather.resources.common_done
+import io.raylytics.justmyweather.resources.common_places
+import io.raylytics.justmyweather.resources.common_remove
+import io.raylytics.justmyweather.resources.places_coordinates
+import io.raylytics.justmyweather.resources.places_enter_coordinates
+import io.raylytics.justmyweather.resources.places_follows_device_way
+import io.raylytics.justmyweather.resources.places_latitude
+import io.raylytics.justmyweather.resources.places_loading_places
+import io.raylytics.justmyweather.resources.places_longitude
+import io.raylytics.justmyweather.resources.places_name_e_g_cabin
+import io.raylytics.justmyweather.resources.places_no_match_clear_search
+import io.raylytics.justmyweather.resources.places_save_place
+import io.raylytics.justmyweather.resources.places_saved
+import io.raylytics.justmyweather.resources.places_search_towns_cities
+import io.raylytics.justmyweather.resources.places_showing
+import io.raylytics.justmyweather.resources.places_united_states_forecast
+import io.raylytics.justmyweather.resources.places_use_my_location
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.fixedDecimals
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Choose where the weather is for.
@@ -67,14 +87,14 @@ fun PlacesScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Places", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onDone) { Text("Done") }
+                Text(stringResource(Res.string.common_places), style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = onDone) { Text(stringResource(Res.string.common_done)) }
             }
 
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = { Text("Search towns and cities") },
+                placeholder = { Text(stringResource(Res.string.places_search_towns_cities)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("place-search"),
@@ -92,15 +112,15 @@ fun PlacesScreen(
                 if (query.isBlank()) {
                     item {
                         ChoiceRow(
-                            title = "Use my location",
-                            subtitle = "Follows the device, the way the app starts out",
+                            title = stringResource(Res.string.places_use_my_location),
+                            subtitle = stringResource(Res.string.places_follows_device_way),
                             selected = saved.selected == null,
                             onClick = { onSelect(null) },
                             tag = "place-device",
                         )
                     }
                     if (saved.places.isNotEmpty()) {
-                        item { SectionLabel("Saved") }
+                        item { SectionLabel(stringResource(Res.string.places_saved)) }
                         items(saved.places, key = { it.label }) { place ->
                             ChoiceRow(
                                 title = place.label,
@@ -116,14 +136,14 @@ fun PlacesScreen(
                 } else {
                     when {
                         loading ->
-                            item { Hint("Loading places…") }
+                            item { Hint(stringResource(Res.string.places_loading_places)) }
                         results.isEmpty() ->
                             item {
                                 // Names the escape hatch rather than just
                                 // saying no: somewhere unlisted is exactly when
                                 // coordinates are the answer, and that entry is
                                 // one clear-the-box away.
-                                Hint("No match. Clear the search to enter coordinates instead.")
+                                Hint(stringResource(Res.string.places_no_match_clear_search))
                             }
                         else ->
                             items(results, key = { "${it.label}|${it.latitude},${it.longitude}" }) { place ->
@@ -179,13 +199,15 @@ private fun ChoiceRow(
         }
         if (selected) {
             Text(
-                text = "Showing",
+                text = stringResource(Res.string.places_showing),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
         }
         onRemove?.let {
-            TextButton(onClick = it, modifier = Modifier.testTag("place-remove")) { Text("Remove") }
+            TextButton(onClick = it, modifier = Modifier.testTag("place-remove")) {
+                Text(stringResource(Res.string.common_remove))
+            }
         }
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
@@ -229,15 +251,15 @@ private fun CoordinateEntry(onSave: (WeatherLocation) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
         if (!open) {
             TextButton(onClick = { open = true }, modifier = Modifier.testTag("place-coords-open")) {
-                Text("Enter coordinates")
+                Text(stringResource(Res.string.places_enter_coordinates))
             }
             return@Column
         }
-        Text("Coordinates", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.places_coordinates), style = MaterialTheme.typography.labelMedium)
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            placeholder = { Text("Name (e.g. Cabin)") },
+            placeholder = { Text(stringResource(Res.string.places_name_e_g_cabin)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("coords-name"),
         )
@@ -248,7 +270,7 @@ private fun CoordinateEntry(onSave: (WeatherLocation) -> Unit) {
             OutlinedTextField(
                 value = lat,
                 onValueChange = { lat = it },
-                placeholder = { Text("Latitude") },
+                placeholder = { Text(stringResource(Res.string.places_latitude)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f).testTag("coords-lat"),
@@ -256,7 +278,7 @@ private fun CoordinateEntry(onSave: (WeatherLocation) -> Unit) {
             OutlinedTextField(
                 value = lon,
                 onValueChange = { lon = it },
-                placeholder = { Text("Longitude") },
+                placeholder = { Text(stringResource(Res.string.places_longitude)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f).testTag("coords-lon"),
@@ -265,8 +287,7 @@ private fun CoordinateEntry(onSave: (WeatherLocation) -> Unit) {
         val parsed = parseCoordinates(name, lat, lon)
         Text(
             text =
-                "In the United States the forecast comes from NWS; anywhere else, from MET Norway, " +
-                    "with no station reading or official alerts.",
+                stringResource(Res.string.places_united_states_forecast),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),
@@ -283,8 +304,8 @@ private fun CoordinateEntry(onSave: (WeatherLocation) -> Unit) {
                 enabled = parsed != null,
                 colors = textButtonColors(),
                 modifier = Modifier.testTag("coords-save"),
-            ) { Text("Save place") }
-            TextButton(onClick = { open = false }) { Text("Cancel") }
+            ) { Text(stringResource(Res.string.places_save_place)) }
+            TextButton(onClick = { open = false }) { Text(stringResource(Res.string.common_cancel)) }
         }
     }
 }

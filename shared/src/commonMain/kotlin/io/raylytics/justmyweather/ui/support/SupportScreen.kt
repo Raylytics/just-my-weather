@@ -26,9 +26,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_done
+import io.raylytics.justmyweather.resources.common_report_bug
+import io.raylytics.justmyweather.resources.support_attached_app_info
+import io.raylytics.justmyweather.resources.support_attached_diagnostics
+import io.raylytics.justmyweather.resources.support_collecting
+import io.raylytics.justmyweather.resources.support_couldn_find_what
+import io.raylytics.justmyweather.resources.support_describe_what_went_wrong
+import io.raylytics.justmyweather.resources.support_email_bug_report
+import io.raylytics.justmyweather.resources.support_email_idea
+import io.raylytics.justmyweather.resources.support_i_tapped_refresh
+import io.raylytics.justmyweather.resources.support_idea
+import io.raylytics.justmyweather.resources.support_no_email_app_found
+import io.raylytics.justmyweather.resources.support_opens_email_app
+import io.raylytics.justmyweather.resources.support_submit_idea
+import io.raylytics.justmyweather.resources.support_what_happened
+import io.raylytics.justmyweather.resources.support_would_great_if
 import io.raylytics.justmyweather.support.SUPPORT_ADDRESS
 import io.raylytics.justmyweather.support.SupportKind
 import io.raylytics.justmyweather.ui.theme.buttonColors
+import org.jetbrains.compose.resources.stringResource
 
 /** The words that make the two forms two forms. Kept together so the
  * difference between them reads at a glance. */
@@ -41,28 +59,26 @@ private class FormCopy(
     val send: String,
 )
 
+@Composable
 private fun copyFor(kind: SupportKind) =
     when (kind) {
         SupportKind.BUG ->
             FormCopy(
-                title = "Report a bug",
-                intro = "Describe what went wrong. Your app version, phone model, settings and recent " +
-                    "app log are attached automatically — all of it is shown below, so you can see " +
-                    "exactly what is sent.",
-                field = "What happened?",
-                placeholder = "I tapped Refresh and…",
-                attachedLabel = "Attached diagnostics",
-                send = "Email bug report",
+                title = stringResource(Res.string.common_report_bug),
+                intro = stringResource(Res.string.support_describe_what_went_wrong),
+                field = stringResource(Res.string.support_what_happened),
+                placeholder = stringResource(Res.string.support_i_tapped_refresh),
+                attachedLabel = stringResource(Res.string.support_attached_diagnostics),
+                send = stringResource(Res.string.support_email_bug_report),
             )
         SupportKind.IDEA ->
             FormCopy(
-                title = "Submit an idea",
-                intro = "Couldn't find what you're looking for? Tell the developer what you'd like " +
-                    "Just My Weather to do. Only your app version and phone model are attached.",
-                field = "Your idea",
-                placeholder = "It would be great if…",
-                attachedLabel = "Attached app info",
-                send = "Email idea",
+                title = stringResource(Res.string.support_submit_idea),
+                intro = stringResource(Res.string.support_couldn_find_what),
+                field = stringResource(Res.string.support_idea),
+                placeholder = stringResource(Res.string.support_would_great_if),
+                attachedLabel = stringResource(Res.string.support_attached_app_info),
+                send = stringResource(Res.string.support_email_idea),
             )
     }
 
@@ -103,7 +119,7 @@ fun SupportScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(copy.title, style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onDone) { Text("Done") }
+                TextButton(onClick = onDone) { Text(stringResource(Res.string.common_done)) }
             }
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -135,9 +151,9 @@ fun SupportScreen(
                 Text(
                     text =
                         if (noMailApp) {
-                            "No email app found. Please write to $SUPPORT_ADDRESS directly."
+                            stringResource(Res.string.support_no_email_app_found, SUPPORT_ADDRESS)
                         } else {
-                            "Opens your email app with this addressed to $SUPPORT_ADDRESS."
+                            stringResource(Res.string.support_opens_email_app, SUPPORT_ADDRESS)
                         },
                     style = MaterialTheme.typography.bodySmall,
                     color =
@@ -150,7 +166,7 @@ fun SupportScreen(
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) {
                     Text(
-                        text = attached ?: "Collecting…",
+                        text = attached ?: stringResource(Res.string.support_collecting),
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

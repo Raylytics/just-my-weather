@@ -29,6 +29,24 @@ import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.region.RegionSettings
 import io.raylytics.justmyweather.region.Regions
 import io.raylytics.justmyweather.region.ResolvedRegion
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_done
+import io.raylytics.justmyweather.resources.common_region
+import io.raylytics.justmyweather.resources.common_region_units
+import io.raylytics.justmyweather.resources.region_auto
+import io.raylytics.justmyweather.resources.region_auto_named
+import io.raylytics.justmyweather.resources.region_automatic
+import io.raylytics.justmyweather.resources.region_automatic_named
+import io.raylytics.justmyweather.resources.region_dates_times_set_by
+import io.raylytics.justmyweather.resources.region_day_first
+import io.raylytics.justmyweather.resources.region_find_country
+import io.raylytics.justmyweather.resources.region_month_first
+import io.raylytics.justmyweather.resources.region_precipitation
+import io.raylytics.justmyweather.resources.region_pressure
+import io.raylytics.justmyweather.resources.region_sets_units_how_dates
+import io.raylytics.justmyweather.resources.region_temperature
+import io.raylytics.justmyweather.resources.region_units
+import io.raylytics.justmyweather.resources.region_wind
 import io.raylytics.justmyweather.ui.customize.ChipRow
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.DateOrder
@@ -39,6 +57,7 @@ import io.raylytics.justmyweather.view.WindUnit
 import io.raylytics.justmyweather.view.format
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Region & units. Automatic is the default and the recommendation: the app
@@ -77,8 +96,8 @@ fun RegionScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Region & units", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = onDone) { Text("Done") }
+                    Text(stringResource(Res.string.common_region_units), style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = onDone) { Text(stringResource(Res.string.common_done)) }
                 }
             }
             item { UnitsSection(settings, resolved, conventions, onUpdate) }
@@ -87,17 +106,18 @@ fun RegionScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
-                Text("Region", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(Res.string.common_region), style = MaterialTheme.typography.labelMedium)
                 Text(
                     text =
-                        "Sets the units, how dates and times read, and which ads may be shown. " +
-                            "The forecast for a place is the same whatever the region.",
+                        stringResource(Res.string.region_sets_units_how_dates),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 4.dp),
                 )
                 RegionRow(
-                    title = "Automatic" + (automatic?.let { " — ${it.region.name}" } ?: ""),
+                    title =
+                        automatic?.let { stringResource(Res.string.region_automatic_named, it.region.name) }
+                            ?: stringResource(Res.string.region_automatic),
                     detail = automatic?.source?.description?.replaceFirstChar(Char::uppercase),
                     selected = settings.manualRegion == null,
                     onClick = { onUpdate { it.copy(manualRegion = null) } },
@@ -106,7 +126,7 @@ fun RegionScreen(
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Find a country") },
+                    placeholder = { Text(stringResource(Res.string.region_find_country)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("region-search"),
                 )
@@ -136,25 +156,34 @@ private fun UnitsSection(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Units", style = MaterialTheme.typography.labelMedium)
-        UnitRow("Temperature", TemperatureUnit.entries, settings.temperature, base?.temperature, { it.label }) { u ->
+        Text(stringResource(Res.string.region_units), style = MaterialTheme.typography.labelMedium)
+        val temperature = stringResource(Res.string.region_temperature)
+        val wind = stringResource(Res.string.region_wind)
+        val pressure = stringResource(Res.string.region_pressure)
+        val precipitationLabel = stringResource(Res.string.region_precipitation)
+        UnitRow(temperature, TemperatureUnit.entries, settings.temperature, base?.temperature, { it.label }) { u ->
             onUpdate { it.copy(temperature = u) }
         }
-        UnitRow("Wind", WindUnit.entries, settings.wind, base?.wind, { it.label }) { u ->
+        UnitRow(wind, WindUnit.entries, settings.wind, base?.wind, { it.label }) { u ->
             onUpdate { it.copy(wind = u) }
         }
-        UnitRow("Pressure", PressureUnit.entries, settings.pressure, base?.pressure, { it.label }) { u ->
+        UnitRow(pressure, PressureUnit.entries, settings.pressure, base?.pressure, { it.label }) { u ->
             onUpdate { it.copy(pressure = u) }
         }
         val precipitation = settings.precipitation
-        UnitRow("Precipitation", PrecipitationUnit.entries, precipitation, base?.precipitation, { it.label }) { u ->
+        UnitRow(precipitationLabel, PrecipitationUnit.entries, precipitation, base?.precipitation, { it.label }) { u ->
             onUpdate { it.copy(precipitation = u) }
         }
         val sample = LocalDate(2026, 10, 6).format(conventions.shortDate)
         val clock = LocalTime(16, 5).format(conventions.clock)
-        val order = if (conventions.dateOrder == DateOrder.DAY_FIRST) "day first" else "month first"
+        val order =
+            if (conventions.dateOrder == DateOrder.DAY_FIRST) {
+                stringResource(Res.string.region_day_first)
+            } else {
+                stringResource(Res.string.region_month_first)
+            }
         Text(
-            text = "Dates and times: $sample ($order), $clock — set by the region.",
+            text = stringResource(Res.string.region_dates_times_set_by, sample, order, clock),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -176,7 +205,9 @@ private fun <T> UnitRow(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
-        val auto = "Auto" + (regionDefault?.let { " (${label(it)})" } ?: "")
+        val auto =
+            regionDefault?.let { stringResource(Res.string.region_auto_named, label(it)) }
+                ?: stringResource(Res.string.region_auto)
         // A sealed choice of "auto" or a unit, as one list for the chip row.
         val choices: List<T?> = listOf<T?>(null) + options
         ChipRow(

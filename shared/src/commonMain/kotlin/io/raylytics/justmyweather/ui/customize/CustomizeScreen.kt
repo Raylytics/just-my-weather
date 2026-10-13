@@ -29,6 +29,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_done
+import io.raylytics.justmyweather.resources.customize_couldn_find_what
+import io.raylytics.justmyweather.resources.customize_customize_view
+import io.raylytics.justmyweather.resources.customize_height
+import io.raylytics.justmyweather.resources.customize_safety_alerts
+import io.raylytics.justmyweather.resources.customize_show_fields_care_about
+import io.raylytics.justmyweather.resources.customize_submit_idea_developer
+import io.raylytics.justmyweather.resources.customize_tap_tile_details
+import io.raylytics.justmyweather.resources.customize_tornado_severe_storm_hurricane
+import io.raylytics.justmyweather.resources.customize_whole_observation_behind_reading
+import io.raylytics.justmyweather.resources.customize_width
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.AlertBannerPosition
 import io.raylytics.justmyweather.view.DailyStyle
@@ -43,6 +55,7 @@ import io.raylytics.justmyweather.view.ThemeConfig
 import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.ViewConfig
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 
 private const val RELABEL_DEBOUNCE_MS = 400L
 
@@ -89,13 +102,11 @@ fun CustomizeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Customize view", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onDone) { Text("Done") }
+                Text(stringResource(Res.string.customize_customize_view), style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = onDone) { Text(stringResource(Res.string.common_done)) }
             }
             Text(
-                text = "Show the fields you care about, in the order you read them. Size is " +
-                    "prominence: the widest, tallest tile is the big one. You can also " +
-                    "long-press any tile on the glance to drag and resize it in place.",
+                text = stringResource(Res.string.customize_show_fields_care_about),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
@@ -170,11 +181,11 @@ private fun IdeaPrompt(onSubmitIdea: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Couldn't find what you're looking for?",
+            text = stringResource(Res.string.customize_couldn_find_what),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        TextButton(onClick = onSubmitIdea) { Text("Submit your idea to the developer.") }
+        TextButton(onClick = onSubmitIdea) { Text(stringResource(Res.string.customize_submit_idea_developer)) }
     }
 }
 
@@ -193,7 +204,7 @@ private fun AlertBannerPicker(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Safety alerts", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.customize_safety_alerts), style = MaterialTheme.typography.labelMedium)
         ChipRow(
             options = AlertBannerPosition.entries,
             selected = position,
@@ -202,8 +213,7 @@ private fun AlertBannerPicker(
             tag = { "banner_${it.key}" },
         )
         Text(
-            text = "Tornado, severe storm, hurricane, dangerous heat and air quality warnings. " +
-                "Only shown while one is active.",
+            text = stringResource(Res.string.customize_tornado_severe_storm_hurricane),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -252,9 +262,9 @@ private fun TapForDetailsPicker(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Tap a tile for details", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(Res.string.customize_tap_tile_details), style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = "The whole observation behind a reading, every field of a forecast hour",
+                text = stringResource(Res.string.customize_whole_observation_behind_reading),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -359,14 +369,14 @@ private fun FieldRow(
         if (setting.visible) {
             val min = setting.module.minSize
             SizeChips(
-                title = "Width",
+                title = stringResource(Res.string.customize_width),
                 options = (min.columns..ModuleSize.COLUMNS).toList(),
                 selected = setting.size.columns,
                 onSelect = { onResize(setting.size.copy(columns = it)) },
                 tag = { "width_${key}_$it" },
             )
             SizeChips(
-                title = "Height",
+                title = stringResource(Res.string.customize_height),
                 options = (min.rows..ModuleSize.MAX_ROWS).toList(),
                 selected = setting.size.rows,
                 onSelect = { onResize(setting.size.copy(rows = it)) },

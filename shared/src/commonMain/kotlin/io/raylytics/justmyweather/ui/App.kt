@@ -16,6 +16,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.app_my_location
+import io.raylytics.justmyweather.resources.app_saved
+import io.raylytics.justmyweather.resources.app_showing
 import io.raylytics.justmyweather.support.AppInfo
 import io.raylytics.justmyweather.support.SupportKind
 import io.raylytics.justmyweather.support.SupportMail
@@ -42,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 
 /*
@@ -203,8 +208,11 @@ fun App(
             val savedPlaces by placesViewModel.saved.collectAsStateWithLifecycle()
             val placesSummary =
                 listOfNotNull(
-                    "Showing " + (savedPlaces.current?.label ?: "my location"),
-                    savedPlaces.places.size.takeIf { it > 0 }?.let { "$it saved" },
+                    stringResource(
+                        Res.string.app_showing,
+                        savedPlaces.current?.label ?: stringResource(Res.string.app_my_location),
+                    ),
+                    savedPlaces.places.size.takeIf { it > 0 }?.let { stringResource(Res.string.app_saved, it) },
                 ).joinToString(" · ")
             AppSettingsScreen(
                 gadgetbridgeEnabled = gadgetbridgeEnabled,

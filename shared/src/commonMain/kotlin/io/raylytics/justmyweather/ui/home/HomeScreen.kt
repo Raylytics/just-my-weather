@@ -45,6 +45,15 @@ import androidx.lifecycle.repeatOnLifecycle
 import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.nws.ActiveAlert
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_alerts
+import io.raylytics.justmyweather.resources.common_customize
+import io.raylytics.justmyweather.resources.home_change_place
+import io.raylytics.justmyweather.resources.home_done_arranging
+import io.raylytics.justmyweather.resources.home_drag_move_drag_corner
+import io.raylytics.justmyweather.resources.home_refresh
+import io.raylytics.justmyweather.resources.home_refreshing
+import io.raylytics.justmyweather.resources.home_try_again
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.AlertBannerPosition
@@ -62,6 +71,7 @@ import io.raylytics.justmyweather.view.ViewConfig
 import io.raylytics.justmyweather.view.render
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -242,7 +252,7 @@ private fun GlanceView(
                 Modifier
                     .clip(RoundedCornerShape(TILE_CORNER))
                     .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(TILE_CORNER))
-                    .clickable(onClickLabel = "Change place", onClick = onPlaces)
+                    .clickable(onClickLabel = stringResource(Res.string.home_change_place), onClick = onPlaces)
                     .padding(horizontal = 14.dp, vertical = 8.dp)
                     .testTag("locationLabel"),
         ) {
@@ -311,14 +321,14 @@ private fun GlanceView(
 private fun ArrangeBar(onDone: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Drag to move · Drag a corner to resize",
+            text = stringResource(Res.string.home_drag_move_drag_corner),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.testTag("arrangeHint"),
         )
         TextButton(onClick = onDone, modifier = Modifier.testTag("doneArranging")) {
-            Text("Done arranging")
+            Text(stringResource(Res.string.home_done_arranging))
         }
     }
 }
@@ -572,11 +582,13 @@ private fun ActionBar(
                 colors = textButtonColors(),
                 contentPadding = padding,
             ) {
-                Text(if (refreshing) "Refreshing…" else "Refresh")
+                Text(stringResource(if (refreshing) Res.string.home_refreshing else Res.string.home_refresh))
             }
             TextButton(onClick = onAppSettings, contentPadding = padding) { Text("App Settings") }
-            TextButton(onClick = onCustomize, contentPadding = padding) { Text("Customize") }
-            TextButton(onClick = onAlerts, contentPadding = padding) { Text("Alerts") }
+            TextButton(onClick = onCustomize, contentPadding = padding) {
+                Text(stringResource(Res.string.common_customize))
+            }
+            TextButton(onClick = onAlerts, contentPadding = padding) { Text(stringResource(Res.string.common_alerts)) }
         }
     }
 }
@@ -596,7 +608,7 @@ private fun ErrorView(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        TextButton(onClick = onRefresh) { Text("Try again") }
+        TextButton(onClick = onRefresh) { Text(stringResource(Res.string.home_try_again)) }
     }
 }
 

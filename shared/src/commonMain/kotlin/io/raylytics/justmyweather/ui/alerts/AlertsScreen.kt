@@ -50,6 +50,30 @@ import io.raylytics.justmyweather.alerts.AlertSubject
 import io.raylytics.justmyweather.alerts.AlertWindow
 import io.raylytics.justmyweather.alerts.Comparison
 import io.raylytics.justmyweather.alerts.FireLimit
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.alerts_add_alert
+import io.raylytics.justmyweather.resources.alerts_alert_created
+import io.raylytics.justmyweather.resources.alerts_all_alerts
+import io.raylytics.justmyweather.resources.alerts_check_every
+import io.raylytics.justmyweather.resources.alerts_deliver_silently_00_00
+import io.raylytics.justmyweather.resources.alerts_ends
+import io.raylytics.justmyweather.resources.alerts_no_alerts_yet_only
+import io.raylytics.justmyweather.resources.alerts_notify
+import io.raylytics.justmyweather.resources.alerts_notify_me_safety_alerts
+import io.raylytics.justmyweather.resources.alerts_official_weather_warnings_come
+import io.raylytics.justmyweather.resources.alerts_silent_00_00
+import io.raylytics.justmyweather.resources.alerts_start_end_can
+import io.raylytics.justmyweather.resources.alerts_starts
+import io.raylytics.justmyweather.resources.alerts_these_apply_every_alert
+import io.raylytics.justmyweather.resources.alerts_tornado_severe_storm_hurricane
+import io.raylytics.justmyweather.resources.alerts_value
+import io.raylytics.justmyweather.resources.common_add
+import io.raylytics.justmyweather.resources.common_alerts
+import io.raylytics.justmyweather.resources.common_cancel
+import io.raylytics.justmyweather.resources.common_done
+import io.raylytics.justmyweather.resources.common_quiet_hours
+import io.raylytics.justmyweather.resources.common_remove
+import io.raylytics.justmyweather.resources.common_save
 import io.raylytics.justmyweather.ui.exposeTestTags
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
@@ -57,6 +81,7 @@ import io.raylytics.justmyweather.ui.theme.chipBorder
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Personal alerts: the user's own rules about everyday conditions. Quiet by
@@ -89,10 +114,11 @@ fun AlertsScreen(
     // appear in the list, but it renders ABOVE the form the user just filled
     // in, so on any phone it lands off-screen and the tap looks like a no-op.
     val snackbar = remember { SnackbarHostState() }
+    val alertCreated = stringResource(Res.string.alerts_alert_created)
     LaunchedEffect(events) {
         events.collect { event ->
             when (event) {
-                AlertsEvent.RULE_ADDED -> snackbar.showSnackbar("Alert created")
+                AlertsEvent.RULE_ADDED -> snackbar.showSnackbar(alertCreated)
             }
         }
     }
@@ -117,14 +143,13 @@ fun AlertsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Alerts", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onDone) { Text("Done") }
+                Text(stringResource(Res.string.common_alerts), style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = onDone) { Text(stringResource(Res.string.common_done)) }
             }
 
             if (rules.isEmpty()) {
                 Text(
-                    text = "No alerts yet. You'll only hear from this app about the conditions " +
-                        "you add here — nothing else.",
+                    text = stringResource(Res.string.alerts_no_alerts_yet_only),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
@@ -150,9 +175,9 @@ fun AlertsScreen(
             // Said in words, not just a divider: with the builder directly
             // above, quiet hours and the cadence read as more fields of the
             // same form, and a user would reasonably expect "Add" to need them.
-            Text("For all alerts", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(Res.string.alerts_all_alerts), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "These apply to every alert above, not just the newest one.",
+                text = stringResource(Res.string.alerts_these_apply_every_alert),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp, bottom = 8.dp),
@@ -167,8 +192,7 @@ fun AlertsScreen(
                 // The honest version of a switch that could never fire.
                 Text(
                     text =
-                        "Official weather warnings come from the US National Weather Service, which " +
-                            "doesn't cover this place. Your own alerts above work everywhere.",
+                        stringResource(Res.string.alerts_official_weather_warnings_come),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 6.dp).testTag("safetyUnavailable"),
@@ -190,7 +214,7 @@ private fun CadenceRow(
     onSelect: (Int) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Check every", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.alerts_check_every), style = MaterialTheme.typography.labelMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AlertSettings.POLL_CHOICES.forEach { minutes ->
                 FilterChip(
@@ -225,10 +249,9 @@ private fun SafetyAlertsRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Notify me of safety alerts", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(Res.string.alerts_notify_me_safety_alerts), style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "Tornado, severe storm, hurricane, dangerous heat, air quality. " +
-                    "These ignore quiet hours.",
+                text = stringResource(Res.string.alerts_tornado_severe_storm_hurricane),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -254,7 +277,7 @@ private fun QuietHoursRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Quiet hours", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(Res.string.common_quiet_hours), style = MaterialTheme.typography.bodyMedium)
             // The window is the affordance: tapping the range edits it. In the
             // accent because it IS interactive — the one place on this screen
             // where that colour is earned by a line of text.
@@ -264,7 +287,11 @@ private fun QuietHoursRow(
             Text(
                 // Zero-padded 24h clock, e.g. "07:00" — reads as a clean time range.
                 text =
-                    "Deliver silently ${twoDigits(settings.quietStartHour)}:00–${twoDigits(settings.quietEndHour)}:00",
+                    stringResource(
+                        Res.string.alerts_deliver_silently_00_00,
+                        twoDigits(settings.quietStartHour),
+                        twoDigits(settings.quietEndHour),
+                    ),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 // labelMedium is 13sp on an 18sp line, so a bare clickable Text
@@ -330,7 +357,7 @@ private fun QuietWindowDialog(
     val valid = start != end
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Quiet hours") },
+        title = { Text(stringResource(Res.string.common_quiet_hours)) },
         text = {
             // A Dialog renders in its OWN window, outside the Box in
             // MainActivity that sets testTagsAsResourceId — so testTags inside
@@ -347,16 +374,16 @@ private fun QuietWindowDialog(
                         .exposeTestTags(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Starts", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(Res.string.alerts_starts), style = MaterialTheme.typography.labelMedium)
                 HourGrid(prefix = "start", selected = start, onSelect = { start = it })
-                Text("Ends", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(Res.string.alerts_ends), style = MaterialTheme.typography.labelMedium)
                 HourGrid(prefix = "end", selected = end, onSelect = { end = it })
                 Text(
                     text =
                         if (valid) {
-                            "Silent ${twoDigits(start)}:00–${twoDigits(end)}:00"
+                            stringResource(Res.string.alerts_silent_00_00, twoDigits(start), twoDigits(end))
                         } else {
-                            "Start and end can't be the same hour — that would silence nothing."
+                            stringResource(Res.string.alerts_start_end_can)
                         },
                     style = MaterialTheme.typography.labelMedium,
                     color =
@@ -378,9 +405,9 @@ private fun QuietWindowDialog(
                     Modifier
                         .exposeTestTags()
                         .testTag("saveQuietWindow"),
-            ) { Text("Save") }
+            ) { Text(stringResource(Res.string.common_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.common_cancel)) } },
     )
 }
 
@@ -446,7 +473,7 @@ private fun RuleRow(
         TextButton(
             onClick = onDelete,
             modifier = Modifier.testTag("removeRule"),
-        ) { Text("Remove") }
+        ) { Text(stringResource(Res.string.common_remove)) }
         Switch(
             checked = rule.enabled,
             onCheckedChange = { onToggle() },
@@ -505,7 +532,7 @@ private fun AddRuleForm(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Add an alert", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.alerts_add_alert), style = MaterialTheme.typography.labelMedium)
 
         ChipRow(
             options = AlertWindow.entries,
@@ -530,7 +557,7 @@ private fun AddRuleForm(
             OutlinedTextField(
                 value = thresholdText,
                 onValueChange = { thresholdText = it },
-                placeholder = { Text("Value") },
+                placeholder = { Text(stringResource(Res.string.alerts_value)) },
                 suffix = { Text(subject.unitLabel(conventions)) },
                 singleLine = true,
                 keyboardOptions =
@@ -549,7 +576,7 @@ private fun AddRuleForm(
                 colors = textButtonColors(),
                 modifier = Modifier.testTag("addRule"),
             ) {
-                Text("Add")
+                Text(stringResource(Res.string.common_add))
             }
         }
 
@@ -557,7 +584,7 @@ private fun AddRuleForm(
         // rule did before this existed; the other two are for alerts that are
         // really reminders ("tell me the first frost") or that should not keep
         // nagging through a week of the same weather.
-        Text("Notify", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(Res.string.alerts_notify), style = MaterialTheme.typography.labelMedium)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ChipRow(
                 options = LimitChoice.entries,
