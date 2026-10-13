@@ -194,7 +194,9 @@ non-personalized ads. The app uses **Google's UMP SDK** (`ads/AdsConsent`,
 - Where a form applies, App settings shows **Privacy choices**, which Google
   requires and which reopens the form. Remove Ads is offered wherever ads
   can run.
-- Requests stay non-personalized (`AdPolicy`), whatever the user chose.
+- Requests carry no personalization override (`AdPolicy`): the SDK applies
+  the user's choice, serving personalized ads only with consent or where
+  none is required (decided 2026-10-13 with the iOS port, as open-frame).
 - To test from anywhere: `./gradlew :app:assembleDebug -PumpGeography=eea`
   (or `not_eea`). It's ignored in release builds.
 

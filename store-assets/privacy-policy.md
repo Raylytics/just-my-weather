@@ -1,6 +1,6 @@
 # Privacy Policy — Just My Weather
 
-_Last updated: 2026-10-07_
+_Last updated: 2026-10-13_
 
 Just My Weather is a free Android weather app published by Raylytics, LLC. It shows the weather for a place you choose, lets you build your
 own view of it, and sends you notifications for conditions you define. This
@@ -98,9 +98,13 @@ the United Kingdom, the European Economic Area and Switzerland — the app shows
 Google's consent form and starts the ad SDK only after you have chosen; if you
 decline, Google may still show a limited ad that uses no cookies or advertising
 identifiers. You can change your choice any time in App settings → Privacy
-choices. It is served by **Google AdMob**, a Google service, and
-the app requests **non-personalized ads only**. To serve and measure that ad,
-the Google Mobile Ads SDK built into the app may collect:
+choices. It is served by **Google AdMob**, a Google service.
+
+**Personalized ads.** Ads may be personalized where you have consented, or
+where no consent is required; otherwise Google serves non-personalized or
+limited ads. You can opt out of personalized ads on Android in your device
+settings (Google → Ads). To serve, measure and — where allowed — personalize
+that ad, the Google Mobile Ads SDK built into the app may collect:
 
 - your device's **advertising ID** (you can reset or delete it in your
   device's settings) and other device identifiers;
@@ -206,7 +210,8 @@ same address.
 ## What the app does NOT do
 
 - No accounts or sign-in.
-- No personalized ads: the banner is requested as non-personalized.
+- No personalized ads without a choice: ads are personalized only where you
+  consented or no consent is required (see "Ads and purchases").
 - No analytics, telemetry, or automatic crash reporting run by the developer.
   The AdMob SDK's own ad measurement and diagnostics are described under
   "Ads and purchases".

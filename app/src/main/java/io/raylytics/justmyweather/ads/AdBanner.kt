@@ -1,6 +1,5 @@
 package io.raylytics.justmyweather.ads
 
-import android.os.Bundle
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.google.ads.mediation.admob.AdMobAdapter
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
@@ -28,16 +26,11 @@ import com.google.android.gms.ads.AdView
  * two files and one call site.
  */
 
-/** The ad request every banner loads: non-personalized, and nothing else.
- * The npa extra is the Google Mobile Ads SDK's switch for it. */
+/** The ad request every banner loads: a bare one. No extras and no
+ * targeting — personalization follows the user's consent, which the SDK
+ * applies by itself (AdPolicy). */
 object AdRequests {
-    fun nonPersonalized(): AdRequest =
-        AdRequest
-            .Builder()
-            .addNetworkExtrasBundle(
-                AdMobAdapter::class.java,
-                Bundle().apply { putString(AdPolicy.NPA_KEY, AdPolicy.NPA_VALUE) },
-            ).build()
+    fun standard(): AdRequest = AdRequest.Builder().build()
 }
 
 /**
@@ -64,7 +57,7 @@ fun AdBanner(unitId: String, modifier: Modifier = Modifier) {
                 }
             }
         DisposableEffect(adView) {
-            adView.loadAd(AdRequests.nonPersonalized())
+            adView.loadAd(AdRequests.standard())
             val observer =
                 LifecycleEventObserver { _, event ->
                     when (event) {

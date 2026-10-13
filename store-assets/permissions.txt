@@ -21,7 +21,8 @@ INTERNET
 com.google.android.gms.permission.AD_ID
   Merged in by the Google Mobile Ads SDK: the banner ad (ads/AdBanner.kt)
   uses the advertising ID. Declared on the Play "Advertising ID" form as
-  Yes. Requests are non-personalized (ads/AdPolicy.kt).
+  Yes. Ads are personalized only with consent, or where none is required;
+  the SDK applies the choice made in Google's consent form (ads/AdPolicy.kt).
 
 android.permission.ACCESS_ADSERVICES_ATTRIBUTION / _AD_ID / _TOPICS
   Merged in by the same SDK for Android 13+'s Privacy Sandbox APIs; the app

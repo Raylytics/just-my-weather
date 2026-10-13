@@ -476,8 +476,9 @@ readable `AppContainer` in `JustMyWeatherApp.kt` — no Hilt). Package layout un
   object the UI depends on — wire shapes never leak past the repository.
 - **`ads/`** + **`billing/`** — the banner and the purchase that removes it.
   `AdBanner` is the only composable that draws an ad (one, at the foot of the
-  glance, non-personalized per `AdPolicy`); `RemoveAdsManager` keeps the
-  on-device entitlement in step with Play behind the `BillingGateway` seam.
+  glance; personalization follows the user's consent, per `AdPolicy`);
+  `RemoveAdsManager` keeps the on-device entitlement in step with Play behind
+  the `BillingGateway` seam.
   See `docs/architecture.md`.
 - **`data/metno/`** — MET Norway, the second source: the whole forecast for a
   place NWS doesn't cover (routed in `WeatherRepository`, which caches "not

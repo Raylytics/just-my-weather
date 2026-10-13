@@ -40,8 +40,9 @@ shapes never leak past `WeatherRepository`.
   `*Repository` classes persist config via Preferences DataStore; `PointCache`
   (in-memory default, `DataStorePointCache` durable) survives the grid lookup
   across launches. `WeatherSnapshot` / `WeatherLocation` are the domain objects.
-- **`ads/`** — the one banner. `AdPolicy` is the pure rules (non-personalized
-  `npa=1`, sample units in debug, nothing about the user in a request);
+- **`ads/`** — the one banner. `AdPolicy` is the pure rules (no
+  personalization override — the SDK applies the user's consent — sample
+  units in debug, nothing about the user in a request);
   `AdBanner` is the single composable that draws an AdMob adaptive banner. It
   is placed once, at the foot of the glance, and only while Remove Ads is not
   owned.
