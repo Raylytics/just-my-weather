@@ -34,9 +34,14 @@ A version that reaches both stores gets an entry in each.
 
 # iOS (App Store)
 
-No builds yet. The first TestFlight build is just-my-weather-nyt.10;
-`scripts/ios/release-testflight.sh --confirm-upload` prints the line to add
-here when it runs.
+## 0.3.1 — build 2, TestFlight 2026-10-13
+
+The first iOS build (just-my-weather-nyt.10), cut from 4003b7f with Evan's
+go-ahead; delivery 1222a8ff-e1ab-4736-a6a6-5c5fd0dc08dc. Internal testers
+only. Build 1 was never uploaded (the rehearsal's number). Includes the
+arrange-bar fix (nyt.13), the App Store product id
+`remove_ads_just_my_weather`, and the real AdMob ids. Gates: verify.sh,
+`:shared:allTests`, Maestro 9/9 on the iOS 27 simulator.
 
 ---
 

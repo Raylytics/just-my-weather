@@ -18,7 +18,7 @@ settings:
     # repo-root VERSION file. The build number is iOS's own counter
     # (scripts/ios/bump-build-number.sh), independent of Android's versionCode.
     MARKETING_VERSION: 0.3.1
-    CURRENT_PROJECT_VERSION: 1
+    CURRENT_PROJECT_VERSION: 2
     # No DEVELOPMENT_TEAM here, not even "": these settings override the
     # xcconfigs, and the team comes from Config/Team.xcconfig (gitignored,
     # written by scripts/ios/setup-team.sh).
