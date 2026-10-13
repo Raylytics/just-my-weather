@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.data.WeatherLocation
 import io.raylytics.justmyweather.data.places.Place
 import io.raylytics.justmyweather.data.places.SavedPlaces
+import io.raylytics.justmyweather.ui.scrollbar
 import java.util.Locale
 
 /**
@@ -81,7 +83,11 @@ fun PlacesScreen(
             // search results and the coordinate entry are all "ways to pick a
             // place", and stacking three independently-scrolling boxes on a
             // phone is how a screen becomes unusable in landscape.
-            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            val listState = rememberLazyListState()
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().weight(1f).scrollbar(listState, gutter = 10.dp),
+            ) {
                 if (query.isBlank()) {
                     item {
                         ChoiceRow(

@@ -52,6 +52,7 @@ import io.raylytics.justmyweather.alerts.AlertSubject
 import io.raylytics.justmyweather.alerts.AlertWindow
 import io.raylytics.justmyweather.alerts.Comparison
 import io.raylytics.justmyweather.alerts.FireLimit
+import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -341,10 +342,12 @@ private fun QuietWindowDialog(
             // this subtree. Found the hard way: the picker looked perfect on
             // screen while every tag selector reported "element not found".
             // Any future dialog needs this line too.
+            val scroll = rememberScrollState()
             Column(
                 modifier =
                     Modifier
-                        .verticalScroll(rememberScrollState())
+                        .scrollbar(scroll, gutter = 12.dp)
+                        .verticalScroll(scroll)
                         .semantics { testTagsAsResourceId = true },
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {

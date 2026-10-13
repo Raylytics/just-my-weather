@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
+import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.view.DailyStyle
 import io.raylytics.justmyweather.view.Detail
@@ -137,11 +138,14 @@ internal fun ForecastModuleContent(
             onSetMode = onSetMode,
             showLabel = columns >= LABELLED_HEADER_MIN_COLUMNS,
         )
+        val scroll = rememberScrollState()
         val viewport =
             Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState(), enabled = !arranging)
+                // In the tile's padding, beside the grid — not over its tiles.
+                .scrollbar(scroll, gutter = TILE_PADDING / 2, enabled = !arranging)
+                .verticalScroll(scroll, enabled = !arranging)
         when (content.mode) {
             ForecastMode.HOURLY ->
                 ForecastFrame(items = content.hours, error = content.error) { list ->

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.data.SunDay
+import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.view.ModuleSize
 import java.time.Instant
@@ -118,8 +119,13 @@ internal fun SunTimesTable(
         // The headings stay put; the days scroll beneath them when there are
         // more than the tile is tall. Two days never need it, and the scroll
         // is a no-op then.
+        val scroll = rememberScrollState()
         Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState(), enabled = !arranging),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .scrollbar(scroll, gutter = TILE_PADDING / 2, enabled = !arranging)
+                    .verticalScroll(scroll, enabled = !arranging),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             days.forEach { day -> SunDayRow(day = day, zone = zone) }
