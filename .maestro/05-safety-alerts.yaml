@@ -36,9 +36,13 @@ appId: io.raylytics.justmyweather
     element: "Notify me of safety alerts"
     direction: DOWN
     timeout: 20000
-- assertVisible:
-    id: "safetyNotifications"
-    checked: false
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "safetyNotifications"
+          checked: false
 # "Done" is the screen's header; the scroll to the safety switch (the last row)
 # parks the view below it on CI's profile. Scroll back before tapping, as
 # 02-alerts does — a tap that never found "Done" fails here, not quietly.

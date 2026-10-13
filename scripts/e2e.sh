@@ -110,7 +110,9 @@ EOF
     fi
 
     echo "device: $DEVICE (iOS simulator)"
-    exec maestro --device "$DEVICE" test -e APP_ID="$APP_ID" .maestro/
+    # Flows for Android-only features (Gadgetbridge) carry the android-only
+    # tag; platform differences inside a flow are `when: platform:` blocks.
+    exec maestro --device "$DEVICE" test -e APP_ID="$APP_ID" --exclude-tags android-only .maestro/
     ;;
 
   *)
