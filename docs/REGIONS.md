@@ -261,8 +261,9 @@ Android order and its stored clues are unchanged.
 
 **Availability must match.** The App Store must offer the app in exactly the
 `LIVE` regions: today the 15 in waves 0–2. That is a manual setting in App
-Store Connect, with "make available in new countries automatically" off
-(human hand-off just-my-weather-aoi). Nothing compares the two
+Store Connect, with "make available in new countries automatically" off.
+Set to those 15 on 2026-10-13 (just-my-weather-aoi): US, CA, AU, NZ, GB,
+IE, IN, PH, NG, ZA, PK, KE, GH, SG, MY. Nothing compares the two
 automatically yet: `scripts/check-regions.sh` reads only Play.
 
 **Adding, opening or pausing a region** also touches App Store Connect's
