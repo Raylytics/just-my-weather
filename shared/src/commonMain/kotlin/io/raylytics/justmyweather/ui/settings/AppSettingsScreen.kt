@@ -479,6 +479,10 @@ private fun HelpSection(
  * (store-assets/play-store-listing.md); change both together. */
 const val PRIVACY_POLICY_URL = "https://raylytics.io/justmyweather/privacy"
 
+/** The iOS app's own policy (store-assets/privacy-policy-ios.md): App Store,
+ * Apple Account and Apple's tracking prompt where Android's says Google. */
+const val PRIVACY_POLICY_URL_IOS = "https://raylytics.io/justmyweather/privacy-ios"
+
 /**
  * What the app is and whose data it shows. The attribution is not a courtesy:
  * MET Norway's and GeoNames' CC BY 4.0 licences ask for it wherever their data
@@ -502,7 +506,9 @@ private fun AboutSection(version: String) {
         AboutLink(
             title = stringResource(Res.string.settings_privacy_policy),
             detail = stringResource(Res.string.settings_no_accounts_what_leaves),
-            onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) },
+            onClick = {
+                uriHandler.openUri(if (currentPlatform == Platform.IOS) PRIVACY_POLICY_URL_IOS else PRIVACY_POLICY_URL)
+            },
         )
         Text(
             text = stringResource(Res.string.settings_weather_data_from_us),
