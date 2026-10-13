@@ -3,21 +3,44 @@
 Per-version log of what shipped where. Two audiences:
 
 - **Store-facing** copy is what goes in Play Console "What's new in this
-  release" (≤500 chars). User language: what they will notice, no issue ids.
+  release" (≤500 chars), or App Store Connect "What's New in This Version".
+  User language: what they will notice, no issue ids.
 - **Internal notes** capture the changeset for bisecting later. Issue ids
   (`just-my-weather-xxx`) and roborev review numbers are fine here.
 
+The two apps share one version name but ship on their own schedules (plan
+decision 8), so each platform has its own section: iOS first, then Android.
+A version that reaches both stores gets an entry in each.
+
 ## Conventions
 
-- `versionName` in `app/build.gradle.kts` is the version; `versionCode` is
-  the upload counter (CLAUDE.md "Versioning").
+- `VERSION` (repo root) is the version for both apps;
+  `scripts/sync-version.sh` copies it into Android's `versionName`
+  (`app/build.gradle.kts`) and iOS's `MARKETING_VERSION`
+  (`iosApp/project.yml`). Entries before 2026-10-13 predate `VERSION` and
+  name `versionName` directly.
+- The upload counters are per platform: `versionCode` on Android,
+  `CURRENT_PROJECT_VERSION` ("build N") on iOS (CLAUDE.md "Versioning").
 - Group internal notes under **Added / Changed / Fixed / Internal**; skip
   empty groups.
 - Date a version when it ships (absolute dates, YYYY-MM-DD), and say where:
-  GitHub release (sideload APK), Play internal, Play production.
+  GitHub release (sideload APK), Play internal, Play production, TestFlight
+  internal, App Store.
+- An iOS entry also names the shared commit it was cut from, the same sha
+  recorded in docs/PARITY.md "Last iOS build".
 - Carry "Known issues" forward until resolved.
 
 ---
+
+# iOS (App Store)
+
+No builds yet. The first TestFlight build is just-my-weather-nyt.10;
+`scripts/ios/release-testflight.sh --confirm-upload` prints the line to add
+here when it runs.
+
+---
+
+# Android (Google Play)
 
 ## 0.3.1 — versionCode 8, Play internal 2026-10-07
 

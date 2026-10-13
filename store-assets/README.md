@@ -1,6 +1,6 @@
 # Store assets
 
-Everything the Google Play listing needs, with sources so it can be regenerated.
+Everything the Google Play and App Store listings need, with sources so it can be regenerated.
 
 | File | Purpose |
 |---|---|
@@ -16,6 +16,9 @@ Everything the Google Play listing needs, with sources so it can be regenerated.
 | `generate-graphics.sh` | Renders both PNGs from the SVGs (needs `rsvg-convert`, `brew install librsvg`); first checks the launcher vector copies match |
 | `crop-screenshots.sh` | Crops 1080×2400 emulator captures to 1080×2160 (Play's 2:1 limit) into `screenshots/final/` |
 | `screenshots/` | Raw captures in; cropped output in `final/` |
+| `app-store-listing.md` | **Canonical copy of every App Store Connect field** (iOS). Edit here first. |
+| `privacy-policy-ios.md` | iOS policy source; to be rendered at https://raylytics.io/justmyweather/privacy-ios |
+| `screenshots/ios/` | iOS captures; sizes and capture steps in its README |
 
 The launcher icon the app ships is the vector in
 `app/src/main/res/drawable/ic_launcher_foreground.xml` (a copy of
