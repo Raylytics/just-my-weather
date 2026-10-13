@@ -162,9 +162,12 @@ into the app's own.
   Interaction, Advertising Data, Crash Data, Performance Data, Other
   Diagnostic Data (`../open-frame/store-assets/app-store-listing.md`, "App
   Privacy").
-- The hand-off text in just-my-weather-kvr marks several types "not linked
-  to identity". open-frame's table marks them "linked". These disagree.
-  Settle it from the privacy report before publishing the labels.
+- Settled 2026-10-13 from the first archive: the merged manifests match
+  open-frame's table exactly (Device ID, Coarse Location, Product
+  Interaction and Advertising Data linked; the three diagnostics types not
+  linked; only Device ID used for tracking). The answers are in
+  `store-assets/app-store-listing.md` "App Privacy". The earlier hand-off
+  text that marked them "not linked" was wrong.
 
 ## Releasing (day-to-day)
 

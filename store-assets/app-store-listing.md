@@ -188,6 +188,33 @@ and the report merges them). Record the published answers here once entered.
 The app's own code collects nothing: it sends forecast coordinates to NWS
 and MET Norway and keeps everything else on the device.
 
+**From the first Release archive's manifests (2026-10-13).** The archive
+bundles three: the app's own (`NSPrivacyTracking` false, collects nothing),
+GoogleMobileAds.framework and UserMessagingPlatform.framework. Merged (a
+type is linked or tracking if either SDK says so; UMP adds App
+Functionality), they give the table below, identical to open-frame's for
+the same SDKs.
+
+**Does this app collect data?** → **Yes.**
+
+| Data type | Purposes | Linked to user | Used for tracking |
+| --- | --- | --- | --- |
+| Identifiers → Device ID | Third-Party Advertising, Developer's Advertising or Marketing, Analytics | Yes | **Yes** |
+| Location → Coarse Location | Third-Party Advertising, Developer's Advertising or Marketing, Analytics, App Functionality | Yes | No |
+| Usage Data → Product Interaction | Third-Party Advertising, Developer's Advertising or Marketing, Analytics, App Functionality | Yes | No |
+| Usage Data → Advertising Data | Third-Party Advertising, Developer's Advertising or Marketing, Analytics | Yes | No |
+| Diagnostics → Crash Data | Analytics | No | No |
+| Diagnostics → Performance Data | Third-Party Advertising, Developer's Advertising or Marketing, Analytics, App Functionality | No | No |
+| Diagnostics → Other Diagnostic Data | Third-Party Advertising, Developer's Advertising or Marketing, Analytics | No | No |
+
+Not declared: Purchase History (StoreKit is Apple's, the app keeps only an
+"ads removed" flag), the forecast coordinates (sent per request to NWS and
+MET Norway for real-time servicing, kept by no one on the app's behalf),
+and the bug-report/idea email (the user sends it from their own mail app;
+same as open-frame). Device ID used for tracking means the listing shows
+"Data Used to Track You"; the build carries `NSUserTrackingUsageDescription`.
+Re-check after any Google SDK upgrade: the manifests are the source.
+
 ---
 
 ## In-App Purchase
