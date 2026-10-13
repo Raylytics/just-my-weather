@@ -42,6 +42,12 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
         }
+        // The Android side of the seams, at the versions the app shipped with:
+        // OkHttp under HttpTransport, DataStore under every settings store.
+        androidMain.dependencies {
+            implementation("com.squareup.okhttp3:okhttp:4.12.0")
+            implementation("androidx.datastore:datastore-preferences:1.1.1")
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
@@ -61,6 +67,7 @@ tasks.withType<Test>().configureEach {
 }
 
 ktlint {
+    android.set(true)
     ignoreFailures.set(false)
     reporters {
         reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)

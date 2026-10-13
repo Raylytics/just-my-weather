@@ -815,9 +815,10 @@ private fun ModuleTile(
     ) {
         // The forecast fills its tile edge to edge — it is a grid with a
         // header, not a value to centre — so it skips the label column.
-        if (module.content is ModuleContent.Forecast) {
+        val content = module.content
+        if (content is ModuleContent.Forecast) {
             ForecastModuleContent(
-                content = module.content,
+                content = content,
                 columns = module.size.columns,
                 gap = spec.moduleGap,
                 arranging = arranging,
