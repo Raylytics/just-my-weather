@@ -78,7 +78,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.time.Instant
+import kotlin.time.Clock
 
 /** How long a bug report waits for the glance to report its state. */
 private const val GLANCE_WAIT_MS = 2_000L
@@ -489,7 +489,7 @@ private fun App(
                             sourceScreen = "App Settings",
                             state = loadBugReportState(),
                             logs = recentLogLines(),
-                            timestamp = Instant.now().toString(),
+                            timestamp = Clock.System.now().toString(),
                         )
                     }
             }

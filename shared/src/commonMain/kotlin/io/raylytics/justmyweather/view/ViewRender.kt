@@ -1,0 +1,158 @@
+package io.raylytics.justmyweather.view
+
+import io.raylytics.justmyweather.data.SunDay
+import io.raylytics.justmyweather.data.WeatherSnapshot
+import io.raylytics.justmyweather.data.metno.ExtendedDay
+import io.raylytics.justmyweather.data.nws.DailyPeriod
+import io.raylytics.justmyweather.data.nws.ForecastPoint
+import kotlinx.datetime.TimeZone
+
+/**
+ * What a module actually has to draw.
+ *
+ * Most modules are one string, and were the only kind until sun times moved
+ * onto the grid: sunrise and sunset are a small table, not a value, and
+ * flattening them into "next sunrise / next sunset" would have thrown away the
+ * reason day rows were chosen in the first place — between sunrise and sunset,
+ * "the next sunrise" and "the next sunset" fall on different dates, and a row
+ * carrying its own date says which is which without hanging a "tomorrow" off a
+ * time.
+ *
+ * Exhaustive, so a new kind of module forces the tile to decide how it draws.
+ */
+sealed interface ModuleContent {
+    /** A single reading, already formatted ("72°", "Calm", "—"). */
+    data class Reading(val text: String) : ModuleContent
+
+    /**
+     * Sun times, today first, with the zone they are to be read in — the
+     * PLACE's, not the device's. The zone travels with the days because they
+     * are instants: the same sunrise formats as two different clock times
+     * depending on where you ask from, and the answer the user wants is the
+     * one local to the place they are looking at.
+     *
+     * The tile decides how much of this it can show at its width; the days
+     * themselves are not the tile's to choose.
+     */
+    data class Sun(val days: List<SunDay>, val zone: TimeZone) : ModuleContent
+
+    /**
+     * The forecast, in the framing the session has chosen: hours and days
+     * both travel, because switching the framing must not wait for a fetch,
+     * and either list is null until its own first fetch lands. [error] is the
+     * shown framing's failure, if any. The zone is the place's, for the same
+     * reason as [Sun]: an hour label is a clock face.
+     */
+    data class Forecast(
+        val hours: List<ForecastPoint>?,
+        val periods: List<DailyPeriod>?,
+        val error: String?,
+        val mode: ForecastMode,
+        val dailyStyle: DailyStyle,
+        /** How many of [hours] the Hourly framing shows — the user's setting. */
+        val hourlyHours: Int,
+        /** How many days the Daily framing shows — the user's setting. */
+        val dailyDays: Int,
+        /** What each tile shows beside its temperature — the user's setting. */
+        val elements: Set<ForecastElement>,
+        /** How each tile arranges its zones — the user's setting. */
+        val layout: ForecastTileLayout,
+        /** The clock the tile's times read in — the user's setting. */
+        val zone: TimeZone,
+        /** The place's own zone, for what depends on the place's calendar:
+         * which hours are "the rest of today". */
+        val placeZone: TimeZone,
+        /** Days past NWS's reach, from the extended source. */
+        val extended: List<ExtendedDay>? = null,
+    ) : ModuleContent
+}
+
+/**
+ * What the screen knows about the forecast, handed to [render] beside the
+ * snapshot: the session's framing and each framing's data. Not part of the
+ * snapshot because the forecast is a separate fetch with its own failure, and
+ * not part of the config because the framing chosen by a tap is session
+ * state, not a saved preference.
+ */
+data class ForecastData(
+    val mode: ForecastMode = ForecastMode.DEFAULT,
+    val hours: List<ForecastPoint>? = null,
+    val periods: List<DailyPeriod>? = null,
+    val error: String? = null,
+    /** The place's zone, whatever clock the screen reads in. */
+    val placeZone: TimeZone = TimeZone.currentSystemDefault(),
+    val extended: List<ExtendedDay>? = null,
+)
+
+/** A module resolved to what the screen shows: its label, its content, and
+ * its footprint on the grid. */
+data class ModuleValue(
+    val module: ModuleKey,
+    val label: String,
+    val size: ModuleSize,
+    val content: ModuleContent,
+)
+
+/**
+ * The glance reduced to render-ready data: the visible modules, in the user's
+ * order. Pure, so the mapping from "user's config + latest weather" to "what's
+ * on screen" is testable without Compose. There is no special hero slot — a
+ * module's prominence is its size, which is the whole idea of the grid.
+ */
+data class RenderedView(
+    val modules: List<ModuleValue>,
+)
+
+/**
+ * Project a snapshot through the user's config. Missing data renders as "—"
+ * rather than vanishing, so an enabled-but-empty module reads as honest
+ * absence instead of a layout that silently dropped it.
+ *
+ * [sunDays] comes in separately because it is not measured at a station: it is
+ * worked out on the device from the date and where you are, which is why the
+ * sun module keeps working with no signal.
+ */
+fun ViewConfig.render(
+    snapshot: WeatherSnapshot,
+    sunDays: List<SunDay> = emptyList(),
+    /** Which zone the sun times and forecast hours read in. Defaults to the
+     * device's, which is the honest fallback while the place's own zone is
+     * unknown. */
+    zone: TimeZone = TimeZone.currentSystemDefault(),
+    forecast: ForecastData = ForecastData(),
+    /** How the readings read: units and all (view/Conventions). */
+    conventions: Conventions,
+): RenderedView =
+    RenderedView(
+        visible.map { setting ->
+            ModuleValue(
+                module = setting.module,
+                label = setting.label,
+                size = setting.size,
+                content =
+                    when (val module = setting.module) {
+                        is ModuleKey.Reading ->
+                            ModuleContent.Reading(module.field.format(snapshot, conventions) ?: "—")
+                        // The rows were computed to the horizon (SunDays.MAX);
+                        // the user's setting says how many of them the tile
+                        // draws, so changing it never recomputes anything.
+                        ModuleKey.Sun -> ModuleContent.Sun(sunDays.take(this.sunDays), zone)
+                        ModuleKey.Forecast ->
+                            ModuleContent.Forecast(
+                                hours = forecast.hours,
+                                periods = forecast.periods,
+                                error = forecast.error,
+                                mode = forecast.mode,
+                                dailyStyle = dailyStyle,
+                                hourlyHours = hourlyHours,
+                                dailyDays = dailyDays,
+                                elements = forecastElements,
+                                layout = forecastTileLayout,
+                                zone = zone,
+                                placeZone = forecast.placeZone,
+                                extended = forecast.extended,
+                            )
+                    },
+            )
+        },
+    )

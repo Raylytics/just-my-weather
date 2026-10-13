@@ -14,10 +14,11 @@ import io.raylytics.justmyweather.AppContainer
 import io.raylytics.justmyweather.JustMyWeatherApp
 import io.raylytics.justmyweather.data.AlertRulesRepository
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.io.IOException
-import java.time.Instant
-import java.time.ZoneId
 import java.util.concurrent.TimeUnit
+import kotlin.time.Clock
 
 /**
  * The background half of alerting: on each tick, evaluate every enabled rule
@@ -75,8 +76,8 @@ class AlertWorker(
 
         // Pure transition-dedup: notify only rules that just entered fired. The
         // clock and zone are read here at the edge and handed to the pure path.
-        val zone = ZoneId.systemDefault()
-        val now = Instant.now()
+        val zone = TimeZone.currentSystemDefault()
+        val now = Clock.System.now()
         // The notification reads in the user's units; the comparison never
         // depends on them (thresholds are stored canonical).
         runCatching { container.regionRepository.refresh(container.locationResolver.resolveKnown()) }
@@ -89,7 +90,7 @@ class AlertWorker(
             }
         val outcome = AlertTransitions.compute(rules, context, repository.firingIds())
         // Quiet hours hush the delivery (silent channel), they don't drop alerts.
-        val silent = settings.isQuietAt(now.atZone(zone).hour)
+        val silent = settings.isQuietAt(now.toLocalDateTime(zone).hour)
         outcome.toNotify.forEach { container.alertNotifier.notify(it.rule, it.decision, silent) }
         repository.setFiringIds(outcome.nowFiring)
         // Fire counts moved on, and a rule that just reached its limit is now

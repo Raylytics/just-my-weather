@@ -7,7 +7,7 @@ import io.raylytics.justmyweather.view.WeatherField
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Instant
+import kotlin.time.Instant
 
 /** Thresholds are typed in the user's units and stored canonical, so a rule
  * keeps meaning the same air when the units change. */
@@ -30,7 +30,7 @@ class AlertUnitsTest {
     fun `the comparison is canonical and the notification reads in the user's units`() {
         val rule = AlertRule("r", temperature, Comparison.BELOW, temperature.toCanonical(2.0, uk))
         val snapshot = WeatherSnapshot("London", 33.8, null, null, null, null, null) // 1 °C
-        val decision = AlertEvaluator.evaluate(rule, WeatherContext(snapshot, Instant.EPOCH, conventions = uk))
+        val decision = AlertEvaluator.evaluate(rule, WeatherContext(snapshot, EPOCH, conventions = uk))
         assertTrue(decision.fired)
         assertEquals("Temperature is 1°, below your 2°", decision.reason)
     }
@@ -57,7 +57,7 @@ class AlertUnitsTest {
         // 1.9 °C (35.4 °F) against a 2 °C rule: both round to "2°".
         val rule = AlertRule("r", temperature, Comparison.BELOW, temperature.toCanonical(2.0, uk))
         val snapshot = WeatherSnapshot("London", 35.4, null, null, null, null, null)
-        val decision = AlertEvaluator.evaluate(rule, WeatherContext(snapshot, Instant.EPOCH, conventions = uk))
+        val decision = AlertEvaluator.evaluate(rule, WeatherContext(snapshot, EPOCH, conventions = uk))
         assertTrue(decision.fired)
         assertEquals("Temperature is 1.9°, below your 2.0°", decision.reason)
     }
@@ -85,7 +85,7 @@ class AlertUnitsTest {
         // your 1.7°" was the bug (roborev 5408).
         val rule = AlertRule("r", temperature, Comparison.BELOW, 35.0)
         val snapshot = WeatherSnapshot("London", 34.9, null, null, null, null, null)
-        val reason = AlertEvaluator.evaluate(rule, WeatherContext(snapshot, Instant.EPOCH, conventions = uk)).reason
+        val reason = AlertEvaluator.evaluate(rule, WeatherContext(snapshot, EPOCH, conventions = uk)).reason
         assertEquals("Temperature is 1.6°, below your 1.7°", reason)
     }
 
@@ -115,3 +115,5 @@ class AlertUnitsTest {
 
     private fun leadingNumber(text: String): Double = Regex("""-?\d+(\.\d+)?""").find(text)!!.value.toDouble()
 }
+
+private val EPOCH = Instant.fromEpochMilliseconds(0)

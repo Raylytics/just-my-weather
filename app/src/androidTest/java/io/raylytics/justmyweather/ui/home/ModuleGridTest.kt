@@ -29,14 +29,14 @@ import io.raylytics.justmyweather.view.ModuleKey
 import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.ModuleValue
 import io.raylytics.justmyweather.view.WeatherField
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 /**
  * The two things about the module grid that only a device can answer: what the
@@ -107,7 +107,7 @@ class ModuleGridTest {
             content =
                 when (key) {
                     is ModuleKey.Reading -> ModuleContent.Reading("—")
-                    ModuleKey.Sun -> ModuleContent.Sun(sunDays, ZoneId.systemDefault())
+                    ModuleKey.Sun -> ModuleContent.Sun(sunDays, TimeZone.currentSystemDefault())
                     ModuleKey.Forecast ->
                         ModuleContent.Forecast(
                             hours = null,
@@ -119,8 +119,8 @@ class ModuleGridTest {
                             dailyDays = 7,
                             elements = ForecastElement.DEFAULT,
                             layout = ForecastTileLayout.DEFAULT,
-                            zone = ZoneId.systemDefault(),
-                            placeZone = ZoneId.systemDefault(),
+                            zone = TimeZone.currentSystemDefault(),
+                            placeZone = TimeZone.currentSystemDefault(),
                         )
                 },
         )
@@ -129,12 +129,12 @@ class ModuleGridTest {
     private val sunDays =
         listOf(
             SunDay(
-                LocalDate.of(2026, 8, 15),
+                LocalDate(2026, 8, 15),
                 Instant.parse("2026-08-15T10:57:00Z"),
                 Instant.parse("2026-08-16T00:36:00Z"),
             ),
             SunDay(
-                LocalDate.of(2026, 8, 16),
+                LocalDate(2026, 8, 16),
                 Instant.parse("2026-08-16T10:58:00Z"),
                 Instant.parse("2026-08-17T00:35:00Z"),
             ),
@@ -393,7 +393,7 @@ class ModuleGridTest {
      * The second tile is the one with surplus height — where SPREAD and
      * STACKED differ. */
     private fun forecastWithHours(layout: ForecastTileLayout): ModuleValue {
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val hours =
             listOf(
                 ForecastPoint(
@@ -471,7 +471,7 @@ class ModuleGridTest {
         // itself now, in both passes; this pins that the two tiles agree on
         // where the middle is, and that the one-liner's row is as tall as its
         // neighbour's.
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val hours =
             listOf(
                 ForecastPoint(Instant.parse("2026-09-06T23:00:00Z"), 72.0, null, shortForecast = "Clear"),
@@ -525,7 +525,7 @@ class ModuleGridTest {
         // same y as its neighbour's (found in review). The width is chosen
         // between the two measured extremes: at 400dp neither shrinks, at
         // 300dp both do.
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val hours =
             listOf(
                 ForecastPoint(Instant.parse("2026-09-02T22:00:00Z"), 63.0, null, shortForecast = "Clear"),
@@ -596,7 +596,7 @@ class ModuleGridTest {
     @Test
     fun theSunTileKeepsItsCaptionWhenItHasNoTimesYet() {
         // No location yet: a lone dash, so the caption is what names it.
-        show(module(ModuleKey.Sun, 2).copy(content = ModuleContent.Sun(emptyList(), ZoneId.systemDefault())))
+        show(module(ModuleKey.Sun, 2).copy(content = ModuleContent.Sun(emptyList(), TimeZone.currentSystemDefault())))
         compose.onNodeWithText("Sun", useUnmergedTree = true).assertIsDisplayed()
     }
 

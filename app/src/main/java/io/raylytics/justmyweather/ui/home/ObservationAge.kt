@@ -1,7 +1,8 @@
 package io.raylytics.justmyweather.ui.home
 
-import java.time.Duration
-import java.time.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 /*
  * How long ago a reading was taken, in words. Pure — the caller supplies
@@ -26,18 +27,18 @@ import java.time.Instant
  */
 object ObservationAge {
     /** How far ahead of us a station may be before we stop claiming an age. */
-    val FUTURE_TOLERANCE: Duration = Duration.ofMinutes(2)
+    val FUTURE_TOLERANCE: Duration = 2.minutes
 
     fun label(observedAt: Instant, now: Instant): String? {
-        val gap = Duration.between(observedAt, now)
-        val minutes = gap.toMinutes()
+        val gap = now - observedAt
+        val minutes = gap.inWholeMinutes
         return when {
-            gap.isNegative && gap.abs() > FUTURE_TOLERANCE -> null
+            gap.isNegative() && gap.absoluteValue > FUTURE_TOLERANCE -> null
             minutes < 1 -> "just now"
             minutes < 60 -> "$minutes min ago"
-            gap.toHours() < 24 -> "${gap.toHours()} hr ago"
-            gap.toDays() == 1L -> "1 day ago"
-            else -> "${gap.toDays()} days ago"
+            gap.inWholeHours < 24 -> "${gap.inWholeHours} hr ago"
+            gap.inWholeDays == 1L -> "1 day ago"
+            else -> "${gap.inWholeDays} days ago"
         }
     }
 }

@@ -36,8 +36,9 @@ import io.raylytics.justmyweather.view.PrecipitationUnit
 import io.raylytics.justmyweather.view.PressureUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
 import io.raylytics.justmyweather.view.WindUnit
-import java.time.LocalDate
-import java.time.LocalTime
+import io.raylytics.justmyweather.view.format
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 
 /**
  * Region & units. Automatic is the default and the recommendation: the app
@@ -149,8 +150,8 @@ private fun UnitsSection(
         UnitRow("Precipitation", PrecipitationUnit.entries, precipitation, base?.precipitation, { it.label }) { u ->
             onUpdate { it.copy(precipitation = u) }
         }
-        val sample = LocalDate.of(2026, 10, 6).format(conventions.shortDate)
-        val clock = LocalTime.of(16, 5).format(conventions.clock)
+        val sample = LocalDate(2026, 10, 6).format(conventions.shortDate)
+        val clock = LocalTime(16, 5).format(conventions.clock)
         val order = if (conventions.dateOrder == DateOrder.DAY_FIRST) "day first" else "month first"
         Text(
             text = "Dates and times: $sample ($order), $clock — set by the region.",

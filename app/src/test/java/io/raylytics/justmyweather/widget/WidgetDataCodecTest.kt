@@ -5,11 +5,11 @@ import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.metno.ExtendedDay
 import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
+import kotlinx.datetime.LocalDate
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.LocalDate
+import kotlin.time.Instant
 
 class WidgetDataCodecTest {
     private val location = WeatherLocation(38.25, -85.76, "Louisville")
@@ -56,7 +56,7 @@ class WidgetDataCodecTest {
 
     private val extendedDay =
         ExtendedDay(
-            date = LocalDate.of(2026, 10, 13),
+            date = LocalDate(2026, 10, 13),
             highF = 70.0,
             lowF = 50.0,
             precipChancePercent = 10.0,
@@ -100,7 +100,13 @@ class WidgetDataCodecTest {
 
     @Test
     fun `round-trips the sparse case - a failed first fetch with nothing but an error`() {
-        val sparse = WidgetData(location, snapshot = null, fetchedAt = Instant.EPOCH, error = "Couldn't reach it.")
+        val sparse =
+            WidgetData(
+                location,
+                snapshot = null,
+                fetchedAt = Instant.fromEpochMilliseconds(0),
+                error = "Couldn't reach it.",
+            )
         assertEquals(sparse, WidgetDataCodec.decode(WidgetDataCodec.encode(sparse)))
     }
 

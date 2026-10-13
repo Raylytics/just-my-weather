@@ -2,14 +2,16 @@ package io.raylytics.justmyweather.view
 
 import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 class ViewConfigTest {
     /** Shorthand: every reading module is `ModuleKey.Reading(field)`, and
@@ -124,10 +126,10 @@ class ViewConfigTest {
         assertEquals(1, ViewConfig.DEFAULT.setSunDays(0).sunDays)
         // The render hands the tile only as many rows as the setting says,
         // from however many were computed: the slider never recomputes.
-        val computed = (0 until 14).map { SunDay(LocalDate.of(2026, 6, 24).plusDays(it.toLong()), null, null) }
+        val computed = (0 until 14).map { SunDay(LocalDate(2026, 6, 24).plus(it, DateTimeUnit.DAY), null, null) }
         val five =
             ViewConfig.DEFAULT.toggle(ModuleKey.Sun).setSunDays(5)
-                .render(snapshot, computed, ZoneId.of("UTC"), conventions = Conventions.US)
+                .render(snapshot, computed, TimeZone.of("UTC"), conventions = Conventions.US)
         val sun = five.modules.first { it.module == ModuleKey.Sun }.content as ModuleContent.Sun
         assertEquals(computed.take(5), sun.days)
     }
@@ -137,9 +139,9 @@ class ViewConfigTest {
         // The tile decides how much of the table it can draw at its width, so
         // the projection hands it the days themselves — flattening here is
         // exactly what would lose the two-day distinction.
-        val days = listOf(SunDay(LocalDate.of(2026, 6, 24), null, null))
+        val days = listOf(SunDay(LocalDate(2026, 6, 24), null, null))
         val config = ViewConfig.DEFAULT.toggle(ModuleKey.Sun)
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val sun =
             config
                 .render(snapshot, days, zone, conventions = Conventions.US)

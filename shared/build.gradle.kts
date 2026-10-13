@@ -38,9 +38,19 @@ kotlin {
     }
 
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.time.ExperimentalTime")
+        }
         commonMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            // Multiplatform since 1.1: the settings stores compile here unchanged,
+            // so Android keeps the very same keys and file it shipped with.
+            api("androidx.datastore:datastore-preferences-core:1.1.1")
+            // Dates and zones in every model. On Android it is java.time
+            // underneath, so arithmetic and zone rules are the ones the app
+            // always used; formatting stays on java.time itself (TimeFormat.kt).
+            api("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
         }
         // The Android side of the seams, at the versions the app shipped with:
         // OkHttp under HttpTransport, DataStore under every settings store.

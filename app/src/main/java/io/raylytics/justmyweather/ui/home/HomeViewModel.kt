@@ -29,8 +29,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.Instant
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /** The sun rows are computed to the setting's ceiling, not its value: the
  * calculation is pure and cheap, and the render trims to what the user asked
@@ -67,10 +69,10 @@ class HomeViewModel(
      * which place the app is showing (region/RegionRepository.refresh). */
     private val onPlaceResolved: suspend (WeatherLocation) -> Unit = {},
     /** Injected so the sun times are testable without waiting for dawn. */
-    private val clock: () -> Instant = Instant::now,
+    private val clock: () -> Instant = Clock.System::now,
     /** Injected alongside the clock: which local day it is decides which rows
      * the glance shows, and that answer is a zone away from the instant. */
-    private val zone: () -> ZoneId = ZoneId::systemDefault,
+    private val zone: () -> TimeZone = TimeZone::currentSystemDefault,
 ) : ViewModel() {
     private val weather = MutableStateFlow<WeatherLoad>(WeatherLoad.Loading)
     private val forecasts = MutableStateFlow(ForecastLoad())
@@ -358,7 +360,7 @@ class HomeViewModel(
      * that resolved zone that gets stored, so the screen formats with the same
      * one rather than resolving its own.
      */
-    private fun publishPlaceTimes(zone: ZoneId?) {
+    private fun publishPlaceTimes(zone: TimeZone?) {
         val location = sunLocation
         // The place's zone decides which day "today" is — for a place a few
         // hours away that is a different date for part of the day, and the
@@ -368,7 +370,7 @@ class HomeViewModel(
             if (location == null) {
                 emptyList()
             } else {
-                val today = clock().atZone(effective).toLocalDate()
+                val today = clock().toLocalDateTime(effective).date
                 SunTimes.daysFrom(location.latitude, location.longitude, today, effective, SUN_DAYS)
             }
         // The RESOLVED zone, not the nullable one that came in. Storing the
@@ -394,12 +396,12 @@ class HomeViewModel(
          * format either. After that it is always the resolved zone the rows
          * were computed in — never the "unknown" that would send the screen
          * off to resolve one of its own. */
-        val zone: ZoneId? = null,
+        val zone: TimeZone? = null,
         val sunDays: List<SunDay> = emptyList(),
     )
 
     /** An id this JVM does not recognise costs a fallback, never a crash. */
-    private fun parseZone(id: String): ZoneId? = runCatching { ZoneId.of(id) }.getOrNull()
+    private fun parseZone(id: String): TimeZone? = runCatching { TimeZone.of(id) }.getOrNull()
 
     /** A corner drag (or a Wider/Taller action) on a module: give it this
      * footprint. The config clamps it to what the module can fill. */

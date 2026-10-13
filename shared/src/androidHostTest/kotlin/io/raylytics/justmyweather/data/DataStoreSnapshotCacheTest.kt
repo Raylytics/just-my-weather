@@ -9,7 +9,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.time.Instant
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * The durable path end to end — put, then get from a fresh instance, as a cold
@@ -62,7 +63,7 @@ class DataStoreSnapshotCacheTest {
         val store = FakePreferencesDataStore()
         val cache = DataStoreSnapshotCache(store)
         cache.put(entry)
-        val newer = entry.copy(savedAt = entry.savedAt.plusSeconds(600))
+        val newer = entry.copy(savedAt = entry.savedAt + 600.seconds)
         cache.put(newer)
         assertEquals(newer, DataStoreSnapshotCache(store).get())
     }

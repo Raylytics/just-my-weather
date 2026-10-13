@@ -37,6 +37,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -47,9 +50,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * Locks in the view-mode contract: forecasts fetch lazily once per framing,
@@ -171,7 +173,7 @@ class HomeViewModelTest {
         // A lambda, not an Instant: a test that steps time needs the clock to
         // keep reading its variable, not a copy taken at construction.
         clock: () -> Instant = { NOW },
-        zone: () -> ZoneId = { ZoneId.of("America/New_York") },
+        zone: () -> TimeZone = { TimeZone.of("America/New_York") },
     ): Harness {
         val transport = RoutingTransport(points)
         val configStore = FakePreferencesDataStore()
@@ -605,7 +607,7 @@ class HomeViewModelTest {
         // Which day is "today" decays with the clock, and nothing else in the
         // ViewModel would notice. This is the whole defence against the glance
         // still heading its first row with yesterday's date.
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         var now = Instant.parse("2026-08-14T03:59:00Z") // 11:59 PM on the 13th
         val h =
             harness(
@@ -614,20 +616,20 @@ class HomeViewModelTest {
                 zone = { zone },
             )
         advanceUntilIdle()
-        assertEquals(LocalDate.of(2026, 8, 13), h.vm.ready().sunDays.first().date, "before midnight")
-        assertEquals(LocalDate.of(2026, 8, 14), h.vm.ready().sunDays[1].date, "tomorrow follows today")
+        assertEquals(LocalDate(2026, 8, 13), h.vm.ready().sunDays.first().date, "before midnight")
+        assertEquals(LocalDate(2026, 8, 14), h.vm.ready().sunDays[1].date, "tomorrow follows today")
 
         now = Instant.parse("2026-08-14T04:05:00Z") // 12:05 AM on the 14th
         h.vm.refreshSunTimes()
         advanceUntilIdle()
-        assertEquals(LocalDate.of(2026, 8, 14), h.vm.ready().sunDays.first().date, "after midnight")
+        assertEquals(LocalDate(2026, 8, 14), h.vm.ready().sunDays.first().date, "after midnight")
     }
 
     @Test
     fun `each row's times belong to that row's date`() = runTest(dispatcher) {
         // The reason day rows replaced "the next of each": a row carrying a
         // date must not carry another day's times.
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val h =
             harness(
                 config = ViewConfig.DEFAULT.toggle(ModuleKey.Sun),
@@ -636,8 +638,8 @@ class HomeViewModelTest {
             )
         advanceUntilIdle()
         h.vm.ready().sunDays.forEach { day ->
-            assertEquals(day.date, day.sunrise!!.atZone(zone).toLocalDate(), "sunrise on its own date")
-            assertEquals(day.date, day.sunset!!.atZone(zone).toLocalDate(), "sunset on its own date")
+            assertEquals(day.date, day.sunrise!!.toLocalDateTime(zone).date, "sunrise on its own date")
+            assertEquals(day.date, day.sunset!!.toLocalDateTime(zone).date, "sunset on its own date")
         }
     }
 
@@ -676,9 +678,9 @@ class HomeViewModelTest {
         // time — a saved place hours away is arguably the main reason to save
         // one, and "Sunset 10:48 PM" for somewhere the sun sets at 7:48 is
         // wrong rather than merely surprising.
-        val h = harness(zone = { ZoneId.of("America/Los_Angeles") })
+        val h = harness(zone = { TimeZone.of("America/Los_Angeles") })
         advanceUntilIdle()
-        assertEquals(ZoneId.of("America/New_York"), h.vm.ready().zone)
+        assertEquals(TimeZone.of("America/New_York"), h.vm.ready().zone)
     }
 
     @Test
@@ -695,13 +697,13 @@ class HomeViewModelTest {
         val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.Sun))
         advanceUntilIdle()
         val ready = h.vm.ready()
-        assertEquals(ZoneId.of("America/New_York"), ready.zone)
+        assertEquals(TimeZone.of("America/New_York"), ready.zone)
         // Every row's date is a date IN that zone — the check that fails if
         // the two are ever sourced independently.
         ready.sunDays.forEach { day ->
             val sunrise = day.sunrise
             if (sunrise != null) {
-                assertEquals(day.date, sunrise.atZone(ready.zone).toLocalDate(), "sunrise on its own date")
+                assertEquals(day.date, sunrise.toLocalDateTime(ready.zone).date, "sunrise on its own date")
             }
         }
     }
@@ -720,10 +722,10 @@ class HomeViewModelTest {
                 harness(
                     config = ViewConfig.DEFAULT.toggle(ModuleKey.Sun),
                     place = { place },
-                    zone = { ZoneId.of("Asia/Tokyo") },
+                    zone = { TimeZone.of("Asia/Tokyo") },
                 )
             advanceUntilIdle()
-            assertEquals(ZoneId.of("America/New_York"), h.vm.ready().zone, "settled on the first place")
+            assertEquals(TimeZone.of("America/New_York"), h.vm.ready().zone, "settled on the first place")
 
             // Switch, and hold the fetch open so the old reading stays up.
             val gate = CompletableDeferred<Unit>()
@@ -739,11 +741,11 @@ class HomeViewModelTest {
             // reported in it. The stale snapshot's New York must not leak in.
             val midSwitch = h.vm.ready()
             assertTrue(midSwitch.refreshing, "the old reading is still on screen")
-            assertEquals(ZoneId.of("Asia/Tokyo"), midSwitch.zone, "rows and zone agree mid-switch")
+            assertEquals(TimeZone.of("Asia/Tokyo"), midSwitch.zone, "rows and zone agree mid-switch")
 
             gate.complete(Unit)
             advanceUntilIdle()
-            assertEquals(ZoneId.of("America/Los_Angeles"), h.vm.ready().zone, "settles on the new place")
+            assertEquals(TimeZone.of("America/Los_Angeles"), h.vm.ready().zone, "settles on the new place")
         }
 
     @Test
@@ -751,10 +753,10 @@ class HomeViewModelTest {
         // Not the screen's zone: during a place switch the reading on screen is
         // still the previous place's, and formatting it at the new place's
         // offset would put a time on it that never happened.
-        val h = harness(zone = { ZoneId.of("Asia/Tokyo") })
+        val h = harness(zone = { TimeZone.of("Asia/Tokyo") })
         advanceUntilIdle()
         assertEquals("America/New_York", h.vm.ready().snapshot.timeZone)
-        assertEquals(ZoneId.of("America/New_York"), h.vm.ready().snapshot.zone)
+        assertEquals(TimeZone.of("America/New_York"), h.vm.ready().snapshot.zone)
     }
 
     @Test
@@ -770,7 +772,7 @@ class HomeViewModelTest {
         // Unlike two writes inside one function body, these two readings are
         // separated by real time and by unrelated flow emissions, so nothing
         // conflates the gap away.
-        var deviceZone = ZoneId.of("America/Los_Angeles")
+        var deviceZone = TimeZone.of("America/Los_Angeles")
         val h =
             harness(
                 config = ViewConfig.DEFAULT.toggle(ModuleKey.Sun),
@@ -778,21 +780,21 @@ class HomeViewModelTest {
                 zone = { deviceZone },
             )
         advanceUntilIdle()
-        assertEquals(ZoneId.of("America/Los_Angeles"), h.vm.ready().zone, "rows were computed in the device zone")
+        assertEquals(TimeZone.of("America/Los_Angeles"), h.vm.ready().zone, "rows were computed in the device zone")
         val rows = h.vm.ready().sunDays
         assertTrue(rows.isNotEmpty())
 
         // The phone moves. Nothing republishes the rows — but an unrelated
         // config edit makes the state re-emit, which is where a re-resolved
         // fallback would leak in.
-        deviceZone = ZoneId.of("Asia/Tokyo")
+        deviceZone = TimeZone.of("Asia/Tokyo")
         h.configRepository.update { it.setDensity(Density.COMPACT) }
         advanceUntilIdle()
 
         val after = h.vm.ready()
         assertEquals(Density.COMPACT, after.config.density, "the unrelated edit did land")
         assertEquals(
-            ZoneId.of("America/Los_Angeles"),
+            TimeZone.of("America/Los_Angeles"),
             after.zone,
             "the rows still read in the zone they were computed in",
         )
@@ -803,9 +805,9 @@ class HomeViewModelTest {
     fun `an unknown zone falls back to the device's rather than failing`() = runTest(dispatcher) {
         // A point that carries no zone (an older cached lookup) must leave the
         // app exactly as it always behaved.
-        val h = harness(zone = { ZoneId.of("America/Los_Angeles") }, points = POINTS_NO_ZONE)
+        val h = harness(zone = { TimeZone.of("America/Los_Angeles") }, points = POINTS_NO_ZONE)
         advanceUntilIdle()
-        assertEquals(ZoneId.of("America/Los_Angeles"), h.vm.ready().zone)
+        assertEquals(TimeZone.of("America/Los_Angeles"), h.vm.ready().zone)
     }
 
     @Test
@@ -822,10 +824,10 @@ class HomeViewModelTest {
             harness(
                 config = ViewConfig.DEFAULT.toggle(ModuleKey.Sun),
                 clock = { Instant.parse("2026-08-15T02:00:00Z") },
-                zone = { ZoneId.of("Asia/Tokyo") },
+                zone = { TimeZone.of("Asia/Tokyo") },
             )
         advanceUntilIdle()
-        assertEquals(LocalDate.of(2026, 8, 14), h.vm.ready().sunDays.first().date)
+        assertEquals(LocalDate(2026, 8, 14), h.vm.ready().sunDays.first().date)
     }
 
     @Test
@@ -941,7 +943,7 @@ class HomeViewModelTest {
          * is rightly dropped. */
         val MET_NO =
             (0 until 8).joinToString(",", prefix = """{"properties":{"timeseries":[""", postfix = "]}}") { i ->
-                val time = Instant.parse("2026-09-29T00:00:00Z").plusSeconds(i * 6L * 3600)
+                val time = Instant.parse("2026-09-29T00:00:00Z") + (i * 6L * 3600).seconds
                 """{"time":"$time","data":{"instant":{"details":{"air_temperature":20.0}},
                   "next_6_hours":{"summary":{"symbol_code":"cloudy"},
                   "details":{"air_temperature_max":22.0,"air_temperature_min":18.0,"precipitation_amount":0.0}}}}"""

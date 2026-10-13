@@ -21,7 +21,7 @@ import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.ThemeConfig
 import io.raylytics.justmyweather.view.ViewConfig
 import kotlinx.coroutines.flow.first
-import java.time.Instant
+import kotlin.time.Clock
 
 /**
  * The home screen widget: one tile of the glance, drawn by the launcher.
@@ -68,7 +68,7 @@ class WeatherWidget : GlanceAppWidget() {
             // The widget reads in the conventions its last fetch stored —
             // the region's units, dates and clock (WidgetRefreshWorker).
             CompositionLocalProvider(LocalConventions provides (data?.conventions ?: Conventions.US)) {
-                WidgetContent(config = config, data = data, now = Instant.now())
+                WidgetContent(config = config, data = data, now = Clock.System.now())
             }
         }
     }

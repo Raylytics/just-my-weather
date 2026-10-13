@@ -43,8 +43,9 @@ import io.raylytics.justmyweather.view.ForecastElement
 import io.raylytics.justmyweather.view.ForecastMode
 import io.raylytics.justmyweather.view.ForecastTileLayout
 import io.raylytics.justmyweather.view.ModuleContent
-import java.time.ZoneId
-import java.util.Locale
+import io.raylytics.justmyweather.view.format
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
 
 /*
@@ -339,15 +340,15 @@ private fun ForecastHeader(
 @Composable
 private fun HourTile(
     hour: ForecastPoint,
-    zone: ZoneId,
+    zone: TimeZone,
     elements: Set<ForecastElement>,
     layout: ForecastTileLayout,
     modifier: Modifier = Modifier,
 ) {
-    val at = hour.startTime.atZone(zone)
+    val at = hour.startTime.toLocalDateTime(zone)
     val conventions = LocalConventions.current
     ZonedTile(
-        top = "${at.format(conventions.tileHour).lowercase(Locale.ENGLISH)} ${at.format(conventions.shortDate)}",
+        top = "${at.format(conventions.tileHour).lowercase()} ${at.format(conventions.shortDate)}",
         bottom = bottomLine(elements, hour.shortForecast, hour.precipProbabilityPercent),
         bottomLines = HOUR_BOTTOM_LINES,
         layout = layout,

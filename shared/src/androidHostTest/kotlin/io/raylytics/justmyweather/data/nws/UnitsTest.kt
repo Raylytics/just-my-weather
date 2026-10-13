@@ -3,7 +3,7 @@ package io.raylytics.justmyweather.data.nws
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.time.Instant
+import kotlin.time.Instant
 
 /**
  * Covers the conversion + parsing primitives ported from almanac-bell. These

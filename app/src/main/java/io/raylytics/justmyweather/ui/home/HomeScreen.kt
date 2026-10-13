@@ -59,11 +59,12 @@ import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.ViewConfig
 import io.raylytics.justmyweather.view.render
 import kotlinx.coroutines.delay
-import java.time.Instant
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 import java.util.Locale
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /** How often the observation age re-reads the clock. See [ObservedLine].
  * Internal so the instrumented test steps the clock by exactly one tick
@@ -206,7 +207,7 @@ private fun GlanceView(
     // are shown.
     val displayZone =
         when (config.timesIn) {
-            TimesIn.DEVICE -> ZoneId.systemDefault()
+            TimesIn.DEVICE -> TimeZone.currentSystemDefault()
             TimesIn.PLACE -> state.zone
         }
     // The reading's own timestamp is the exception: see TimesIn.observedZone.
@@ -377,10 +378,10 @@ private fun NowContent(
     /** The clock the screen reads in: the phone's or the place's, per the
      * user's setting. The sun rows were computed for the place's days; this
      * is only how their instants are shown. */
-    zone: ZoneId,
+    zone: TimeZone,
     /** The clock the station reading's timestamp reads in — the reading's
      * own in place mode, never the screen's current place. */
-    observedZone: ZoneId,
+    observedZone: TimeZone,
     /** The forecast module's data: a separate fetch with its own failure and
      * a session-chosen framing, so it rides beside the snapshot. */
     forecast: ForecastData,
@@ -489,12 +490,12 @@ internal fun ObservedLine(
      * switch this reading is still the previous place's while the new one is
      * in flight — formatting it at the new place's offset would put a time
      * on it that never happened. The screen passes the user's choice. */
-    zone: ZoneId = snapshot.zone ?: ZoneId.systemDefault(),
+    zone: TimeZone = snapshot.zone ?: TimeZone.currentSystemDefault(),
     /** The wall clock, injectable so a test can decide when "now" is — the
      * defects this line has had were all in *when* it read the clock, which is
      * untestable while the read is hard-wired. Last, so a test's trailing
      * lambda lands here. */
-    clock: () -> Instant = Instant::now,
+    clock: () -> Instant = Clock.System::now,
 ) {
     val observedAt = snapshot.observedAt
     var now by remember { mutableStateOf(clock()) }
@@ -628,5 +629,5 @@ private fun ErrorView(
  * printing the age beside this — "Observed 12:40 PM · 12 min ago" — so the
  * timestamp keeps saying what it means and the age answers "is this current?".
  */
-private fun observedLabel(snapshot: WeatherSnapshot, zone: ZoneId, conventions: Conventions): String? =
+private fun observedLabel(snapshot: WeatherSnapshot, zone: TimeZone, conventions: Conventions): String? =
     snapshot.observedAt?.let { conventions.clock(it, zone) }

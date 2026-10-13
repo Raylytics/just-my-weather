@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Instant
+import kotlin.time.Instant
 
 /**
  * Every field in this payload is a bare number with no unit code attached, so
@@ -57,7 +57,7 @@ class GadgetbridgeWeatherTest {
     @Test
     fun `timestamp is epoch seconds from the observation, not millis`() {
         val f = fields(GadgetbridgeWeather.payloadFor(snapshot(), now))
-        assertEquals(observed.epochSecond, f["timestamp"]!!.jsonPrimitive.content.toLong())
+        assertEquals(observed.epochSeconds, f["timestamp"]!!.jsonPrimitive.content.toLong())
     }
 
     @Test
@@ -65,7 +65,7 @@ class GadgetbridgeWeatherTest {
         // Deliberate exception to the app's "never substitute the clock" rule:
         // an absent field serialises to 0 and the watch renders 1970.
         val f = fields(GadgetbridgeWeather.payloadFor(snapshot(observedAt = null), now))
-        assertEquals(now.epochSecond, f["timestamp"]!!.jsonPrimitive.content.toLong())
+        assertEquals(now.epochSeconds, f["timestamp"]!!.jsonPrimitive.content.toLong())
     }
 
     @Test

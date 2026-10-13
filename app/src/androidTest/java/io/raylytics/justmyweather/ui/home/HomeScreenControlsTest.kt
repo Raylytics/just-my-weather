@@ -16,11 +16,16 @@ import io.raylytics.justmyweather.data.nws.ActiveAlert
 import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.view.ForecastMode
 import io.raylytics.justmyweather.view.ViewConfig
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import org.junit.Rule
 import org.junit.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * The controls stay on screen however tall the glance gets.
@@ -39,11 +44,11 @@ class HomeScreenControlsTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private val zone: ZoneId = ZoneId.systemDefault()
-    private val today: LocalDate = LocalDate.of(2026, 8, 15)
+    private val zone: TimeZone = TimeZone.currentSystemDefault()
+    private val today: LocalDate = LocalDate(2026, 8, 15)
 
     private fun at(hour: Int, minute: Int): Instant =
-        today.atTime(hour, minute).atZone(zone).toInstant()
+        today.atTime(hour, minute).toInstant(zone)
 
     /** A day with everything on: a standing alert, sun times, an hourly strip. */
     private val crowded =
@@ -63,7 +68,7 @@ class HomeScreenControlsTest {
             hourly =
                 (0..11).map {
                     ForecastPoint(
-                        startTime = at(18, 0).plusSeconds(it * 3600L),
+                        startTime = at(18, 0) + (it * 3600L).seconds,
                         temperatureF = 90.0 - it,
                         windMph = 5.0,
                     )
@@ -80,7 +85,7 @@ class HomeScreenControlsTest {
             sunDays =
                 listOf(
                     SunDay(today, at(6, 57), at(20, 36)),
-                    SunDay(today.plusDays(1), at(6, 58), at(20, 35)),
+                    SunDay(today.plus(1, DateTimeUnit.DAY), at(6, 58), at(20, 35)),
                 ),
         )
 

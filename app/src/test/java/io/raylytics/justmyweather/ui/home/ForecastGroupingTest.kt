@@ -3,13 +3,13 @@ package io.raylytics.justmyweather.ui.home
 import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.view.Conventions
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 class ForecastGroupingTest {
     private fun day(name: String, temp: Double) =
@@ -58,7 +58,7 @@ class ForecastGroupingTest {
 
     @Test
     fun `a leading night borrows today's high from the warmest remaining hour`() {
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
 
         fun hour(iso: String, temp: Double?) = ForecastPoint(Instant.parse(iso), temp, null)
         // 7 pm, 9 pm, 11 pm today; 1 am tomorrow is warmer but not today's.
@@ -115,7 +115,7 @@ class ForecastGroupingTest {
 
     @Test
     fun `past NWS's reach the extended days fill in, after NWS's last date and never over it`() {
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         // Two NWS days, the second ending on Sep 30 (a night starting 10pm ET).
         val nws =
             combineDays(
@@ -159,7 +159,7 @@ class ForecastGroupingTest {
 
     @Test
     fun `splits hours at the local midnight boundary`() {
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
 
         fun hourAt(iso: String) = ForecastPoint(startTime = Instant.parse(iso), temperatureF = 70.0, windMph = null)
         // 02:00Z/03:00Z land on Jul 31 (10/11 pm ET); 04:00Z/05:00Z on Aug 1.
@@ -174,21 +174,21 @@ class ForecastGroupingTest {
                 zone,
             )
         assertEquals(2, groups.size)
-        assertEquals(LocalDate.of(2026, 7, 31), groups[0].date)
+        assertEquals(LocalDate(2026, 7, 31), groups[0].date)
         assertEquals(2, groups[0].hours.size)
-        assertEquals(LocalDate.of(2026, 8, 1), groups[1].date)
+        assertEquals(LocalDate(2026, 8, 1), groups[1].date)
         assertEquals(2, groups[1].hours.size)
     }
 
     @Test
     fun `empty inputs group to nothing`() {
         assertEquals(emptyList<DayForecast>(), combineDays(emptyList()))
-        assertEquals(emptyList<HourDayGroup>(), groupHoursByDay(emptyList(), ZoneId.of("UTC")))
+        assertEquals(emptyList<HourDayGroup>(), groupHoursByDay(emptyList(), TimeZone.of("UTC")))
     }
 
     @Test
     fun `outside NWS territory every day is MET's, from its first, and none is marked as different`() {
-        val zone = ZoneId.of("Europe/London")
+        val zone = TimeZone.of("Europe/London")
         val met = listOf(ext("2026-10-07", 60.0), ext("2026-10-08", 62.0), ext("2026-10-09", 58.0))
         val days = forecastDays(emptyList(), met, dailyDays = 2, zone = zone, Conventions.US)
         assertEquals(
@@ -204,7 +204,7 @@ class ForecastGroupingTest {
 
     @Test
     fun `in NWS territory an extended day is still marked and explained as past NWS's reach`() {
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val nws = combineDays(listOf(dated(day("Monday", 70.0), "2026-09-28T10:00:00-04:00")))
         val days = forecastDays(nws, listOf(ext("2026-09-29", 72.0)), dailyDays = 2, zone = zone, Conventions.US)
         val extended = days.last()
@@ -214,7 +214,7 @@ class ForecastGroupingTest {
 
     @Test
     fun `the Daily view waits on MET's days when the periods come back empty, and only then`() {
-        val zone = ZoneId.of("Europe/London")
+        val zone = TimeZone.of("Europe/London")
         val met = listOf(ext("2026-10-07", 60.0))
         assertNull(dailyView(null, null, met, 7, zone, Conventions.US), "periods still coming")
         assertNull(dailyView(emptyList(), null, null, 7, zone, Conventions.US), "abroad, MET's days a fetch behind")
@@ -224,12 +224,12 @@ class ForecastGroupingTest {
         assertEquals(emptyList<DayForecast>(), dailyView(emptyList(), null, emptyList(), 7, zone, Conventions.US))
         // In NWS territory nothing waits on the second source.
         val periods = listOf(dated(day("Monday", 70.0), "2026-09-28T10:00:00-04:00"))
-        assertEquals(1, dailyView(periods, null, null, 7, ZoneId.of("America/New_York"), Conventions.US)!!.size)
+        assertEquals(1, dailyView(periods, null, null, 7, TimeZone.of("America/New_York"), Conventions.US)!!.size)
     }
 
     @Test
     fun `abroad after the morning, the rest of today's hours become a Today tile`() {
-        val zone = ZoneId.of("Europe/London")
+        val zone = TimeZone.of("Europe/London")
         // 4 pm and 6 pm on Oct 6 left; MET's whole days start Oct 7.
         val hours =
             listOf(

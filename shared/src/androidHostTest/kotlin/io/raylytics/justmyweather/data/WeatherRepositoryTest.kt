@@ -6,14 +6,14 @@ import io.raylytics.justmyweather.data.nws.HttpTransport
 import io.raylytics.justmyweather.data.nws.NwsClient
 import io.raylytics.justmyweather.data.places.Place
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.util.TimeZone
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * Covers the repository's label-fallback and point-caching behaviour — the
@@ -79,9 +79,9 @@ class WeatherRepositoryTest {
         val days =
             repo(transport, metNo = MetNoClient(transport = transport))
                 .loadExtendedDaily(honolulu)
-        assertEquals(listOf(LocalDate.of(2026, 10, 11)), days.map { it.date })
+        assertEquals(listOf(LocalDate(2026, 10, 11)), days.map { it.date })
         assertEquals(
-            MetNoClient(transport = transport).getDailyForecast(21.3, -157.9, ZoneId.of("Pacific/Honolulu")),
+            MetNoClient(transport = transport).getDailyForecast(21.3, -157.9, TimeZone.of("Pacific/Honolulu")),
             days,
         )
     }
@@ -90,19 +90,19 @@ class WeatherRepositoryTest {
     fun `without a usable place zone, or a point at all, the device's calendar cuts the days`() = runTest {
         // Pinned, so the outcome is the same on a UTC CI runner as on a desk
         // in Kentucky; restored after, since the default is JVM-wide.
-        val before = TimeZone.getDefault()
-        TimeZone.setDefault(TimeZone.getTimeZone("America/Denver"))
+        val before = java.util.TimeZone.getDefault()
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/Denver"))
         try {
             deviceZoneCutsTheDays()
         } finally {
-            TimeZone.setDefault(before)
+            java.util.TimeZone.setDefault(before)
         }
     }
 
     private suspend fun deviceZoneCutsTheDays() {
         // No timeZone on the point (older cache entries have none).
         val plain = RoutingTransport()
-        val expected = MetNoClient(transport = plain).getDailyForecast(21.3, -157.9, ZoneId.systemDefault())
+        val expected = MetNoClient(transport = plain).getDailyForecast(21.3, -157.9, TimeZone.currentSystemDefault())
         assertTrue(expected.isNotEmpty())
         assertEquals(
             expected,
@@ -178,7 +178,7 @@ class WeatherRepositoryTest {
         assertEquals("Flat", snapshot.locationLabel, "the user's name stands")
         assertEquals("Europe/London", snapshot.timeZone)
         assertEquals(
-            MetNoClient(transport).getDailyForecast(51.51, -0.13, ZoneId.of("Europe/London")),
+            MetNoClient(transport).getDailyForecast(51.51, -0.13, TimeZone.of("Europe/London")),
             repository.loadExtendedDaily(typed),
             "Daily is cut in the same zone the hours read in",
         )
@@ -336,7 +336,7 @@ class WeatherRepositoryTest {
             repo(
                 RoutingTransport(),
                 snapshots = snapshots,
-                now = savedAt.plus(CachedSnapshot.MAX_AGE).plusSeconds(1),
+                now = savedAt.plus(CachedSnapshot.MAX_AGE) + 1.seconds,
             )
         assertNull(muchLater.lastReading(location))
 
@@ -410,7 +410,7 @@ class WeatherRepositoryTest {
         /** Eight six-hour blocks, Oct 11 00Z through Oct 12 18Z. */
         val MET_NO =
             (0 until 8).joinToString(",", prefix = """{"properties":{"timeseries":[""", postfix = "]}}") { i ->
-                val time = Instant.parse("2026-10-11T00:00:00Z").plusSeconds(i * 6L * 3600)
+                val time = Instant.parse("2026-10-11T00:00:00Z") + (i * 6L * 3600).seconds
                 """{"time":"$time","data":{"instant":{"details":{"air_temperature":20.0}},
                   "next_6_hours":{"summary":{"symbol_code":"cloudy"},
                   "details":{"air_temperature_max":22.0,"air_temperature_min":18.0,"precipitation_amount":0.0}}}}"""

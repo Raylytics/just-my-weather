@@ -4,13 +4,13 @@ import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.WeatherField
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Instant
 
 /**
  * The forecast-window path of the evaluator: BELOW watches the window's low,
@@ -20,7 +20,7 @@ import java.time.temporal.ChronoUnit
  */
 class AlertForecastEvaluatorTest {
     private val now = Instant.parse("2026-01-15T18:00:00Z") // 18:00 UTC, daytime
-    private val zone = ZoneId.of("UTC")
+    private val zone = TimeZone.of("UTC")
 
     private val temp = AlertSubject.Field(WeatherField.TEMPERATURE)
     private val wind = AlertSubject.Field(WeatherField.WIND)
@@ -40,7 +40,7 @@ class AlertForecastEvaluatorTest {
 
     private fun at(hoursAhead: Long, temp: Double? = null, wind: Double? = null, precip: Double? = null) =
         ForecastPoint(
-            startTime = now.plus(hoursAhead, ChronoUnit.HOURS),
+            startTime = now + hoursAhead.hours,
             temperatureF = temp,
             windMph = wind,
             precipProbabilityPercent = precip,
@@ -131,11 +131,11 @@ class AlertForecastEvaluatorTest {
         val cold = rule(temp, Comparison.BELOW, 35.0, AlertWindow.OVERNIGHT)
 
         val nextEveningOnly =
-            listOf(ForecastPoint(lateNight.plus(22, ChronoUnit.HOURS), temperatureF = 25.0, windMph = null))
+            listOf(ForecastPoint(lateNight + 22.hours, temperatureF = 25.0, windMph = null))
         assertFalse(AlertEvaluator.evaluate(cold, WeatherContext(mildNow, lateNight, nextEveningOnly, zone)).fired)
 
         val laterTonight =
-            listOf(ForecastPoint(lateNight.plus(5, ChronoUnit.HOURS), temperatureF = 25.0, windMph = null))
+            listOf(ForecastPoint(lateNight + 5.hours, temperatureF = 25.0, windMph = null))
         assertTrue(AlertEvaluator.evaluate(cold, WeatherContext(mildNow, lateNight, laterTonight, zone)).fired)
     }
 

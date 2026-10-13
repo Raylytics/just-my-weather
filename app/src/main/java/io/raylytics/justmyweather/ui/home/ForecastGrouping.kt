@@ -6,9 +6,11 @@ import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.Detail
 import io.raylytics.justmyweather.view.DetailRow
+import io.raylytics.justmyweather.view.format
 import io.raylytics.justmyweather.view.percent
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /*
  * Pure reshaping of forecast data for display: no I/O, no clock reads, no
@@ -77,7 +79,7 @@ data class DayForecast(
 fun combineDays(
     periods: List<DailyPeriod>,
     hours: List<ForecastPoint>? = null,
-    zone: ZoneId = ZoneId.systemDefault(),
+    zone: TimeZone = TimeZone.currentSystemDefault(),
 ): List<DayForecast> {
     val days = mutableListOf<DayForecast>()
     var i = 0
@@ -141,7 +143,7 @@ fun forecastDays(
     nwsDays: List<DayForecast>,
     extended: List<ExtendedDay>?,
     dailyDays: Int,
-    zone: ZoneId,
+    zone: TimeZone,
     conventions: Conventions,
 ): List<DayForecast> {
     // Outside NWS territory there are no NWS days at all: MET's are the
@@ -158,11 +160,11 @@ fun forecastDays(
     val needed = dailyDays - (if (leadingNight) shown.size - 1 else shown.size)
     if (needed <= 0 || extended.isNullOrEmpty()) return shown
     val lastNwsDate =
-        nwsDays.lastOrNull()?.let { it.night ?: it.day }?.startTime?.atZone(zone)?.toLocalDate()
+        nwsDays.lastOrNull()?.let { it.night ?: it.day }?.startTime?.toLocalDateTime(zone)?.date
             ?: return shown
     return shown +
         extended
-            .filter { it.date.isAfter(lastNwsDate) }
+            .filter { it.date > lastNwsDate }
             .take(needed)
             .map { it.toDayForecast(outsideNws = false, conventions) }
 }
@@ -182,7 +184,7 @@ fun dailyView(
     hours: List<ForecastPoint>?,
     extended: List<ExtendedDay>?,
     dailyDays: Int,
-    zone: ZoneId,
+    zone: TimeZone,
     conventions: Conventions,
 ): List<DayForecast>? {
     if (periods == null || (periods.isEmpty() && extended == null)) return null
@@ -201,11 +203,11 @@ fun dailyView(
  * or null when MET's days already include today, or no hour is left.
  * Pure, like everything in this file.
  */
-internal fun restOfToday(hours: List<ForecastPoint>?, extended: List<ExtendedDay>?, zone: ZoneId): ExtendedDay? {
+internal fun restOfToday(hours: List<ForecastPoint>?, extended: List<ExtendedDay>?, zone: TimeZone): ExtendedDay? {
     val first = hours?.firstOrNull() ?: return null
-    val today = first.startTime.atZone(zone).toLocalDate()
-    if (extended?.firstOrNull()?.date?.isAfter(today) != true) return null
-    val left = hours.takeWhile { it.startTime.atZone(zone).toLocalDate() == today }
+    val today = first.startTime.toLocalDateTime(zone).date
+    if ((extended?.firstOrNull()?.date?.let { it > today }) != true) return null
+    val left = hours.takeWhile { it.startTime.toLocalDateTime(zone).date == today }
     val temps = left.mapNotNull { it.temperatureF }
     if (temps.isEmpty()) return null
     val windiest = left.filter { it.windMph != null }.maxByOrNull { it.windMph!! }
@@ -246,11 +248,11 @@ val List<DayForecast>.periods: List<DailyPeriod>
 /** The warmest of the hourly points that fall on the first point's date in
  * [zone] — the rest of today, as the hourly forecast starts at the current
  * hour. Null with no hours, or none carrying a temperature. */
-private fun warmestRemainingHour(hours: List<ForecastPoint>?, zone: ZoneId): Double? {
+private fun warmestRemainingHour(hours: List<ForecastPoint>?, zone: TimeZone): Double? {
     val first = hours?.firstOrNull() ?: return null
-    val today = first.startTime.atZone(zone).toLocalDate()
+    val today = first.startTime.toLocalDateTime(zone).date
     return hours
-        .takeWhile { it.startTime.atZone(zone).toLocalDate() == today }
+        .takeWhile { it.startTime.toLocalDateTime(zone).date == today }
         .mapNotNull { it.temperatureF }
         .maxOrNull()
 }
@@ -264,12 +266,12 @@ data class HourDayGroup(
 
 /** Split consecutive hourly points at local-midnight boundaries. [zone] is a
  * parameter (not a systemDefault() read) so the split is deterministic. */
-fun groupHoursByDay(points: List<ForecastPoint>, zone: ZoneId): List<HourDayGroup> {
+fun groupHoursByDay(points: List<ForecastPoint>, zone: TimeZone): List<HourDayGroup> {
     val groups = mutableListOf<HourDayGroup>()
     var date: LocalDate? = null
     var bucket = mutableListOf<ForecastPoint>()
     points.forEach { point ->
-        val pointDate = point.startTime.atZone(zone).toLocalDate()
+        val pointDate = point.startTime.toLocalDateTime(zone).date
         if (pointDate != date) {
             date?.let { groups += HourDayGroup(it, bucket) }
             date = pointDate

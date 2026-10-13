@@ -3,8 +3,10 @@ package io.raylytics.justmyweather.data
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Duration
-import java.time.Instant
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * The rule that decides whether a remembered reading is still honest enough to
@@ -39,7 +41,7 @@ class CachedSnapshotTest {
 
     @Test
     fun `a reading from minutes ago at the same place is usable`() {
-        assertTrue(entry(savedAt = now.minus(Duration.ofMinutes(20))).isUsableFor(here, now))
+        assertTrue(entry(savedAt = now - (20).minutes).isUsableFor(here, now))
     }
 
     @Test
@@ -48,16 +50,16 @@ class CachedSnapshotTest {
         // sank a three-hour cap; the second, a fortnight later, sank a
         // twenty-four-hour one. They are here so the next person changing
         // MAX_AGE can see what it has to clear.
-        assertTrue(entry(savedAt = now.minus(Duration.ofHours(12))).isUsableFor(here, now), "overnight, 12h")
+        assertTrue(entry(savedAt = now - 12.hours).isUsableFor(here, now), "overnight, 12h")
         assertTrue(
-            entry(savedAt = now.minus(Duration.ofMinutes(26 * 60 + 24))).isUsableFor(here, now),
+            entry(savedAt = now - (26 * 60 + 24).minutes).isUsableFor(here, now),
             "a day and a bit, 26.4h",
         )
     }
 
     @Test
     fun `a reading older than the cap is not`() {
-        val stale = entry(savedAt = now.minus(CachedSnapshot.MAX_AGE).minusSeconds(1))
+        val stale = entry(savedAt = now - CachedSnapshot.MAX_AGE - 1.seconds)
         assertFalse(stale.isUsableFor(here, now))
         // Exactly at the cap still counts — the boundary is inclusive.
         assertTrue(entry(savedAt = now.minus(CachedSnapshot.MAX_AGE)).isUsableFor(here, now))
@@ -68,11 +70,11 @@ class CachedSnapshotTest {
         // Some stations omit the timestamp, and the glance then shows a bare
         // "Observed" — no time, no age, no signal at all. A reading that
         // cannot say how old it is has to be recent enough not to need to.
-        val undated = entry(savedAt = now.minus(Duration.ofHours(12))).undated()
+        val undated = entry(savedAt = now - 12.hours).undated()
         assertFalse(undated.isUsableFor(here, now))
         // Well inside the tighter bound it is still worth showing.
         assertTrue(
-            entry(savedAt = now.minus(Duration.ofMinutes(30))).undated().isUsableFor(here, now),
+            entry(savedAt = now - (30).minutes).undated().isUsableFor(here, now),
         )
         // And the boundary is the shorter cap, not the general one.
         assertTrue(
@@ -80,14 +82,14 @@ class CachedSnapshotTest {
                 .undated().isUsableFor(here, now),
         )
         assertFalse(
-            entry(savedAt = now.minus(CachedSnapshot.MAX_AGE_WITHOUT_OBSERVATION_TIME).minusSeconds(1))
+            entry(savedAt = now - CachedSnapshot.MAX_AGE_WITHOUT_OBSERVATION_TIME - 1.seconds)
                 .undated().isUsableFor(here, now),
         )
     }
 
     @Test
     fun `a device clock that moved backwards makes the age unknowable, so drop it`() {
-        assertFalse(entry(savedAt = now.plusSeconds(60)).isUsableFor(here, now))
+        assertFalse(entry(savedAt = now + 60.seconds).isUsableFor(here, now))
     }
 
     @Test

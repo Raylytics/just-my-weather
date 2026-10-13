@@ -1,11 +1,11 @@
 package io.raylytics.justmyweather.view
 
 import io.raylytics.justmyweather.region.Regions
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 class ConventionsTest {
     private val us = Conventions.US
@@ -35,9 +35,9 @@ class ConventionsTest {
 
     @Test
     fun `dates and the clock follow the region`() {
-        val day = LocalDate.of(2026, 10, 6)
+        val day = LocalDate(2026, 10, 6)
         val at = Instant.parse("2026-10-06T15:05:00Z")
-        val utc = ZoneId.of("UTC")
+        val utc = TimeZone.of("UTC")
         assertEquals("10/6", day.format(us.shortDate))
         assertEquals("6/10", day.format(uk.shortDate))
         assertEquals("Tue 6/10", day.format(uk.dayAndDate))

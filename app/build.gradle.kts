@@ -140,6 +140,8 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // kotlin.time.Instant, which the shared models carry.
+        optIn.add("kotlin.time.ExperimentalTime")
     }
 }
 

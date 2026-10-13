@@ -49,15 +49,16 @@ import io.raylytics.justmyweather.view.ModuleContent
 import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.ModuleValue
 import io.raylytics.justmyweather.view.SunDays
+import io.raylytics.justmyweather.view.TimePattern
 import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.WeatherField
 import io.raylytics.justmyweather.view.field
+import io.raylytics.justmyweather.view.format
 import io.raylytics.justmyweather.view.render
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
+import kotlin.time.Instant
 
 /*
  * The widget's drawing: one module of the glance, in Glance's vocabulary.
@@ -166,14 +167,14 @@ internal fun WidgetContent(config: WidgetConfig, data: WidgetData?, now: Instant
  */
 private fun WidgetConfig.moduleValue(data: WidgetData, now: Instant): ModuleValue? {
     val snapshot = data.snapshot ?: emptySnapshot(data)
-    val placeZone = snapshot.zone ?: ZoneId.systemDefault()
+    val placeZone = snapshot.zone ?: TimeZone.currentSystemDefault()
     val displayZone =
         when (view.timesIn) {
-            TimesIn.DEVICE -> ZoneId.systemDefault()
+            TimesIn.DEVICE -> TimeZone.currentSystemDefault()
             TimesIn.PLACE -> placeZone
         }
     // Computed to the horizon, like the glance: the setting trims.
-    val today = now.atZone(placeZone).toLocalDate()
+    val today = now.toLocalDateTime(placeZone).date
     val sunDays = SunTimes.daysFrom(data.location.latitude, data.location.longitude, today, placeZone, SunDays.MAX)
     val forecast =
         ForecastData(
@@ -200,9 +201,9 @@ private fun emptySnapshot(data: WidgetData) =
 
 /** The clock the "Observed" time reads in — the user's choice, applied the
  * way the glance applies it. */
-private fun WidgetConfig.observedZone(data: WidgetData): ZoneId {
-    val snapshot = data.snapshot ?: return ZoneId.systemDefault()
-    return view.timesIn.observedZone(snapshot, place = snapshot.zone ?: ZoneId.systemDefault())
+private fun WidgetConfig.observedZone(data: WidgetData): TimeZone {
+    val snapshot = data.snapshot ?: return TimeZone.currentSystemDefault()
+    return view.timesIn.observedZone(snapshot, place = snapshot.zone ?: TimeZone.currentSystemDefault())
 }
 
 private fun DpSize.inset(padding: Dp): DpSize =
@@ -248,7 +249,7 @@ private fun ReadingWidget(
     value: ModuleValue,
     text: String,
     snapshot: WeatherSnapshot?,
-    observedZone: ZoneId,
+    observedZone: TimeZone,
     now: Instant,
     palette: WidgetPalette,
     spec: WidgetDensitySpec,
@@ -368,14 +369,14 @@ private fun SunHeading(text: String, palette: WidgetPalette) {
 }
 
 @Composable
-private fun SunRow(day: SunDay, zone: ZoneId, palette: WidgetPalette, spec: WidgetDensitySpec) {
+private fun SunRow(day: SunDay, zone: TimeZone, palette: WidgetPalette, spec: WidgetDensitySpec) {
     Row(
         modifier = GlanceModifier.fillMaxWidth().padding(bottom = spec.gap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = GlanceModifier.defaultWeight()) {
             Text(
-                text = day.date.format(WEEKDAY).uppercase(Locale.ENGLISH),
+                text = day.date.format(WEEKDAY).uppercase(),
                 style =
                     TextStyle(
                         color = palette.ink,
@@ -397,7 +398,12 @@ private fun SunRow(day: SunDay, zone: ZoneId, palette: WidgetPalette, spec: Widg
 }
 
 @Composable
-private fun SunTime(event: Instant?, zone: ZoneId, color: androidx.glance.unit.ColorProvider, palette: WidgetPalette) {
+private fun SunTime(
+    event: Instant?,
+    zone: TimeZone,
+    color: androidx.glance.unit.ColorProvider,
+    palette: WidgetPalette,
+) {
     Text(
         text = event?.let { LocalConventions.current.clock(it, zone) } ?: "—",
         style = TextStyle(color = color, fontSize = TEMP_SP, fontFamily = palette.font, textAlign = TextAlign.End),
@@ -412,7 +418,7 @@ private fun SunTime(event: Instant?, zone: ZoneId, color: androidx.glance.unit.C
 private fun SunPair(
     word: String,
     event: Instant?,
-    zone: ZoneId,
+    zone: TimeZone,
     color: androidx.glance.unit.ColorProvider,
     palette: WidgetPalette,
     modifier: GlanceModifier,
@@ -597,10 +603,10 @@ private fun <T> TileRows(
 /** One hour: when, how warm, and whatever the user has switched on. */
 @Composable
 private fun HourTile(hour: ForecastPoint, content: ModuleContent.Forecast, palette: WidgetPalette, height: Dp) {
-    val at = hour.startTime.atZone(content.zone)
+    val at = hour.startTime.toLocalDateTime(content.zone)
     val conventions = LocalConventions.current
     ZonedTile(
-        top = "${at.format(conventions.tileHour).lowercase(Locale.ENGLISH)} ${at.format(conventions.shortDate)}",
+        top = "${at.format(conventions.tileHour).lowercase()} ${at.format(conventions.shortDate)}",
         topItalic = false,
         chance = hour.precipProbabilityPercent.takeIf { ForecastElement.PRECIP_CHANCE in content.elements },
         words = hour.shortForecast.takeIf { ForecastElement.CONDITIONS in content.elements },
@@ -786,4 +792,4 @@ private fun QuietLine(text: String, palette: WidgetPalette) {
 }
 
 /** "TUE": the weekday reads the same in every region; only its date moves. */
-private val WEEKDAY: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH)
+private val WEEKDAY = TimePattern("EEE")

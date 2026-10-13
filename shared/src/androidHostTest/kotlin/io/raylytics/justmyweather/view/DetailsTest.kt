@@ -4,15 +4,15 @@ import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 class DetailsTest {
-    private val newYork = ZoneId.of("America/New_York")
+    private val newYork = TimeZone.of("America/New_York")
 
     private val snapshot =
         WeatherSnapshot(
@@ -41,7 +41,7 @@ class DetailsTest {
         assertEquals(
             "Observed 4:00 PM · Louisville, KY",
             Details
-                .ofModule(module(WeatherField.WIND), snapshot, ZoneId.of("America/Los_Angeles"), Conventions.US)!!
+                .ofModule(module(WeatherField.WIND), snapshot, TimeZone.of("America/Los_Angeles"), Conventions.US)!!
                 .subtitle,
         )
         assertEquals(
@@ -71,11 +71,11 @@ class DetailsTest {
         val days =
             listOf(
                 SunDay(
-                    LocalDate.of(2026, 9, 5),
+                    LocalDate(2026, 9, 5),
                     Instant.parse("2026-09-05T11:16:00Z"),
                     Instant.parse("2026-09-06T00:06:00Z"),
                 ),
-                SunDay(LocalDate.of(2026, 9, 6), null, null),
+                SunDay(LocalDate(2026, 9, 6), null, null),
             )
         val sun = ModuleValue(ModuleKey.Sun, "Sun", ModuleKey.Sun.defaultSize, ModuleContent.Sun(days, newYork))
         val detail = Details.ofModule(sun, snapshot, newYork, Conventions.US)!!

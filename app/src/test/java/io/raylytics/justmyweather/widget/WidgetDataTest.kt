@@ -6,14 +6,20 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.Duration
-import java.time.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 class WidgetDataTest {
-    private val carryWindow: Duration = Duration.ofMinutes(30)
+    private val carryWindow: Duration = (30).minutes
 
     private fun data(latitude: Double, longitude: Double) =
-        WidgetData(WeatherLocation(latitude, longitude, "Here"), snapshot = null, fetchedAt = Instant.EPOCH)
+        WidgetData(
+            WeatherLocation(latitude, longitude, "Here"),
+            snapshot = null,
+            fetchedAt = Instant.fromEpochMilliseconds(0),
+        )
 
     @Test
     fun `previous data is about the same place within a grid cell's drift`() {
@@ -26,16 +32,16 @@ class WidgetDataTest {
     fun `a list is fresh within the window, on its own clock`() {
         val fetched = Instant.parse("2026-10-05T14:00:00Z")
         val list = Fetched(listOf("x"), fetched)
-        val window = Duration.ofMinutes(30)
-        assertTrue(list.isFresh(fetched.plusSeconds(600), window))
-        assertFalse(list.isFresh(fetched.plusSeconds(3600), window), "an hour old is past a 30 min window")
-        assertFalse(list.isFresh(fetched.minusSeconds(60), window), "a clock that went backwards")
+        val window = (30).minutes
+        assertTrue(list.isFresh(fetched + (600).seconds, window))
+        assertFalse(list.isFresh(fetched + (3600).seconds, window), "an hour old is past a 30 min window")
+        assertFalse(list.isFresh(fetched - (60).seconds, window), "a clock that went backwards")
     }
 
     @Test
     fun `a needed list that fetched is stamped now, and one that failed keeps the previous list and its time`() {
         val then = Instant.parse("2026-10-05T14:00:00Z")
-        val now = then.plusSeconds(900)
+        val now = then + (900).seconds
         val previous = Fetched(listOf("old"), then)
         assertEquals(Fetched(listOf("new"), now), settle(true, listOf("new"), previous, now, carryWindow))
         assertEquals(previous, settle(true, null, previous, now, carryWindow))
@@ -46,8 +52,8 @@ class WidgetDataTest {
     fun `an unneeded list is carried while fresh and dropped once stale`() {
         val then = Instant.parse("2026-10-05T14:00:00Z")
         val previous = Fetched(listOf("old"), then)
-        assertEquals(previous, settle(false, null, previous, then.plusSeconds(900), carryWindow))
-        assertNull(settle(false, null, previous, then.plus(carryWindow).plusSeconds(1), carryWindow))
+        assertEquals(previous, settle(false, null, previous, then + (900).seconds, carryWindow))
+        assertNull(settle(false, null, previous, then.plus(carryWindow) + (1).seconds, carryWindow))
     }
 
     @Test
@@ -57,7 +63,7 @@ class WidgetDataTest {
         var hours = Fetched(listOf("h0"), start)
         var periods: Fetched<String>? = Fetched(listOf("p0"), start)
         for (tick in 1..4) {
-            val now = start.plus(carryWindow.dividedBy(2).multipliedBy(tick.toLong()))
+            val now = start + carryWindow / 2 * tick
             hours = settle(true, listOf("h$tick"), hours, now, carryWindow)!!
             periods = settle(false, null, periods, now, carryWindow)
         }

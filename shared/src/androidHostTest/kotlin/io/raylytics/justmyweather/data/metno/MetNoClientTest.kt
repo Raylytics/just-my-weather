@@ -3,14 +3,14 @@ package io.raylytics.justmyweather.data.metno
 import io.raylytics.justmyweather.data.nws.HttpResult
 import io.raylytics.justmyweather.data.nws.HttpTransport
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 class MetNoClientTest {
     private val requested = mutableListOf<Pair<String, Map<String, String>>>()
@@ -24,7 +24,7 @@ class MetNoClientTest {
                 },
         )
 
-    private val louisville: ZoneId = ZoneId.of("America/New_York") // UTC-4 in October
+    private val louisville: TimeZone = TimeZone.of("America/New_York") // UTC-4 in October
 
     private fun entry(time: String, tempC: Double, windMps: Double, windFrom: Double, six: String?) =
         """{"time":"$time","data":{"instant":{"details":""" +
@@ -59,7 +59,7 @@ class MetNoClientTest {
         // stays; Oct 12 has no block at all.
         assertEquals(listOf("2026-10-10", "2026-10-11"), days.map { it.date.toString() })
         val sat = days[0]
-        assertEquals(LocalDate.of(2026, 10, 10), sat.date)
+        assertEquals(LocalDate(2026, 10, 10), sat.date)
         assertEquals(77.0, sat.highF!!, 0.01) // 25 °C, the day's block max
         assertEquals(53.6, sat.lowF!!, 0.01) // 12 °C, from the evening block
         assertEquals("Rain Showers", sat.conditions) // the 8 am–2 pm block holds noon
@@ -106,7 +106,7 @@ class MetNoClientTest {
             ${entry("2026-10-12T18:00:00Z", 27.0, 1.0, 0.0, six("clearsky_night", 26.0, 20.0, 0.0))}
             ]}}"""
         val day = client(200, threeBlocks).getDailyForecast(0.0, 0.0, louisville).single()
-        assertEquals(LocalDate.of(2026, 10, 12), day.date)
+        assertEquals(LocalDate(2026, 10, 12), day.date)
         assertEquals(80.6, day.highF!!, 0.01) // 27 °C, the afternoon's
     }
 
@@ -134,7 +134,7 @@ class MetNoClientTest {
                 Triple("Asia/Yangon", "2026-07-15", "Cloudy"),
             )
         for ((zone, day, want) in cases) {
-            val days = client(200, series(day)).getDailyForecast(0.0, 0.0, ZoneId.of(zone))
+            val days = client(200, series(day)).getDailyForecast(0.0, 0.0, TimeZone.of(zone))
             assertEquals(1, days.size, zone)
             assertEquals(want, days.single().conditions, zone)
         }

@@ -1,13 +1,13 @@
 package io.raylytics.justmyweather.view
 
 import io.raylytics.justmyweather.data.WeatherSnapshot
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.time.ZoneId
 
 class TimesInTest {
-    private val newYork = ZoneId.of("America/New_York")
-    private val seattle = ZoneId.of("America/Los_Angeles")
+    private val newYork = TimeZone.of("America/New_York")
+    private val seattle = TimeZone.of("America/Los_Angeles")
 
     private fun reading(zone: String?) =
         WeatherSnapshot("x", null, null, null, null, null, observedAt = null, timeZone = zone)

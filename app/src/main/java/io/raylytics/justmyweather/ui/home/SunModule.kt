@@ -20,10 +20,10 @@ import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.view.ModuleSize
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import io.raylytics.justmyweather.view.TimePattern
+import io.raylytics.justmyweather.view.format
+import kotlinx.datetime.TimeZone
+import kotlin.time.Instant
 
 /*
  * The sun module's drawing, at each size it can be given.
@@ -54,7 +54,7 @@ internal fun SunModuleContent(
     days: List<SunDay>,
     size: ModuleSize,
     /** The PLACE's zone, not the device's — see ModuleContent.Sun. */
-    zone: ZoneId,
+    zone: TimeZone,
     /** Arrange mode: the rows stop scrolling so a drag moves the tile. */
     arranging: Boolean = false,
 ) {
@@ -90,7 +90,7 @@ internal fun SunModuleContent(
 @Composable
 internal fun SunTimesTable(
     days: List<SunDay>,
-    zone: ZoneId = ZoneId.systemDefault(),
+    zone: TimeZone = TimeZone.currentSystemDefault(),
     arranging: Boolean = false,
 ) {
     Column(
@@ -142,7 +142,7 @@ internal fun SunTimesTable(
  * position left to carry the distinction.
  */
 @Composable
-private fun SunPair(day: SunDay, zone: ZoneId) {
+private fun SunPair(day: SunDay, zone: TimeZone) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -162,7 +162,7 @@ private fun SunPair(day: SunDay, zone: ZoneId) {
  * exactly half the width, so a long time cannot push the other aside.
  */
 @Composable
-private fun SunPairRow(day: SunDay, zone: ZoneId) {
+private fun SunPairRow(day: SunDay, zone: TimeZone) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -182,7 +182,7 @@ private fun SunPairRow(day: SunDay, zone: ZoneId) {
 private fun SunPairLine(
     label: String,
     event: Instant?,
-    zone: ZoneId,
+    zone: TimeZone,
     color: Color,
     timeStyle: TextStyle = MaterialTheme.typography.titleMedium,
 ) {
@@ -200,7 +200,7 @@ private fun SunPairLine(
 }
 
 @Composable
-private fun SunDayRow(day: SunDay, zone: ZoneId) {
+private fun SunDayRow(day: SunDay, zone: TimeZone) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -209,7 +209,7 @@ private fun SunDayRow(day: SunDay, zone: ZoneId) {
         // date wherever it appears on this screen.
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = day.date.format(WEEKDAY).uppercase(Locale.ENGLISH),
+                text = day.date.format(WEEKDAY).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -229,7 +229,7 @@ private fun SunDayRow(day: SunDay, zone: ZoneId) {
 @Composable
 private fun SunTimeCell(
     event: Instant?,
-    zone: ZoneId,
+    zone: TimeZone,
     color: Color,
 ) {
     Text(
@@ -242,4 +242,4 @@ private fun SunTimeCell(
 }
 
 /** "TUE": the weekday reads the same in every region; only its date moves. */
-private val WEEKDAY: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH)
+private val WEEKDAY = TimePattern("EEE")

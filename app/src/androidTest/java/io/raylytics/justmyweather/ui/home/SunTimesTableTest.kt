@@ -7,11 +7,15 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import io.raylytics.justmyweather.data.SunDay
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import org.junit.Rule
 import org.junit.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 /**
  * What the sun table draws. The behaviour that used to live here — the day
@@ -20,7 +24,7 @@ import java.time.ZoneId
  * ViewModel and testable on the JVM, so only the rendering needs a device.
  *
  * Instants are built from the device's own zone. The table formats in
- * [ZoneId.systemDefault], so fixed UTC instants would land on a different
+ * [TimeZone.systemDefault], so fixed UTC instants would land on a different
  * local date on every differently-offset machine and the row a time appears
  * in would depend on the emulator's settings rather than on the code.
  */
@@ -28,18 +32,21 @@ class SunTimesTableTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private val zone: ZoneId = ZoneId.systemDefault()
-    private val today: LocalDate = LocalDate.of(2026, 8, 14)
+    private val zone: TimeZone = TimeZone.currentSystemDefault()
+    private val today: LocalDate = LocalDate(2026, 8, 14)
 
     private fun at(date: LocalDate, hour: Int, minute: Int): Instant =
-        date.atTime(hour, minute).atZone(zone).toInstant()
+        date.atTime(hour, minute).toInstant(zone)
 
     @Test
     fun eachDayShowsItsOwnDateAndBothTimes() {
         val days =
             listOf(
                 SunDay(today, at(today, 6, 52), at(today, 20, 28)),
-                SunDay(today.plusDays(1), at(today.plusDays(1), 6, 53), at(today.plusDays(1), 20, 27)),
+                today.plus(1, DateTimeUnit.DAY).let {
+                        tomorrow ->
+                    SunDay(tomorrow, at(tomorrow, 6, 53), at(tomorrow, 20, 27))
+                },
             )
         compose.setContent { SunTimesTable(days) }
 

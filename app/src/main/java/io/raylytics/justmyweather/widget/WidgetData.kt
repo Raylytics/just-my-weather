@@ -10,9 +10,9 @@ import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.DailyDays
 import io.raylytics.justmyweather.view.ForecastMode
 import io.raylytics.justmyweather.view.ModuleKey
-import java.time.Duration
-import java.time.Instant
 import kotlin.math.abs
+import kotlin.time.Duration
+import kotlin.time.Instant
 
 /**
  * What the refresh worker last fetched for the widgets, kept so a widget can
@@ -72,8 +72,8 @@ data class Fetched<T>(
     /** Whether this list is at most [maxAge] old at [now]. A clock that
      * went backwards reads as stale: its age cannot be known. */
     fun isFresh(now: Instant, maxAge: Duration): Boolean {
-        val age = Duration.between(at, now)
-        return !age.isNegative && age <= maxAge
+        val age = now - at
+        return !age.isNegative() && age <= maxAge
     }
 }
 

@@ -12,12 +12,12 @@ import io.raylytics.justmyweather.view.PressureUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
 import io.raylytics.justmyweather.view.UnitPrefs
 import io.raylytics.justmyweather.view.WindUnit
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.time.Instant
-import java.time.LocalDate
+import kotlin.time.Instant
 
 /**
  * Pure JSON (de)serialisation for [WidgetData], in the style of
@@ -129,11 +129,11 @@ object WidgetDataCodec {
                 hours = data.hours?.items?.map { it.stored() },
                 periods = data.periods?.items?.map { it.stored() },
                 extended = data.extended?.items?.map { it.stored() },
-                fetchedAtEpochMillis = data.fetchedAt.toEpochMilli(),
+                fetchedAtEpochMillis = data.fetchedAt.toEpochMilliseconds(),
                 error = data.error,
-                hoursFetchedAtEpochMillis = data.hours?.at?.toEpochMilli(),
-                periodsFetchedAtEpochMillis = data.periods?.at?.toEpochMilli(),
-                extendedFetchedAtEpochMillis = data.extended?.at?.toEpochMilli(),
+                hoursFetchedAtEpochMillis = data.hours?.at?.toEpochMilliseconds(),
+                periodsFetchedAtEpochMillis = data.periods?.at?.toEpochMilliseconds(),
+                extendedFetchedAtEpochMillis = data.extended?.at?.toEpochMilliseconds(),
                 conventions =
                     data.conventions.let { c ->
                         StoredConventions(
@@ -159,7 +159,7 @@ object WidgetDataCodec {
             hours = fetched(s.hours?.map { it.restored() }, s.hoursFetchedAtEpochMillis),
             periods = fetched(s.periods?.map { it.restored() }, s.periodsFetchedAtEpochMillis),
             extended = fetched(s.extended?.mapNotNull { it.restored() }, s.extendedFetchedAtEpochMillis),
-            fetchedAt = Instant.ofEpochMilli(s.fetchedAtEpochMillis),
+            fetchedAt = Instant.fromEpochMilliseconds(s.fetchedAtEpochMillis),
             error = s.error,
             conventions = s.conventions?.restored() ?: Conventions.US,
         )
@@ -187,7 +187,7 @@ object WidgetDataCodec {
      * no time (written before lists had one) is dated to the epoch: kept,
      * but stale to any freshness check. */
     private fun <T> fetched(items: List<T>?, atEpochMillis: Long?): Fetched<T>? =
-        items?.let { Fetched(it, Instant.ofEpochMilli(atEpochMillis ?: 0L)) }
+        items?.let { Fetched(it, Instant.fromEpochMilliseconds(atEpochMillis ?: 0L)) }
 
     private fun WeatherSnapshot.stored() =
         StoredSnapshot(
@@ -197,7 +197,7 @@ object WidgetDataCodec {
             windMph = windMph,
             precipitationIn = precipitationIn,
             pressureInHg = pressureInHg,
-            observedAtEpochMillis = observedAt?.toEpochMilli(),
+            observedAtEpochMillis = observedAt?.toEpochMilliseconds(),
             relativeHumidityPercent = relativeHumidityPercent,
             windDirectionDegrees = windDirectionDegrees,
             feelsLikeF = feelsLikeF,
@@ -213,7 +213,7 @@ object WidgetDataCodec {
             windMph = windMph,
             precipitationIn = precipitationIn,
             pressureInHg = pressureInHg,
-            observedAt = observedAtEpochMillis?.let(Instant::ofEpochMilli),
+            observedAt = observedAtEpochMillis?.let(Instant::fromEpochMilliseconds),
             relativeHumidityPercent = relativeHumidityPercent,
             windDirectionDegrees = windDirectionDegrees,
             feelsLikeF = feelsLikeF,
@@ -223,7 +223,7 @@ object WidgetDataCodec {
 
     private fun ForecastPoint.stored() =
         StoredHour(
-            startEpochMillis = startTime.toEpochMilli(),
+            startEpochMillis = startTime.toEpochMilliseconds(),
             temperatureF = temperatureF,
             windMph = windMph,
             precipProbabilityPercent = precipProbabilityPercent,
@@ -235,7 +235,7 @@ object WidgetDataCodec {
 
     private fun StoredHour.restored() =
         ForecastPoint(
-            startTime = Instant.ofEpochMilli(startEpochMillis),
+            startTime = Instant.fromEpochMilliseconds(startEpochMillis),
             temperatureF = temperatureF,
             windMph = windMph,
             precipProbabilityPercent = precipProbabilityPercent,
@@ -248,7 +248,7 @@ object WidgetDataCodec {
     private fun DailyPeriod.stored() =
         StoredPeriod(
             name = name,
-            startEpochMillis = startTime?.toEpochMilli(),
+            startEpochMillis = startTime?.toEpochMilliseconds(),
             isDaytime = isDaytime,
             temperatureF = temperatureF,
             shortForecast = shortForecast,
@@ -261,7 +261,7 @@ object WidgetDataCodec {
     private fun StoredPeriod.restored() =
         DailyPeriod(
             name = name,
-            startTime = startEpochMillis?.let(Instant::ofEpochMilli),
+            startTime = startEpochMillis?.let(Instant::fromEpochMilliseconds),
             isDaytime = isDaytime,
             temperatureF = temperatureF,
             shortForecast = shortForecast,

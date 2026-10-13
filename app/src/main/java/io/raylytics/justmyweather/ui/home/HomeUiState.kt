@@ -8,7 +8,7 @@ import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.view.ForecastMode
 import io.raylytics.justmyweather.view.ViewConfig
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 
 /**
  * The complete state of the home screen as one value. A sealed hierarchy keeps
@@ -74,7 +74,7 @@ sealed interface HomeUiState {
          * reading is still the previous place's, and it formats its own
          * observed time from its own zone.
          */
-        val zone: ZoneId = ZoneId.systemDefault(),
+        val zone: TimeZone = TimeZone.currentSystemDefault(),
     ) : HomeUiState
 
     /** Network or NWS failure, with a short plain-language message. */
