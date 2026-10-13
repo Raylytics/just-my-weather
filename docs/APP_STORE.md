@@ -50,8 +50,11 @@ again. (The hand-off text in just-my-weather-r6d lists In-App Purchase only.)
 
 - New App: iOS, name `Just My Weather`, English (U.S.), bundle id above,
   SKU `justmyweather-ios`.
-- In-App Purchase: **Non-Consumable**, product id **`remove_ads`** (the
-  shared code uses the same id on both stores), **USD 0.99**, display name
+- In-App Purchase: **Non-Consumable**, product id
+  **`remove_ads_just_my_weather`**, **USD 0.99**. (App Store product ids
+  are unique across the developer account and open-frame owns
+  `remove_ads`; the shared code still says `remove_ads`, and
+  `billing/AppStoreProducts.kt` translates at the iOS gateway.) display name
   "Remove ads", description "One purchase removes the banner for good."
   It shows "Missing Metadata" until a build is attached, which is expected.
   Review wants a screenshot of the purchase; take one from the simulator.
@@ -247,7 +250,7 @@ External by mistake: pull it back and attach it to Internal.
 
 No App Store Connect record is needed to test Remove Ads:
 
-- `iosApp/JustMyWeather/Products.storekit` defines `remove_ads` as a
+- `iosApp/JustMyWeather/Products.storekit` defines `remove_ads_just_my_weather` as a
   non-consumable at 0.99, US storefront.
 - The scheme's Run action uses it (`storeKitConfiguration` in
   `project.yml`), so on a simulator the product can be bought and restored
@@ -353,7 +356,7 @@ for a video again, Apple's wording means it will ask every time after that.
 - `GADApplicationIdentifier` and `JMWBannerUnitID` come from the xcconfig
   (step 3).
 - `JMWAppStoreID`: the app's numeric App Store id, for the Rate row
-  (step 2). Empty until the App Store Connect record exists.
+  (step 2): `6822450301`.
 - Entitlements (`JustMyWeather.entitlements`): Time Sensitive Notifications
   only (step 1).
 - Notifications need no plist key. Permission is asked when the user opens

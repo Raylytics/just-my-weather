@@ -3,6 +3,10 @@ import StoreKitTest
 import XCTest
 @testable import JustMyWeather
 
+/// The id the shared code asks for, as the iOS gateway sends it: this is
+/// what proves Products.storekit and AppStoreProducts agree.
+private let removeAds = AppStoreProducts.shared.appStoreId(sharedId: "remove_ads")
+
 /// Remove Ads against the local StoreKit configuration (Products.storekit):
 /// the offer, a purchase, ownership, and a restore after the store forgets
 /// nothing — with no App Store Connect record and no network.
@@ -19,8 +23,8 @@ final class StoreServiceTests: XCTestCase {
 
     func testTheOfferIsTheNinetyNineCentProduct() {
         let offer = expectation(description: "offer")
-        store.offer(productId: "remove_ads") { product in
-            XCTAssertEqual(product?.productId, "remove_ads")
+        store.offer(productId: removeAds) { product in
+            XCTAssertEqual(product?.productId, removeAds)
             XCTAssertEqual(product?.formattedPrice, "$0.99")
             offer.fulfill()
         }
@@ -29,7 +33,7 @@ final class StoreServiceTests: XCTestCase {
 
     func testABoughtProductIsOwned() {
         let bought = expectation(description: "purchase")
-        store.purchase(productId: "remove_ads") { result in
+        store.purchase(productId: removeAds) { result in
             XCTAssertEqual(result, StorePurchase.purchased)
             bought.fulfill()
         }
@@ -37,7 +41,7 @@ final class StoreServiceTests: XCTestCase {
 
         let owned = expectation(description: "owned")
         store.ownedProducts { products in
-            XCTAssertEqual(products, ["remove_ads"])
+            XCTAssertEqual(products, [removeAds])
             owned.fulfill()
         }
         wait(for: [owned], timeout: 10)

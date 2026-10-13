@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import io.raylytics.justmyweather.alerts.AlertCheck
 import io.raylytics.justmyweather.alerts.AlertScheduling
 import io.raylytics.justmyweather.alerts.BackgroundAlerts
+import io.raylytics.justmyweather.billing.AppStoreProducts
 import io.raylytics.justmyweather.billing.BillingEvent
 import io.raylytics.justmyweather.billing.BillingGateway
 import io.raylytics.justmyweather.billing.ProductOffer
@@ -210,7 +211,8 @@ private class StoreKitGateway(private val store: StoreBridge) : BillingGateway {
         // Changes that happen outside the sheet. A late approval is a
         // purchase like any other; a revocation asks the manager to re-read
         // what the account owns, without a word to the user.
-        store.onTransactionUpdate { productId, revoked ->
+        store.onTransactionUpdate { appStoreId, revoked ->
+            val productId = AppStoreProducts.sharedId(appStoreId) ?: return@onTransactionUpdate
             outcomes.tryEmit(
                 if (revoked) {
                     BillingEvent.EntitlementChanged
@@ -224,19 +226,29 @@ private class StoreKitGateway(private val store: StoreBridge) : BillingGateway {
     override val events: Flow<BillingEvent> = outcomes
 
     override suspend fun queryOffer(productId: String): ProductOffer? =
-        suspendCancellableCoroutine { c -> store.offer(productId) { c.resume(it) } }
+        suspendCancellableCoroutine { c ->
+            // The offer comes back under the App Store's id; the shared code
+            // knows it by its own.
+            store.offer(AppStoreProducts.appStoreId(productId)) { offer ->
+                c.resume(offer?.copy(productId = productId))
+            }
+        }
 
     override suspend fun ownedPurchases(): List<PurchaseRecord>? =
         suspendCancellableCoroutine { c ->
             store.ownedProducts { owned ->
-                c.resume(owned?.map { PurchaseRecord(listOf(it), purchased = true, acknowledged = true, token = it) })
+                c.resume(
+                    owned
+                        ?.mapNotNull(AppStoreProducts::sharedId)
+                        ?.map { PurchaseRecord(listOf(it), purchased = true, acknowledged = true, token = it) },
+                )
             }
         }
 
     override suspend fun acknowledge(token: String): Boolean = true
 
     override fun launchPurchase(activity: PurchaseHost, productId: String) {
-        store.purchase(productId) { result ->
+        store.purchase(AppStoreProducts.appStoreId(productId)) { result ->
             val event =
                 when (result) {
                     StorePurchase.PURCHASED ->

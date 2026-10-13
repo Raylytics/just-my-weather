@@ -31,7 +31,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>JMWAppStoreID</key>
-	<string></string>
+	<string>6822450301</string>
 	<key>JMWBannerUnitID</key>
 	<string>$(ADMOB_BANNER_UNIT_ID)</string>
 	<key>LSRequiresIPhoneOS</key>
