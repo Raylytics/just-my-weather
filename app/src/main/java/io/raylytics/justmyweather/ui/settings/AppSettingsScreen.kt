@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.billing.RemoveAdsStatus
+import io.raylytics.justmyweather.ui.theme.textButtonColors
 
 /**
  * Settings that are about the app, not the canvas. Customize is for what the
@@ -236,7 +237,12 @@ private fun AdsSection(
                     },
             )
         }
-        TextButton(onClick = onRestore, enabled = !busy, modifier = Modifier.testTag("restore-purchase")) {
+        TextButton(
+            onClick = onRestore,
+            enabled = !busy,
+            colors = textButtonColors(),
+            modifier = Modifier.testTag("restore-purchase"),
+        ) {
             Text("Already bought it? Restore purchase")
         }
     }

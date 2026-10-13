@@ -44,6 +44,7 @@ import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.nws.ActiveAlert
 import io.raylytics.justmyweather.ui.theme.LocalConventions
+import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.AlertBannerPosition
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.Detail
@@ -563,7 +564,12 @@ private fun ActionBar(
         FlowRow(horizontalArrangement = Arrangement.Center) {
             // The button label reflects the refreshing flag, so a re-fetch is an
             // observable state change (and the flag stops being dead state).
-            TextButton(onClick = onRefresh, enabled = !refreshing, contentPadding = padding) {
+            TextButton(
+                onClick = onRefresh,
+                enabled = !refreshing,
+                colors = textButtonColors(),
+                contentPadding = padding,
+            ) {
                 Text(if (refreshing) "Refreshing…" else "Refresh")
             }
             TextButton(onClick = onAppSettings, contentPadding = padding) { Text("App Settings") }

@@ -33,6 +33,7 @@ import io.raylytics.justmyweather.data.WeatherLocation
 import io.raylytics.justmyweather.data.places.Place
 import io.raylytics.justmyweather.data.places.SavedPlaces
 import io.raylytics.justmyweather.ui.scrollbar
+import io.raylytics.justmyweather.ui.theme.textButtonColors
 import java.util.Locale
 
 /**
@@ -280,6 +281,7 @@ private fun CoordinateEntry(onSave: (WeatherLocation) -> Unit) {
                     open = false
                 },
                 enabled = parsed != null,
+                colors = textButtonColors(),
                 modifier = Modifier.testTag("coords-save"),
             ) { Text("Save place") }
             TextButton(onClick = { open = false }) { Text("Cancel") }

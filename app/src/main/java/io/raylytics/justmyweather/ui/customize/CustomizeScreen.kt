@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.AlertBannerPosition
 import io.raylytics.justmyweather.view.DailyStyle
 import io.raylytics.justmyweather.view.Density
@@ -302,11 +303,13 @@ private fun FieldRow(
                 TextButton(
                     onClick = onMoveUp,
                     enabled = canMoveUp,
+                    colors = textButtonColors(),
                     modifier = Modifier.testTag("moveUp_$key"),
                 ) { Text("↑") }
                 TextButton(
                     onClick = onMoveDown,
                     enabled = canMoveDown,
+                    colors = textButtonColors(),
                     modifier = Modifier.testTag("moveDown_$key"),
                 ) { Text("↓") }
             }

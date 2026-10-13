@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.ui.theme.accentColor
+import io.raylytics.justmyweather.ui.theme.chipBorder
 import io.raylytics.justmyweather.ui.theme.onAccent
 import io.raylytics.justmyweather.view.AccentChoice
 import io.raylytics.justmyweather.view.DailyDays
@@ -82,6 +83,7 @@ internal fun AccentChipRow(
             val swatch = accentColor(choice)
             FilterChip(
                 selected = choice == selected,
+                border = chipBorder(choice == selected),
                 onClick = { onSelect(choice) },
                 label = { Text(choice.label) },
                 colors =
@@ -108,6 +110,7 @@ internal fun <T> MultiChipRow(
         options.forEach { option ->
             FilterChip(
                 selected = option in selected,
+                border = chipBorder(option in selected),
                 onClick = { onToggle(option) },
                 label = { Text(label(option)) },
                 modifier = Modifier.testTag(tag(option)),
@@ -136,6 +139,7 @@ internal fun <T> ChipRow(
         options.forEach { option ->
             FilterChip(
                 selected = option == selected,
+                border = chipBorder(option == selected),
                 onClick = { onSelect(option) },
                 label = { Text(label(option)) },
                 modifier = tag?.let { Modifier.testTag(it(option)) } ?: Modifier,

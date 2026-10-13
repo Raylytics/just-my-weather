@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.support.SUPPORT_ADDRESS
 import io.raylytics.justmyweather.support.SupportKind
+import io.raylytics.justmyweather.ui.theme.buttonColors
 
 /** The words that make the two forms two forms. Kept together so the
  * difference between them reads at a glance. */
@@ -128,6 +129,7 @@ fun SupportScreen(
                 Button(
                     onClick = { noMailApp = !onSend(message) },
                     enabled = message.isNotBlank() && attached != null,
+                    colors = buttonColors(),
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(copy.send) }
                 Text(

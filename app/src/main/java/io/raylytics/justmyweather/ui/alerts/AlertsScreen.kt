@@ -54,6 +54,8 @@ import io.raylytics.justmyweather.alerts.Comparison
 import io.raylytics.justmyweather.alerts.FireLimit
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
+import io.raylytics.justmyweather.ui.theme.chipBorder
+import io.raylytics.justmyweather.ui.theme.textButtonColors
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import java.util.Locale
@@ -195,6 +197,7 @@ private fun CadenceRow(
             AlertSettings.POLL_CHOICES.forEach { minutes ->
                 FilterChip(
                     selected = minutes == selected,
+                    border = chipBorder(minutes == selected),
                     onClick = { onSelect(minutes) },
                     label = { Text(AlertSettings.pollLabel(minutes)) },
                 )
@@ -377,6 +380,7 @@ private fun QuietWindowDialog(
             TextButton(
                 onClick = { onSave(start, end) },
                 enabled = valid,
+                colors = textButtonColors(),
                 modifier =
                     Modifier
                         .semantics { testTagsAsResourceId = true }
@@ -406,6 +410,7 @@ private fun HourGrid(
         (0..23).forEach { hour ->
             FilterChip(
                 selected = hour == selected,
+                border = chipBorder(hour == selected),
                 onClick = { onSelect(hour) },
                 label = { Text(String.format(Locale.US, "%02d", hour)) },
                 modifier = Modifier.testTag("${prefix}_hour_$hour"),
@@ -548,6 +553,7 @@ private fun AddRuleForm(
                     }
                 },
                 enabled = threshold != null && limit != null,
+                colors = textButtonColors(),
                 modifier = Modifier.testTag("addRule"),
             ) {
                 Text("Add")
@@ -595,6 +601,7 @@ private fun <T> ChipRow(
         options.forEach { option ->
             FilterChip(
                 selected = option == selected,
+                border = chipBorder(option == selected),
                 onClick = { onSelect(option) },
                 label = { Text(label(option)) },
             )
