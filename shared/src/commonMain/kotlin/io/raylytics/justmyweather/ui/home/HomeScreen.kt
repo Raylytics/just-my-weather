@@ -183,7 +183,17 @@ fun HomeScreen(
             }
             // Only with a reading on screen: the error view carries its own
             // "Try again", and a bare "…" has nothing to refresh yet.
-            if (state is HomeUiState.Ready) {
+            //
+            // While arranging, the arrange bar takes the action bar's place.
+            // It used to sit under the grid, inside the weighted box, and
+            // when the grid filled that box (an iPhone 16, a short Android
+            // phone, a large font) it was measured with no height left and
+            // vanished, taking the hint and Done with it (just-my-weather-
+            // nyt.13). The foot always has room, and Refresh, Settings,
+            // Customize and Alerts have nothing to do mid-edit.
+            if (state is HomeUiState.Ready && arranging) {
+                ArrangeBar(onDone = { arranging = false })
+            } else if (state is HomeUiState.Ready) {
                 ActionBar(
                     refreshing = state.refreshing,
                     refreshError = state.refreshError,
@@ -302,24 +312,28 @@ private fun GlanceView(
             onOpenDetail = onOpenDetail,
         )
 
-        // Only while arranging, right under the grid it edits. The wiggle
-        // says "editing"; this says what editing IS and how it stops. The
-        // hint earns its line because half of the grammar is not obvious:
-        // drag-to-move is the launcher's and needs no telling, but the corner
-        // handle is a small dot, and a gesture nobody would guess is a
-        // feature nobody has. Back and a tap on empty ground end it too.
-        if (arranging) ArrangeBar(onDone = onDoneArranging)
-
         if (config.alertBannerPosition == AlertBannerPosition.BOTTOM) {
             SafetyAlertBanner(alerts = state.safetyAlerts)
         }
     }
 }
 
-/** The one piece of editor chrome: what the gestures do, and the way out. */
+/**
+ * The one piece of editor chrome, at the foot in the action bar's place while
+ * arranging. The wiggle says "editing"; this says what editing IS and how it
+ * stops. The hint earns its line because half of the grammar is not obvious:
+ * drag-to-move is the launcher's and needs no telling, but the corner handle
+ * is a small dot, and a gesture nobody would guess is a feature nobody has.
+ * Back and a tap on empty ground end it too.
+ */
 @Composable
 private fun ArrangeBar(onDone: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // The action bar's own top padding, so the grid above barely moves
+        // when one bar replaces the other.
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
         Text(
             text = stringResource(Res.string.home_drag_move_drag_corner),
             style = MaterialTheme.typography.labelMedium,

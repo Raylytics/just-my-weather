@@ -44,6 +44,10 @@ appId: io.raylytics.justmyweather
 # The hint is the other half of the editor chrome: the corner handle is a
 # small dot, so the mode has to say what it is for.
 - assertVisible: "Drag to move · Drag a corner to resize"
+# The arrange bar stands in for the action bar at the foot, where it always
+# has room: under the grid it was squeezed to nothing whenever the grid
+# filled the screen (an iPhone 16; just-my-weather-nyt.13).
+- assertNotVisible: "Refresh"
 
 # A tap on a tile while arranging does nothing — and, in particular, does NOT
 # leave the mode: the way out is Done, Back or empty ground, never the thing

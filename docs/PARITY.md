@@ -44,7 +44,7 @@ iPhone 16 simulator, iOS 27, 8/9 passed. Last Android run: Pixel 7, API 35,
 | Feature | Android | iOS | Status | bd | Maestro |
 |---|---|---|---|---|---|
 | Glance: modules on the lattice, tap for details | shared Compose UI (`ui/home/`) | same code | parity | — | `00-smoke` |
-| Arrange mode: drag to move, corner-drag to resize | shared `ui/home/ModuleGrid` | same code | **open bug**: the "Done arranging" bar disappears on short screens (iPhone 16, small Android phones) | just-my-weather-nyt.13 | `06-arrange` (fails on iOS) |
+| Arrange mode: drag to move, corner-drag to resize | shared `ui/home/ModuleGrid` | same code; the arrange bar replaces the action bar at the foot while arranging | parity | — | `06-arrange` (both) |
 | Forecast module: Hourly / Daily toggle, up to nine days | shared `ui/home/ForecastModule`; NWS plus MET Norway | same code | parity | — | `07-forecast` |
 | Customize: which modules, sizes, density | shared `ui/customize/` | same code | parity | — | `01-customize` |
 | Themes: light/dark/system, accent, typeface | shared `ui/theme/` | same code, but the "system sans" typeface is bundled Roboto on iOS (ledger: `sansFamily`) | parity | — | `01-customize` |
