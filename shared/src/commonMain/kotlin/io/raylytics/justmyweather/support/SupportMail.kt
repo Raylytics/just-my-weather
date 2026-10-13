@@ -24,8 +24,12 @@ data class AppInfo(
     val versionName: String,
     /** Internal-track builds can share a versionName; this tells them apart. */
     val versionCode: Int,
-    val androidRelease: String,
-    val sdkInt: Int,
+    /** "Android" or "iOS". */
+    val osName: String,
+    /** "15", "27.0". */
+    val osRelease: String,
+    /** What tells releases apart beyond the number — "API 35" — if anything. */
+    val osDetail: String?,
     val manufacturer: String,
     val model: String,
 )
@@ -59,7 +63,7 @@ fun bugDiagnostics(
         add("Version: ${app.versionName} (build ${app.versionCode})")
         add("")
         add("--- Device ---")
-        add("Android: ${app.androidRelease} (API ${app.sdkInt})")
+        add("${app.osName}: ${app.osRelease}" + (app.osDetail?.let { " ($it)" } ?: ""))
         add("Model: ${app.manufacturer} ${app.model}")
         add("")
         add("--- App State ---")
@@ -79,7 +83,7 @@ fun bugDiagnostics(
 fun ideaContext(app: AppInfo, sourceScreen: String): String =
     listOf(
         "App: Just My Weather ${app.versionName} (build ${app.versionCode})",
-        "Android: ${app.androidRelease}",
+        "${app.osName}: ${app.osRelease}",
         "Device: ${app.manufacturer} ${app.model}",
         "Screen: $sourceScreen",
     ).joinToString("\n")

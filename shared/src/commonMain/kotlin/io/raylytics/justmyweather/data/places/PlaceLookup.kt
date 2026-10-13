@@ -24,6 +24,10 @@ class PlaceLookup(private val load: suspend () -> PlaceCatalog) {
     private var catalog: PlaceCatalog? = null
     private val memo = mutableMapOf<String, Place?>()
 
+    /** [PlaceCatalog.countryOfZone], on the same once-loaded catalog. */
+    suspend fun countryOfZone(zone: String): String? =
+        mutex.withLock { (catalog ?: load().also { catalog = it }).countryOfZone(zone) }
+
     suspend fun nearest(latitude: Double, longitude: Double): Place? =
         mutex.withLock {
             val key = PointCacheKey.of(WeatherLocation(latitude, longitude, label = ""))

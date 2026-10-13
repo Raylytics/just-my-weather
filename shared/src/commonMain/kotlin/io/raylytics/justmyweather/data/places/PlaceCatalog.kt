@@ -126,6 +126,16 @@ class PlaceCatalog(val places: List<Place>) {
     private data class Ranked(val rank: Int, val length: Int, val place: Place)
 
     /**
+     * The country most of the gazetteer's places in IANA zone [zone] belong
+     * to — "Europe/London" → GB. The iPhone's last clue to its region, which
+     * it can read without a SIM or a fix. Null for a zone with no foreign
+     * rows: US places carry no zone (NWS supplies it), so a US zone answers
+     * nothing here and the region falls to its US default anyway.
+     */
+    fun countryOfZone(zone: String): String? =
+        places.filter { it.timeZone == zone }.groupingBy { it.country }.eachCount().maxByOrNull { it.value }?.key
+
+    /**
      * The bundled place nearest a coordinate, within [maxKm], or null.
      *
      * How the app tells which COUNTRY (and so which region, and which time

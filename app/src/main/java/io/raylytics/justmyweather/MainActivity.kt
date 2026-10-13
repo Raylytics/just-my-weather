@@ -10,19 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -34,28 +22,19 @@ import io.raylytics.justmyweather.support.SupportMail
 import io.raylytics.justmyweather.support.composeSupportMail
 import io.raylytics.justmyweather.support.currentAppInfo
 import io.raylytics.justmyweather.support.openStoreListing
-import io.raylytics.justmyweather.ui.App
+import io.raylytics.justmyweather.ui.AppRoot
+import io.raylytics.justmyweather.ui.AppViewModels
 import io.raylytics.justmyweather.ui.SupportHost
 import io.raylytics.justmyweather.ui.alerts.AlertsViewModel
 import io.raylytics.justmyweather.ui.customize.CustomizeViewModel
-import io.raylytics.justmyweather.ui.home.HomeUiState
 import io.raylytics.justmyweather.ui.home.HomeViewModel
-import io.raylytics.justmyweather.ui.home.describe
 import io.raylytics.justmyweather.ui.places.PlacesViewModel
 import io.raylytics.justmyweather.ui.settings.AppSettingsViewModel
 import io.raylytics.justmyweather.ui.settings.RegionViewModel
-import io.raylytics.justmyweather.ui.theme.JustMyWeatherTheme
-import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.ui.theme.ThemeViewModel
-import io.raylytics.justmyweather.ui.theme.themeResolvesToDark
-import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.widget.WidgetRefreshWorker
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
-
-/** How long a bug report waits for the glance to report its state. */
-private const val GLANCE_WAIT_MS = 2_000L
 
 class MainActivity : ComponentActivity() {
     private val container by lazy { (application as JustMyWeatherApp).container }
@@ -179,103 +158,50 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val themeConfig by themeViewModel.config.collectAsStateWithLifecycle()
-            // Starts true: the banner is withheld until the store's answer
-            // is read, so an owner never sees it flash in.
-            val adsRemoved by container.adsEntitlementRepository.adsRemoved.collectAsStateWithLifecycle(true)
-            // The region decides how everything reads; whether a banner may
-            // be shown at all is Google's consent SDK's call (ads/AdsConsent),
-            // false until it has answered, so no ad loads before then.
-            val conventions by container.regionRepository.conventions.collectAsStateWithLifecycle(Conventions.US)
-            val canShowAds by container.adsConsent.canShowAds.collectAsStateWithLifecycle()
-            val privacyOptionsRequired by container.adsConsent.privacyOptionsRequired.collectAsStateWithLifecycle()
-            // The bars sit on the app-painted background, and the user can
-            // force a mood against the system setting — so bar icon contrast
-            // must follow the app's resolved mood, not the system default
-            // that the argless enableEdgeToEdge() above assumes.
-            val dark = themeResolvesToDark(themeConfig)
-            LaunchedEffect(dark) {
-                val bars =
-                    if (dark) {
-                        SystemBarStyle.dark(Color.TRANSPARENT)
-                    } else {
-                        // The darkScrim only shows on API 24/25, which can't
-                        // render dark nav-bar icons: a translucent dark bar
-                        // keeps the white buttons visible over a light theme.
-                        SystemBarStyle.light(Color.TRANSPARENT, Color.argb(0x80, 0x1B, 0x1B, 0x1B))
-                    }
-                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
-            }
-            JustMyWeatherTheme(themeConfig) {
-                // Surface Compose testTags as resource-ids so UI tests (Maestro)
-                // can target controls that carry no stable text, like switches.
-                // The background paints the full edge-to-edge window (so the
-                // areas behind the system bars match the app), then the padding
-                // keeps every screen's content clear of bars and cutouts.
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                        .safeDrawingPadding()
-                        .semantics { testTagsAsResourceId = true },
-                ) {
-                    CompositionLocalProvider(LocalConventions provides conventions) {
-                        App(
-                            homeViewModel = homeViewModel,
-                            customizeViewModel = customizeViewModel,
-                            appSettingsViewModel = appSettingsViewModel,
-                            regionViewModel = regionViewModel,
-                            alertsViewModel = alertsViewModel,
-                            placesViewModel = placesViewModel,
-                            themeConfig = themeConfig,
-                            onThemeChange = themeViewModel::save,
-                            onEnterAlerts = ::requestNotificationsIfNeeded,
-                            loadBugReportState = ::bugReportState,
-                            adsRemoved = adsRemoved,
-                            canShowAds = canShowAds,
-                            privacyOptionsRequired = privacyOptionsRequired,
-                            onPrivacyChoices = { container.adsConsent.showPrivacyOptions(this@MainActivity) },
-                            onBuyRemoveAds = { appSettingsViewModel.buyRemoveAds(this@MainActivity) },
-                            onRateApp = { openStoreListing() },
-                            version = "${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
-                            adBanner = { AdBanner(unitId = bannerUnitId) },
-                            support = supportHost,
-                        )
-                    }
-                }
-            }
+            AppRoot(
+                graph = container,
+                viewModels = viewModels,
+                canShowAds = container.adsConsent.canShowAds,
+                privacyOptionsRequired = container.adsConsent.privacyOptionsRequired,
+                onEnterAlerts = ::requestNotificationsIfNeeded,
+                onPrivacyChoices = { container.adsConsent.showPrivacyOptions(this@MainActivity) },
+                onBuyRemoveAds = { appSettingsViewModel.buyRemoveAds(this@MainActivity) },
+                onRateApp = { openStoreListing() },
+                version = "${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+                adBanner = { AdBanner(unitId = bannerUnitId) },
+                support = supportHost,
+                // The bars sit on the app-painted background, and the user can
+                // force a mood against the system setting — so bar icon contrast
+                // must follow the app's resolved mood, not the system default
+                // that the argless enableEdgeToEdge() above assumes.
+                onDarkChanged = { dark ->
+                    val bars =
+                        if (dark) {
+                            SystemBarStyle.dark(Color.TRANSPARENT)
+                        } else {
+                            // The darkScrim only shows on API 24/25, which can't
+                            // render dark nav-bar icons: a translucent dark bar
+                            // keeps the white buttons visible over a light theme.
+                            SystemBarStyle.light(Color.TRANSPARENT, Color.argb(0x80, 0x1B, 0x1B, 0x1B))
+                        }
+                    enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+                },
+            )
         }
     }
 
-    /**
-     * What a bug report says about the app, read from the persisted stores and
-     * not from any screen's StateFlow: those are shared WhileSubscribed and
-     * report their defaults to a reader that arrives before a subscriber.
-     * The glance state is the exception — it lives only in the ViewModel.
-     * Its StateFlow starts at Loading, and first() on a StateFlow returns the
-     * current value at once, so the wait is for a SETTLED state: first {}
-     * subscribes, which starts the upstream. A glance still loading when the
-     * wait ends is reported as exactly that — a stuck fetch is the kind of
-     * thing a bug report is for — rather than blocking the report.
-     */
-    private suspend fun bugReportState(): List<Pair<String, String>> {
-        val config = container.viewConfigRepository.config.first()
-        val home =
-            withTimeoutOrNull(GLANCE_WAIT_MS) {
-                homeViewModel.state.first { it !is HomeUiState.Loading }
-            }
-        return listOf(
-            "Glance" to (home?.describe() ?: "Loading (still, after ${GLANCE_WAIT_MS}ms)"),
-            "Location permission" to container.locationProvider.hasPermission().toString(),
-            "Visible modules" to config.visible.size.toString(),
-            "Density" to config.density.name,
-            "Theme" to container.themeConfigRepository.config.first().toString(),
-            "Gadgetbridge" to container.gadgetbridgeSettingsRepository.enabled.first().toString(),
+    private val viewModels by lazy {
+        AppViewModels(
+            home = homeViewModel,
+            customize = customizeViewModel,
+            appSettings = appSettingsViewModel,
+            region = regionViewModel,
+            alerts = alertsViewModel,
+            places = placesViewModel,
+            theme = themeViewModel,
         )
     }
 
-    /** The support mail's Android half: Build facts, this process's own
-     * logcat, and the ACTION_SENDTO hand-off (support/SupportIntents.kt). */
     private val bannerUnitId: String
         get() = AdPolicy.bannerUnitId(BuildConfig.DEBUG, BuildConfig.ADMOB_BANNER_UNIT_ID)
 

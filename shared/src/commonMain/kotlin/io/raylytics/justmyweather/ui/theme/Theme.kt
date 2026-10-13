@@ -120,9 +120,10 @@ fun accentColor(accent: AccentChoice): Color =
         AccentChoice.VIOLET -> AccentViolet
     }
 
+@Composable
 private fun fontFamily(type: TypeChoice): FontFamily =
     when (type) {
-        TypeChoice.SANS -> FontFamily.SansSerif
+        TypeChoice.SANS -> sansFamily()
         TypeChoice.SERIF -> FontFamily.Serif
         TypeChoice.MONO -> FontFamily.Monospace
     }

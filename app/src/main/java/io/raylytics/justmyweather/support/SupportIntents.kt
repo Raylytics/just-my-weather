@@ -19,8 +19,9 @@ fun currentAppInfo(): AppInfo =
     AppInfo(
         versionName = BuildConfig.VERSION_NAME,
         versionCode = BuildConfig.VERSION_CODE,
-        androidRelease = Build.VERSION.RELEASE,
-        sdkInt = Build.VERSION.SDK_INT,
+        osName = "Android",
+        osRelease = Build.VERSION.RELEASE,
+        osDetail = "API ${Build.VERSION.SDK_INT}",
         manufacturer = Build.MANUFACTURER,
         model = Build.MODEL,
     )

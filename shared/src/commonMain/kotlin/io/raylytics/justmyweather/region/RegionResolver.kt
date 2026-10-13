@@ -14,9 +14,11 @@ import io.raylytics.justmyweather.view.WindUnit
 enum class RegionSource(val description: String) {
     MANUAL("chosen by you"),
     PHONE_NETWORK("from your phone's mobile network"),
+    STOREFRONT("from your App Store country"),
     PHONE_LOCATION("from your phone's location"),
     PLACE("from the place the app is showing"),
     DEVICE_SETTINGS("from your phone's language settings"),
+    TIME_ZONE("from your phone's time zone"),
     DEFAULT("the app's default"),
 }
 
@@ -35,6 +37,12 @@ data class RegionClues(
     val place: String? = null,
     /** The country in the phone's language settings (en-GB → GB). */
     val deviceSettings: String? = null,
+    /** iOS: the App Store storefront's country — Apple's analogue of a Play
+     * country, and the strongest clue an iPhone offers without a SIM API. */
+    val storefront: String? = null,
+    /** iOS: the country the phone's time zone belongs to, via the
+     * gazetteer — the last clue before the default. */
+    val timeZone: String? = null,
 )
 
 /** The region in force, and the clue that decided it. */
@@ -81,9 +89,11 @@ object RegionResolver {
             listOf(
                 settings.manualRegion to RegionSource.MANUAL,
                 clues.phoneNetwork to RegionSource.PHONE_NETWORK,
+                clues.storefront to RegionSource.STOREFRONT,
                 clues.phoneLocation to RegionSource.PHONE_LOCATION,
                 clues.place to RegionSource.PLACE,
                 clues.deviceSettings to RegionSource.DEVICE_SETTINGS,
+                clues.timeZone to RegionSource.TIME_ZONE,
             )
         val (code, source) =
             ordered.firstOrNull { (code, _) -> code != null && Regions.isKnown(code) }

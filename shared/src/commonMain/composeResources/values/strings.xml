@@ -67,6 +67,8 @@
     <!-- alerts -->
     <string name="alerts_add_alert">Add an alert</string>
     <string name="alerts_alert_created">Alert created</string>
+    <string name="alerts_background_best_effort">On iPhone, iOS decides when the app may check in the background, so an alert can arrive late. Opening the app checks at once.</string>
+    <string name="alerts_background_refresh_off">Background App Refresh is off for Just My Weather, so alerts are only checked while the app is open. Turn it on in Settings → General → Background App Refresh.</string>
     <string name="alerts_check_every">Check every</string>
     <string name="alerts_deliver_silently_00_00">Deliver silently %1$s:00–%2$s:00</string>
     <string name="alerts_ends">Ends</string>
@@ -107,14 +109,18 @@
     <string name="settings_app_settings">App settings</string>
     <string name="settings_change_what_agreed_about">Change what you agreed to about ads.</string>
     <string name="settings_checking_google_play">Checking with Google Play…</string>
+    <string name="settings_checking_google_play_ios">Checking with the App Store…</string>
     <string name="settings_hands_each_new_reading">Hands each new reading to Gadgetbridge, which passes it to a paired watch. Does nothing if Gadgetbridge isn't installed.</string>
     <string name="settings_help">Help</string>
     <string name="settings_if_has_earned_place">If it has earned a place on your phone, a rating on Google Play helps others find it.</string>
+    <string name="settings_if_has_earned_place_ios">If it has earned a place on your phone, a rating on the App Store helps others find it.</string>
     <string name="settings_location">Location</string>
     <string name="settings_no_accounts_what_leaves">No accounts. What leaves your phone, the ad included, and why.</string>
     <string name="settings_no_ads_now">No ads for now</string>
     <string name="settings_no_purchase_found_google">No purchase found for this Google account.</string>
+    <string name="settings_no_purchase_found_google_ios">No purchase found for this Apple Account.</string>
     <string name="settings_opening_google_play">Opening Google Play…</string>
+    <string name="settings_opening_google_play_ios">Opening the App Store…</string>
     <string name="settings_privacy_choices">Privacy choices</string>
     <string name="settings_privacy_policy">Privacy policy</string>
     <string name="settings_rate_just_my_weather">Rate Just My Weather</string>
@@ -124,12 +130,15 @@
     <string name="settings_something_wrong_email_developer">Something wrong? Email the developer, with your app version and device attached.</string>
     <string name="settings_submit_idea_developer">Submit your idea to the developer</string>
     <string name="settings_thank_banner_gone">Thank you. The banner is gone on every phone signed in to this Google account.</string>
+    <string name="settings_thank_banner_gone_ios">Thank you. The banner is gone on every device signed in to this Apple Account.</string>
     <string name="settings_banner_appears_once_app">The banner appears once the app has reached Google.</string>
     <string name="settings_version">Version %1$s</string>
     <string name="settings_waiting_google_play_confirm">Waiting for Google Play to confirm the price…</string>
+    <string name="settings_waiting_google_play_confirm_ios">Waiting for the App Store to confirm the price…</string>
     <string name="settings_weather_data_from_us">Weather data from the US National Weather Service (public domain) in the United States, and from MET Norway (CC BY 4.0) everywhere else and for days eight and nine. Places from the US Census Gazetteer (public domain) and GeoNames (CC BY 4.0).</string>
     <string name="settings_where_law_asks_first">Where the law asks first, the banner waits for your choice in the consent form.</string>
     <string name="settings_purchase_pending_banner">Your purchase is pending. The banner goes once Google Play confirms the payment.</string>
+    <string name="settings_purchase_pending_banner_ios">Your purchase is pending. The banner goes once the App Store confirms the payment.</string>
     <!-- region -->
     <string name="region_auto">Auto</string>
     <string name="region_auto_named">Auto (%1$s)</string>

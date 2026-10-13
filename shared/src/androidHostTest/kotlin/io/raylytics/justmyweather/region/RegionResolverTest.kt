@@ -81,6 +81,43 @@ class RegionResolverTest {
         assertEquals(RegionClues(deviceSettings = "IE"), RegionRepository.gather(nothing, null))
     }
 
+    /** iOS's signals: no network country, but a storefront and a time zone. */
+    private class IosSignals(
+        val store: String? = null,
+        val device: String? = null,
+        val zone: String? = null,
+    ) : RegionSignals {
+        override fun phoneNetwork(): String? = null
+
+        override suspend fun phoneLocation(): String? = null
+
+        override suspend fun countryOf(place: WeatherLocation): String? = null
+
+        override fun deviceSettings() = device
+
+        override fun storefront() = store
+
+        override suspend fun timeZoneCountry() = zone
+    }
+
+    @Test
+    fun `on iOS the storefront comes second and the time zone last`() = runTest {
+        assertEquals(RegionClues(storefront = "AU"), RegionRepository.gather(IosSignals("au", "GB", "NZ"), null))
+        assertEquals(RegionClues(deviceSettings = "GB"), RegionRepository.gather(IosSignals(null, "GB", "NZ"), null))
+        assertEquals(RegionClues(timeZone = "NZ"), RegionRepository.gather(IosSignals(null, null, "NZ"), null))
+
+        fun source(clues: RegionClues) = RegionResolver.resolve(RegionSettings.AUTOMATIC, clues).source
+        assertEquals(RegionSource.STOREFRONT, source(RegionClues(storefront = "AU", phoneLocation = "NZ")))
+        assertEquals(RegionSource.TIME_ZONE, source(RegionClues(timeZone = "NZ")))
+        assertEquals(RegionSource.DEVICE_SETTINGS, source(RegionClues(deviceSettings = "GB", timeZone = "NZ")))
+    }
+
+    @Test
+    fun `a storefront is a strong clue, so a remembered place does not outrank it`() {
+        val merged = RegionRepository.merge(RegionClues(place = "GB"), RegionClues(storefront = "AU"))
+        assertEquals(RegionClues(storefront = "AU"), merged)
+    }
+
     @Test
     fun `settings and clues survive storage, and junk reads as automatic`() {
         val settings = RegionSettings(manualRegion = "AU", wind = WindUnit.KNOTS)

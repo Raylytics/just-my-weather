@@ -16,8 +16,9 @@ class SupportMailTest {
         AppInfo(
             versionName = "0.2.0",
             versionCode = 7,
-            androidRelease = "15",
-            sdkInt = 35,
+            osName = "Android",
+            osRelease = "15",
+            osDetail = "API 35",
             manufacturer = "Google",
             model = "Pixel 7",
         )

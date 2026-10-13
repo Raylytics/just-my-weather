@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import io.raylytics.justmyweather.Platform
 import io.raylytics.justmyweather.billing.RemoveAdsStatus
+import io.raylytics.justmyweather.currentPlatform
 import io.raylytics.justmyweather.resources.Res
 import io.raylytics.justmyweather.resources.common_done
 import io.raylytics.justmyweather.resources.common_places
@@ -42,18 +44,23 @@ import io.raylytics.justmyweather.resources.settings_app_settings
 import io.raylytics.justmyweather.resources.settings_banner_appears_once_app
 import io.raylytics.justmyweather.resources.settings_change_what_agreed_about
 import io.raylytics.justmyweather.resources.settings_checking_google_play
+import io.raylytics.justmyweather.resources.settings_checking_google_play_ios
 import io.raylytics.justmyweather.resources.settings_hands_each_new_reading
 import io.raylytics.justmyweather.resources.settings_help
 import io.raylytics.justmyweather.resources.settings_if_has_earned_place
+import io.raylytics.justmyweather.resources.settings_if_has_earned_place_ios
 import io.raylytics.justmyweather.resources.settings_location
 import io.raylytics.justmyweather.resources.settings_no_accounts_what_leaves
 import io.raylytics.justmyweather.resources.settings_no_ads_now
 import io.raylytics.justmyweather.resources.settings_no_purchase_found_google
+import io.raylytics.justmyweather.resources.settings_no_purchase_found_google_ios
 import io.raylytics.justmyweather.resources.settings_one_time_purchase_no
 import io.raylytics.justmyweather.resources.settings_opening_google_play
+import io.raylytics.justmyweather.resources.settings_opening_google_play_ios
 import io.raylytics.justmyweather.resources.settings_privacy_choices
 import io.raylytics.justmyweather.resources.settings_privacy_policy
 import io.raylytics.justmyweather.resources.settings_purchase_pending_banner
+import io.raylytics.justmyweather.resources.settings_purchase_pending_banner_ios
 import io.raylytics.justmyweather.resources.settings_rate_just_my_weather
 import io.raylytics.justmyweather.resources.settings_remove_ads
 import io.raylytics.justmyweather.resources.settings_remove_ads_2
@@ -61,12 +68,15 @@ import io.raylytics.justmyweather.resources.settings_send_gadgetbridge
 import io.raylytics.justmyweather.resources.settings_something_wrong_email_developer
 import io.raylytics.justmyweather.resources.settings_submit_idea_developer
 import io.raylytics.justmyweather.resources.settings_thank_banner_gone
+import io.raylytics.justmyweather.resources.settings_thank_banner_gone_ios
 import io.raylytics.justmyweather.resources.settings_tile_alert_or
 import io.raylytics.justmyweather.resources.settings_version
 import io.raylytics.justmyweather.resources.settings_waiting_google_play_confirm
+import io.raylytics.justmyweather.resources.settings_waiting_google_play_confirm_ios
 import io.raylytics.justmyweather.resources.settings_weather_data_from_us
 import io.raylytics.justmyweather.resources.settings_where_law_asks_first
 import io.raylytics.justmyweather.ui.theme.textButtonColors
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -164,14 +174,18 @@ fun AppSettingsScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
-                AdvancedSection(
-                    gadgetbridgeEnabled = gadgetbridgeEnabled,
-                    onSetGadgetbridgeEnabled = onSetGadgetbridgeEnabled,
-                )
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
+                // Gadgetbridge is an Android app; the hand-off has no iOS
+                // counterpart (docs/PARITY.md, "Dropped").
+                if (currentPlatform == Platform.ANDROID) {
+                    AdvancedSection(
+                        gadgetbridgeEnabled = gadgetbridgeEnabled,
+                        onSetGadgetbridgeEnabled = onSetGadgetbridgeEnabled,
+                    )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
+                }
                 AboutSection(version = version)
             }
         }
@@ -203,7 +217,10 @@ private fun AdsSection(
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                 Text(stringResource(Res.string.settings_ads_removed), style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = stringResource(Res.string.settings_thank_banner_gone),
+                    text =
+                        stringResource(
+                            onStore(Res.string.settings_thank_banner_gone, Res.string.settings_thank_banner_gone_ios),
+                        ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -262,7 +279,12 @@ private fun AdsSection(
                     if (price != null) {
                         stringResource(Res.string.settings_one_time_purchase_no)
                     } else {
-                        stringResource(Res.string.settings_waiting_google_play_confirm)
+                        stringResource(
+                            onStore(
+                                Res.string.settings_waiting_google_play_confirm,
+                                Res.string.settings_waiting_google_play_confirm_ios,
+                            ),
+                        )
                     },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -271,12 +293,29 @@ private fun AdsSection(
         val note =
             when (status) {
                 RemoveAdsStatus.Idle -> null
-                RemoveAdsStatus.Busy -> stringResource(Res.string.settings_opening_google_play)
-                RemoveAdsStatus.Restoring -> stringResource(Res.string.settings_checking_google_play)
+                RemoveAdsStatus.Busy ->
+                    stringResource(
+                        onStore(Res.string.settings_opening_google_play, Res.string.settings_opening_google_play_ios),
+                    )
+                RemoveAdsStatus.Restoring ->
+                    stringResource(
+                        onStore(Res.string.settings_checking_google_play, Res.string.settings_checking_google_play_ios),
+                    )
                 RemoveAdsStatus.Pending ->
-                    stringResource(Res.string.settings_purchase_pending_banner)
+                    stringResource(
+                        onStore(
+                            Res.string.settings_purchase_pending_banner,
+                            Res.string.settings_purchase_pending_banner_ios,
+                        ),
+                    )
                 is RemoveAdsStatus.Failed -> status.message
-                RemoveAdsStatus.NothingToRestore -> stringResource(Res.string.settings_no_purchase_found_google)
+                RemoveAdsStatus.NothingToRestore ->
+                    stringResource(
+                        onStore(
+                            Res.string.settings_no_purchase_found_google,
+                            Res.string.settings_no_purchase_found_google_ios,
+                        ),
+                    )
             }
         if (note != null) {
             Text(
@@ -425,7 +464,10 @@ private fun HelpSection(
         ) {
             Text(stringResource(Res.string.settings_rate_just_my_weather), style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = stringResource(Res.string.settings_if_has_earned_place),
+                text =
+                    stringResource(
+                        onStore(Res.string.settings_if_has_earned_place, Res.string.settings_if_has_earned_place_ios),
+                    ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -492,3 +534,8 @@ private fun AboutLink(
         )
     }
 }
+
+/** The store's own name in a sentence: Google Play on Android, the App Store
+ * on iOS — each wording is its own catalog entry. */
+private fun onStore(play: StringResource, appStore: StringResource): StringResource =
+    if (currentPlatform == Platform.IOS) appStore else play

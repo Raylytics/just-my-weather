@@ -32,6 +32,8 @@ object RegionCodec {
         val phoneLocation: String? = null,
         val place: String? = null,
         val deviceSettings: String? = null,
+        val storefront: String? = null,
+        val timeZone: String? = null,
     )
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -62,11 +64,20 @@ object RegionCodec {
     }
 
     fun encodeClues(clues: RegionClues): String =
-        json.encodeToString(StoredClues(clues.phoneNetwork, clues.phoneLocation, clues.place, clues.deviceSettings))
+        json.encodeToString(
+            StoredClues(
+                clues.phoneNetwork,
+                clues.phoneLocation,
+                clues.place,
+                clues.deviceSettings,
+                clues.storefront,
+                clues.timeZone,
+            ),
+        )
 
     fun decodeClues(raw: String?): RegionClues? {
         if (raw.isNullOrBlank()) return null
         val c = runCatching { json.decodeFromString<StoredClues>(raw) }.getOrNull() ?: return null
-        return RegionClues(c.phoneNetwork, c.phoneLocation, c.place, c.deviceSettings)
+        return RegionClues(c.phoneNetwork, c.phoneLocation, c.place, c.deviceSettings, c.storefront, c.timeZone)
     }
 }

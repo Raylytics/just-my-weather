@@ -48,12 +48,15 @@ import io.raylytics.justmyweather.alerts.AlertRule
 import io.raylytics.justmyweather.alerts.AlertSettings
 import io.raylytics.justmyweather.alerts.AlertSubject
 import io.raylytics.justmyweather.alerts.AlertWindow
+import io.raylytics.justmyweather.alerts.BackgroundAlerts
 import io.raylytics.justmyweather.alerts.Comparison
 import io.raylytics.justmyweather.alerts.FireLimit
 import io.raylytics.justmyweather.resources.Res
 import io.raylytics.justmyweather.resources.alerts_add_alert
 import io.raylytics.justmyweather.resources.alerts_alert_created
 import io.raylytics.justmyweather.resources.alerts_all_alerts
+import io.raylytics.justmyweather.resources.alerts_background_best_effort
+import io.raylytics.justmyweather.resources.alerts_background_refresh_off
 import io.raylytics.justmyweather.resources.alerts_check_every
 import io.raylytics.justmyweather.resources.alerts_deliver_silently_00_00
 import io.raylytics.justmyweather.resources.alerts_ends
@@ -108,6 +111,9 @@ fun AlertsScreen(
     officialAlertsHere: Boolean? = null,
     /** One-shot confirmations from the view model; see [AlertsEvent]. */
     events: Flow<AlertsEvent> = emptyFlow(),
+    /** How dependably background checks run here; anything but RELIABLE
+     * is said up front (iOS). */
+    backgroundAlerts: BackgroundAlerts = BackgroundAlerts.RELIABLE,
 ) {
     // The one piece of feedback this screen gives beyond its own state: a
     // brief "Alert created" at the foot of the screen. The new rule row does
@@ -146,6 +152,8 @@ fun AlertsScreen(
                 Text(stringResource(Res.string.common_alerts), style = MaterialTheme.typography.titleMedium)
                 TextButton(onClick = onDone) { Text(stringResource(Res.string.common_done)) }
             }
+
+            BackgroundAlertsNotice(backgroundAlerts)
 
             if (rules.isEmpty()) {
                 Text(
@@ -631,3 +639,24 @@ private fun <T> ChipRow(
 
 /** An hour as a clock writes it: 7 → "07". */
 private fun twoDigits(hour: Int): String = hour.toString().padStart(2, '0')
+
+/** Said once, above everything, when background checks are not on a clock
+ * the app controls: quietly when iOS merely decides the timing, plainly in
+ * the accent colour when Background App Refresh is off and nothing runs. */
+@Composable
+private fun BackgroundAlertsNotice(backgroundAlerts: BackgroundAlerts) {
+    val (text, color) =
+        when (backgroundAlerts) {
+            BackgroundAlerts.RELIABLE -> return
+            BackgroundAlerts.BEST_EFFORT ->
+                stringResource(Res.string.alerts_background_best_effort) to MaterialTheme.colorScheme.onSurfaceVariant
+            BackgroundAlerts.REFRESH_OFF ->
+                stringResource(Res.string.alerts_background_refresh_off) to MaterialTheme.colorScheme.primary
+        }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = color,
+        modifier = Modifier.padding(top = 4.dp, bottom = 12.dp).testTag("background-alerts-notice"),
+    )
+}

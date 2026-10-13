@@ -29,6 +29,14 @@ interface RegionSignals {
 
     /** The country in the phone's language settings. */
     fun deviceSettings(): String?
+
+    /** The App Store storefront's country. iOS only; Android has no store
+     * signal it can read, so the default says nothing. */
+    fun storefront(): String? = null
+
+    /** The country of the phone's time zone. iOS only (it has no network
+     * country to read); null elsewhere. */
+    suspend fun timeZoneCountry(): String? = null
 }
 
 /**
@@ -101,7 +109,8 @@ class RegionRepository(
          */
         internal fun merge(stored: RegionClues?, gathered: RegionClues): RegionClues {
             val sawNothingStrong =
-                gathered.phoneNetwork == null && gathered.phoneLocation == null && gathered.place == null
+                gathered.phoneNetwork == null && gathered.storefront == null &&
+                    gathered.phoneLocation == null && gathered.place == null
             return if (sawNothingStrong && stored?.place != null) gathered.copy(place = stored.place) else gathered
         }
 
@@ -116,9 +125,11 @@ class RegionRepository(
         internal suspend fun gather(signals: RegionSignals, place: WeatherLocation?): RegionClues {
             fun String?.known(): String? = this?.uppercase()?.takeIf(Regions::isKnown)
             signals.phoneNetwork().known()?.let { return RegionClues(phoneNetwork = it) }
+            signals.storefront().known()?.let { return RegionClues(storefront = it) }
             signals.phoneLocation().known()?.let { return RegionClues(phoneLocation = it) }
             place?.let { (it.country ?: signals.countryOf(it)).known() }?.let { return RegionClues(place = it) }
-            return RegionClues(deviceSettings = signals.deviceSettings().known())
+            signals.deviceSettings().known()?.let { return RegionClues(deviceSettings = it) }
+            return RegionClues(timeZone = signals.timeZoneCountry().known())
         }
     }
 }

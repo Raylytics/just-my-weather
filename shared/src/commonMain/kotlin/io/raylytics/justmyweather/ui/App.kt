@@ -16,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import io.raylytics.justmyweather.alerts.BackgroundAlerts
 import io.raylytics.justmyweather.resources.Res
 import io.raylytics.justmyweather.resources.app_my_location
 import io.raylytics.justmyweather.resources.app_saved
@@ -99,6 +100,8 @@ fun App(
     adBanner: @Composable () -> Unit,
     /** The support mail's platform half: app facts, logs, and the hand-off. */
     support: SupportHost,
+    /** How dependably background alert checks run on this phone. */
+    backgroundAlerts: BackgroundAlerts = BackgroundAlerts.RELIABLE,
     /** The app state a bug report attaches, read fresh from the stores. */
     loadBugReportState: suspend () -> List<Pair<String, String>>,
 ) {
@@ -359,6 +362,7 @@ fun App(
                 officialAlertsHere = officialAlertsHere,
                 onDone = { screen = Screen.HOME },
                 events = alertsViewModel.events,
+                backgroundAlerts = backgroundAlerts,
             )
         }
     }
