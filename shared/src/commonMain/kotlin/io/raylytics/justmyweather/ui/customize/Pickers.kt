@@ -34,6 +34,7 @@ import io.raylytics.justmyweather.view.ThemeConfig
 import io.raylytics.justmyweather.view.ThemeMood
 import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.TypeChoice
+import kotlin.math.roundToInt
 
 /*
  * The option pickers the Customize screen is built from, shared with the
@@ -44,7 +45,7 @@ import io.raylytics.justmyweather.view.TypeChoice
  */
 
 @Composable
-internal fun ThemePicker(
+fun ThemePicker(
     theme: ThemeConfig,
     onChange: (ThemeConfig) -> Unit,
 ) {
@@ -121,13 +122,13 @@ internal fun <T> MultiChipRow(
 
 /** The slider's own stops are fours; a float from it becomes the nearest one. */
 internal fun snapToStep(value: Float): Int {
-    val stepped = Math.round((value - HourlyHours.MIN) / HourlyHours.STEP) * HourlyHours.STEP + HourlyHours.MIN
+    val stepped = ((value - HourlyHours.MIN) / HourlyHours.STEP).roundToInt() * HourlyHours.STEP + HourlyHours.MIN
     return HourlyHours.clamp(stepped)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun <T> ChipRow(
+fun <T> ChipRow(
     options: List<T>,
     selected: T,
     label: (T) -> String,
@@ -149,7 +150,7 @@ internal fun <T> ChipRow(
 }
 
 @Composable
-internal fun DensityPicker(
+fun DensityPicker(
     selected: Density,
     onSelect: (Density) -> Unit,
 ) {
@@ -169,7 +170,7 @@ internal fun DensityPicker(
 /** One switch: which clock the screen's times read in. Off is the phone's;
  * on is the place's, for planning a day somewhere else. */
 @Composable
-internal fun TimesInPicker(
+fun TimesInPicker(
     timesIn: TimesIn,
     onSet: (TimesIn) -> Unit,
 ) {
@@ -201,7 +202,7 @@ internal fun TimesInPicker(
  * sets the horizon, not the tile's size.
  */
 @Composable
-internal fun SunPicker(
+fun SunPicker(
     show: Boolean,
     sunDays: Int,
     onSetSunDays: (Int) -> Unit,
@@ -220,7 +221,7 @@ internal fun SunPicker(
         )
         Slider(
             value = sunDays.toFloat(),
-            onValueChange = { onSetSunDays(Math.round(it)) },
+            onValueChange = { onSetSunDays(it.roundToInt()) },
             valueRange = SunDays.MIN.toFloat()..SunDays.MAX.toFloat(),
             steps = SunDays.MAX - SunDays.MIN - 1,
             modifier = Modifier.testTag("sun-days-slider"),
@@ -229,7 +230,7 @@ internal fun SunPicker(
 }
 
 @Composable
-internal fun ForecastPicker(
+fun ForecastPicker(
     /** Whether the forecast module is on — switched in the field list below,
      * like every other module. */
     show: Boolean,
@@ -298,7 +299,7 @@ internal fun ForecastPicker(
         )
         Slider(
             value = dailyDays.toFloat(),
-            onValueChange = { onSetDailyDays(Math.round(it)) },
+            onValueChange = { onSetDailyDays(it.roundToInt()) },
             valueRange = DailyDays.MIN.toFloat()..DailyDays.MAX.toFloat(),
             steps = DailyDays.MAX - DailyDays.MIN - 1,
             modifier = Modifier.testTag("daily-days-slider"),

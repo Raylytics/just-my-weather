@@ -31,6 +31,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import okio.IOException
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -556,9 +557,9 @@ class HomeViewModel(
  * location on screen and into a mail the privacy policy says has none. The
  * HTTP status is kept because it is what a bug report needs.
  */
-internal fun weatherErrorMessage(e: Throwable): String =
+fun weatherErrorMessage(e: Throwable): String =
     when {
-        e is java.io.IOException -> "Couldn't reach the weather service. Check your connection."
+        e is IOException -> "Couldn't reach the weather service. Check your connection."
         // NWS answers /points with 404 for anywhere it doesn't forecast.
         e is NwsHttpException && e.status == 404 && e.path.startsWith("/points/") ->
             "The National Weather Service doesn't forecast for this place. It covers the US."

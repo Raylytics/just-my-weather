@@ -44,7 +44,7 @@ import io.raylytics.justmyweather.view.packGridRows
 internal val TILE_CORNER = 10.dp
 
 /** Air between a tile's border and its content. */
-internal val TILE_PADDING = 10.dp
+val TILE_PADDING = 10.dp
 
 /** Floor for a flow-grid tile's height, so a one-column tile with a short
  * value is still a comfortable touch target. (A lattice tile's height is fixed

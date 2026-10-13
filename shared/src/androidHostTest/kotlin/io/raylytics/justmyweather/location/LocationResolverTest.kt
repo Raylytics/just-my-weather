@@ -19,7 +19,7 @@ class LocationResolverTest {
     private val home = WeatherLocation(38.25, -85.76, label = "")
 
     private fun provider(fix: WeatherLocation?) =
-        mock<LocationProvider> { on { lastKnownLocation() } doReturn fix }
+        mock<LocationSource> { on { lastKnownLocation() } doReturn fix }
 
     @Test
     fun `a chosen place outranks even a live fix`() = runTest {

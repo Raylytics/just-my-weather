@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.UUID
+import kotlin.uuid.Uuid
 
 /**
  * Backs the alerts screen. Like the customize screen, the persisted rule list is
@@ -131,7 +131,7 @@ class AlertsViewModel(
         window: AlertWindow = AlertWindow.NOW,
         limit: FireLimit = FireLimit.UNLIMITED,
     ) = edit(activates = { _, _ -> true }, confirmation = AlertsEvent.RULE_ADDED) {
-        it + AlertRule(UUID.randomUUID().toString(), subject, comparison, threshold, window = window, limit = limit)
+        it + AlertRule(Uuid.random().toString(), subject, comparison, threshold, window = window, limit = limit)
     }
 
     // Only an *enable* can make a rule newly fire; disabling just drops it, so

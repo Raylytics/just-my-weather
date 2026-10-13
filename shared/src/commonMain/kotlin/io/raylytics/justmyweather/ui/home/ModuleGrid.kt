@@ -195,7 +195,7 @@ private class TileMotion {
  * so the reflow is legible without a single tile recomposing for it.
  */
 @Composable
-internal fun ModuleGrid(
+fun ModuleGrid(
     modules: List<ModuleValue>,
     arranging: Boolean,
     spec: DensitySpec,

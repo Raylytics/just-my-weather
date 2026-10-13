@@ -1,6 +1,5 @@
 package io.raylytics.justmyweather.billing
 
-import android.app.Activity
 import io.raylytics.justmyweather.data.AdsEntitlementRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -77,7 +76,7 @@ class RemoveAdsManager(
 
     /** Opens the purchase sheet. The result lands on [status] and, when it is
      * a purchase, on [adsRemoved]. */
-    fun buy(activity: Activity) {
+    fun buy(activity: PurchaseHost) {
         _status.value = RemoveAdsStatus.Busy
         scope.launch {
             if (_offer.value == null) loadOffer()

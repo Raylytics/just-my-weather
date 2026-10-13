@@ -1,6 +1,5 @@
 package io.raylytics.justmyweather.ui.home
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -30,12 +29,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -60,7 +62,6 @@ import io.raylytics.justmyweather.view.ViewConfig
 import io.raylytics.justmyweather.view.render
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
-import java.util.Locale
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -69,7 +70,7 @@ import kotlin.time.Instant
 /** How often the observation age re-reads the clock. See [ObservedLine].
  * Internal so the instrumented test steps the clock by exactly one tick
  * instead of hardcoding a number that could drift from this one. */
-internal val AGE_TICK = 30.seconds
+val AGE_TICK = 30.seconds
 
 /** How often the sun row re-reads the clock, and how often MainActivity asks
  * the ViewModel to re-work the events. One constant because the two halves are
@@ -246,7 +247,7 @@ private fun GlanceView(
                     .testTag("locationLabel"),
         ) {
             Text(
-                text = snapshot.locationLabel.uppercase(Locale.getDefault()),
+                text = snapshot.locationLabel.toUpperCase(Locale.current),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -483,7 +484,7 @@ private fun NowContent(
  *    backgrounded glance costs nothing.
  */
 @Composable
-internal fun ObservedLine(
+fun ObservedLine(
     snapshot: WeatherSnapshot,
     /** The clock the time reads in. Defaults to the reading's own zone: a
      * station reading is taken where the weather is, and during a place

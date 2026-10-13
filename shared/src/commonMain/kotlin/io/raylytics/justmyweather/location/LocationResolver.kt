@@ -27,7 +27,7 @@ import io.raylytics.justmyweather.data.WeatherLocation
  * moves; a fix is only ever replaced by a newer fix, never by the default.
  */
 class LocationResolver(
-    private val provider: LocationProvider,
+    private val provider: LocationSource,
     private val store: LastLocationStore,
     /**
      * The place the user has chosen from their saved list, or null to follow

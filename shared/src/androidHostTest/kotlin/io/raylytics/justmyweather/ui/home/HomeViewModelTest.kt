@@ -15,8 +15,8 @@ import io.raylytics.justmyweather.data.metno.MetNoClient
 import io.raylytics.justmyweather.data.nws.HttpResult
 import io.raylytics.justmyweather.data.nws.HttpTransport
 import io.raylytics.justmyweather.data.nws.NwsClient
-import io.raylytics.justmyweather.location.LocationProvider
 import io.raylytics.justmyweather.location.LocationResolver
+import io.raylytics.justmyweather.location.LocationSource
 import io.raylytics.justmyweather.view.Density
 import io.raylytics.justmyweather.view.ForecastMode
 import io.raylytics.justmyweather.view.ModuleKey
@@ -192,7 +192,7 @@ class HomeViewModelTest {
                 // WeatherLocation.DEFAULT — which the fixtures answer for.
                 locationResolver =
                     LocationResolver(
-                        mock<LocationProvider> { on { lastKnownLocation() } doReturn null },
+                        mock<LocationSource> { on { lastKnownLocation() } doReturn null },
                         InMemoryLastLocationStore(),
                         chosenPlace = { place() },
                     ),

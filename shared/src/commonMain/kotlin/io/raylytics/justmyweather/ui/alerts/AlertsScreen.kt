@@ -41,8 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -52,13 +50,13 @@ import io.raylytics.justmyweather.alerts.AlertSubject
 import io.raylytics.justmyweather.alerts.AlertWindow
 import io.raylytics.justmyweather.alerts.Comparison
 import io.raylytics.justmyweather.alerts.FireLimit
+import io.raylytics.justmyweather.ui.exposeTestTags
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.ui.theme.chipBorder
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import java.util.Locale
 
 /**
  * Personal alerts: the user's own rules about everyday conditions. Quiet by
@@ -266,12 +264,7 @@ private fun QuietHoursRow(
             Text(
                 // Zero-padded 24h clock, e.g. "07:00" — reads as a clean time range.
                 text =
-                    String.format(
-                        Locale.US,
-                        "Deliver silently %02d:00–%02d:00",
-                        settings.quietStartHour,
-                        settings.quietEndHour,
-                    ),
+                    "Deliver silently ${twoDigits(settings.quietStartHour)}:00–${twoDigits(settings.quietEndHour)}:00",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 // labelMedium is 13sp on an 18sp line, so a bare clickable Text
@@ -351,7 +344,7 @@ private fun QuietWindowDialog(
                     Modifier
                         .scrollbar(scroll, gutter = 12.dp)
                         .verticalScroll(scroll)
-                        .semantics { testTagsAsResourceId = true },
+                        .exposeTestTags(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text("Starts", style = MaterialTheme.typography.labelMedium)
@@ -361,7 +354,7 @@ private fun QuietWindowDialog(
                 Text(
                     text =
                         if (valid) {
-                            String.format(Locale.US, "Silent %02d:00–%02d:00", start, end)
+                            "Silent ${twoDigits(start)}:00–${twoDigits(end)}:00"
                         } else {
                             "Start and end can't be the same hour — that would silence nothing."
                         },
@@ -383,7 +376,7 @@ private fun QuietWindowDialog(
                 colors = textButtonColors(),
                 modifier =
                     Modifier
-                        .semantics { testTagsAsResourceId = true }
+                        .exposeTestTags()
                         .testTag("saveQuietWindow"),
             ) { Text("Save") }
         },
@@ -412,7 +405,7 @@ private fun HourGrid(
                 selected = hour == selected,
                 border = chipBorder(hour == selected),
                 onClick = { onSelect(hour) },
-                label = { Text(String.format(Locale.US, "%02d", hour)) },
+                label = { Text(twoDigits(hour)) },
                 modifier = Modifier.testTag("${prefix}_hour_$hour"),
             )
         }
@@ -608,3 +601,6 @@ private fun <T> ChipRow(
         }
     }
 }
+
+/** An hour as a clock writes it: 7 → "07". */
+private fun twoDigits(hour: Int): String = hour.toString().padStart(2, '0')

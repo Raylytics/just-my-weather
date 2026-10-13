@@ -88,7 +88,7 @@ internal fun SunModuleContent(
  * telling them apart.
  */
 @Composable
-internal fun SunTimesTable(
+fun SunTimesTable(
     days: List<SunDay>,
     zone: TimeZone = TimeZone.currentSystemDefault(),
     arranging: Boolean = false,

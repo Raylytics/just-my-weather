@@ -1,9 +1,9 @@
 package io.raylytics.justmyweather.ui.settings
 
-import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.raylytics.justmyweather.billing.ProductOffer
+import io.raylytics.justmyweather.billing.PurchaseHost
 import io.raylytics.justmyweather.billing.RemoveAdsManager
 import io.raylytics.justmyweather.billing.RemoveAdsStatus
 import io.raylytics.justmyweather.data.GadgetbridgeSettingsRepository
@@ -37,7 +37,7 @@ class AppSettingsViewModel(
     val removeAdsOffer: StateFlow<ProductOffer?> = removeAds.offer
     val removeAdsStatus: StateFlow<RemoveAdsStatus> = removeAds.status
 
-    fun buyRemoveAds(activity: Activity) = removeAds.buy(activity)
+    fun buyRemoveAds(activity: PurchaseHost) = removeAds.buy(activity)
 
     fun restorePurchases() = removeAds.restore()
 }

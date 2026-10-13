@@ -1,6 +1,5 @@
 package io.raylytics.justmyweather.billing
 
-import android.app.Activity
 import kotlinx.coroutines.flow.Flow
 
 /*
@@ -54,7 +53,7 @@ interface BillingGateway {
 
     /** Opens Play's purchase sheet over [activity]; the outcome arrives on
      * [events]. Must be called on the main thread. */
-    fun launchPurchase(activity: Activity, productId: String)
+    fun launchPurchase(activity: PurchaseHost, productId: String)
 
     val events: Flow<BillingEvent>
 }

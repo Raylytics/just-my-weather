@@ -6,6 +6,8 @@ plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.compose")
     id("org.jlleitschuh.gradle.ktlint")
 }
 
@@ -40,6 +42,9 @@ kotlin {
     sourceSets {
         all {
             languageSettings.optIn("kotlin.time.ExperimentalTime")
+            languageSettings.optIn("kotlin.uuid.ExperimentalUuidApi")
+            // BackHandler: common in Compose Multiplatform, still marked experimental.
+            languageSettings.optIn("androidx.compose.ui.ExperimentalComposeUiApi")
         }
         commonMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
@@ -51,6 +56,18 @@ kotlin {
             // underneath, so arithmetic and zone rules are the ones the app
             // always used; formatting stays on java.time itself (TimeFormat.kt).
             api("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+
+            // The UI. Compose Multiplatform 1.11.1 is androidx Compose 1.11.2 /
+            // Material 3 1.4.0 on Android — the versions the app's BOM pins
+            // (just-my-weather-nyt.1), so Android draws with exactly what it did.
+            api("org.jetbrains.compose.runtime:runtime:1.11.1")
+            api("org.jetbrains.compose.foundation:foundation:1.11.1")
+            api("org.jetbrains.compose.ui:ui:1.11.1")
+            api("org.jetbrains.compose.material3:material3:1.9.0")
+            implementation("org.jetbrains.compose.ui:ui-backhandler:1.11.1")
+            implementation("org.jetbrains.compose.components:components-resources:1.11.1")
+            api("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.6")
+            api("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.6")
         }
         // The Android side of the seams, at the versions the app shipped with:
         // OkHttp under HttpTransport, DataStore under every settings store.

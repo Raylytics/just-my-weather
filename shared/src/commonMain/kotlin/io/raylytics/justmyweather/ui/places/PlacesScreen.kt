@@ -34,7 +34,7 @@ import io.raylytics.justmyweather.data.places.Place
 import io.raylytics.justmyweather.data.places.SavedPlaces
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.textButtonColors
-import java.util.Locale
+import io.raylytics.justmyweather.view.fixedDecimals
 
 /**
  * Choose where the weather is for.
@@ -317,4 +317,4 @@ private fun coordinateLabel(location: WeatherLocation): String =
  * documents.
  */
 internal fun coordinateLabel(latitude: Double, longitude: Double): String =
-    String.format(Locale.US, "%.2f, %.2f", latitude, longitude)
+    "${fixedDecimals(latitude, 2)}, ${fixedDecimals(longitude, 2)}"
