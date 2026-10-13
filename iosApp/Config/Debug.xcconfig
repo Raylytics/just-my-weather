@@ -1,0 +1,4 @@
+// Debug always serves Google's SAMPLE ids — labelled test ads that earn
+// nothing (clicking one's own live ads gets an AdMob account suspended).
+ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
+ADMOB_BANNER_UNIT_ID = ca-app-pub-3940256099942544/2435281174

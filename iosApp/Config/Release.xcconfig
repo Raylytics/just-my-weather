@@ -1,0 +1,6 @@
+// Release reads the real AdMob ids from AdMob.xcconfig (gitignored; copy
+// AdMob.xcconfig.example). Without it, release falls back to the samples, and
+// scripts/ios/release-testflight.sh refuses to upload a build that carries them.
+ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
+ADMOB_BANNER_UNIT_ID = ca-app-pub-3940256099942544/2435281174
+#include? "AdMob.xcconfig"

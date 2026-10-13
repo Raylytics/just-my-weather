@@ -1,0 +1,96 @@
+# The iOS app, as XcodeGen builds it: `cd iosApp && xcodegen`. The .xcodeproj
+# is generated and not committed — this file is the project. The app is a thin
+# SwiftUI host: the UI and logic are the shared Kotlin module (../shared), and
+# the Swift in JustMyWeather/Platform is the iOS twin of each Android service.
+name: JustMyWeather
+options:
+  bundleIdPrefix: io.raylytics
+  deploymentTarget:
+    iOS: "15.1" # open-frame's floor (plan decision 5)
+  createIntermediateGroups: true
+  developmentLanguage: en
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+settings:
+  base:
+    # One semver for both apps: scripts/sync-version.sh writes this from the
+    # repo-root VERSION file. The build number is iOS's own counter
+    # (scripts/ios/bump-build-number.sh), independent of Android's versionCode.
+    MARKETING_VERSION: 0.3.1
+    CURRENT_PROJECT_VERSION: 1
+    # No DEVELOPMENT_TEAM here, not even "": these settings override the
+    # xcconfigs, and the team comes from Config/Team.xcconfig (gitignored,
+    # written by scripts/ios/setup-team.sh).
+packages:
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads
+    from: 12.11.0
+  GoogleUserMessagingPlatform:
+    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform
+    from: 3.0.0
+targets:
+  JustMyWeather:
+    type: application
+    platform: iOS
+    sources:
+      - path: JustMyWeather
+        excludes: [Products.storekit]
+      # Referenced by the scheme for local StoreKit testing; never shipped.
+      - path: JustMyWeather/Products.storekit
+        buildPhase: none
+      # The gazetteer, shared with Android rather than copied.
+      - path: ../app/src/main/assets/places.tsv
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.raylytics.justmyweather
+        PRODUCT_NAME: JustMyWeather
+        INFOPLIST_FILE: JustMyWeather/Info.plist
+        TARGETED_DEVICE_FAMILY: "1" # iPhone only for now (decision 5)
+        SWIFT_VERSION: "5.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # The shared Kotlin framework, built by the script phase below.
+        FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+        OTHER_LDFLAGS: [$(inherited), -framework, Shared, -lsqlite3]
+        # The shared framework has arm64 slices only (no Intel Macs).
+        EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+        # Gradle reads and writes outside the sandbox Xcode gives scripts.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    preBuildScripts:
+      - name: Compile Kotlin (shared)
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "${OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED:-}" = "YES" ]; then exit 0; fi
+          cd "$SRCROOT/.." && ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+    dependencies:
+      - package: GoogleMobileAds
+      - package: GoogleUserMessagingPlatform
+      - sdk: StoreKit.framework
+      - sdk: BackgroundTasks.framework
+      - sdk: UserNotifications.framework
+      - sdk: CoreLocation.framework
+      - sdk: AppTrackingTransparency.framework
+      - sdk: MessageUI.framework
+    scheme:
+      testTargets: [JustMyWeatherTests]
+      # Debug runs against the local StoreKit configuration: Remove Ads can be
+      # bought and restored on a simulator with no App Store Connect record.
+      storeKitConfiguration: JustMyWeather/Products.storekit
+  JustMyWeatherTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: JustMyWeatherTests
+      # SKTestSession(configurationFileNamed:) looks in the test bundle.
+      - path: JustMyWeather/Products.storekit
+        buildPhase: resources
+    dependencies:
+      - target: JustMyWeather
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/JustMyWeather.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/JustMyWeather
+        BUNDLE_LOADER: $(TEST_HOST)
+        FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+        EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
