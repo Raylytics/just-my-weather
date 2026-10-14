@@ -47,6 +47,39 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
+## 0.4.0 — versionCode 9, Play internal (NOT YET CUT; pre-tested 2026-10-13)
+
+Pre-tested at the VERSION bump on `ios-port`; the cut itself needs Evan's
+go-ahead. Fill in the versionCode, date and cut commit when it lands.
+
+### Store-facing (≤500 chars)
+
+> Customize is easier to read: every setting folds to one line until you tap
+> it, and Density shows a preview of how the glance will look. Buttons now
+> have a light outline, so they look like buttons. Your place name is boxed
+> on the glance: tap it to switch places, which are also in App Settings.
+> Long forecasts show a scrollbar. Ads are personalized only if you agree in
+> Google's consent form.
+
+### Internal
+
+- Added: collapsible Customize (`ui/customize/CollapsibleSection.kt`),
+  forecast/sun options inside their module's fold, live
+  `ui/home/DensityPreview.kt` (a191165, just-my-weather-v55); boxed place
+  name + App Settings → Location (abe25d0); quiet scrollbar (d943e64).
+- Changed: the consent SDK decides ad personalization; requests no longer
+  force npa=1 (da74242, plan decision 4; privacy policy live on
+  raylytics-site, Data safety already declared it, vg0); `subtleBorder`
+  outline on in-content buttons (e017a3f); the UI's strings move to one
+  shared catalog (3a7419b). Phase 1 KMP restructure (`shared/`) with no
+  intended behaviour change.
+- Fixed: the arrange bar replaces the action bar while arranging (afc8061,
+  nyt.13).
+- Pre-tests: verify.sh 494 tests; instrumented 28/28 on API 35 and API 36;
+  Maestro 10/10 on API 35 and API 36; signed release AAB builds locally
+  with the real AdMob ids; preflight-play OK. Play before the cut:
+  production = versionCode 8 (0.3.1), internal = 8.
+
 ## 0.3.1 — versionCode 8, Play internal 2026-10-07
 
 Google's consent form (UMP) decides when ads may run, so the UK, Ireland
