@@ -4,17 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -26,14 +23,14 @@ import io.raylytics.justmyweather.resources.customize_density
 import io.raylytics.justmyweather.resources.customize_each_day_shows
 import io.raylytics.justmyweather.resources.customize_hourly_shows_hours
 import io.raylytics.justmyweather.resources.customize_look
-import io.raylytics.justmyweather.resources.customize_off_forecast_hours_sun
 import io.raylytics.justmyweather.resources.customize_opens
-import io.raylytics.justmyweather.resources.customize_show_times_place
+import io.raylytics.justmyweather.resources.customize_show_times_in
 import io.raylytics.justmyweather.resources.customize_sun_shows_1_day
 import io.raylytics.justmyweather.resources.customize_sun_shows_days
 import io.raylytics.justmyweather.resources.customize_sun_times
 import io.raylytics.justmyweather.resources.customize_tile_layout
 import io.raylytics.justmyweather.resources.customize_tiles_show
+import io.raylytics.justmyweather.resources.customize_times_read_in_that_clock
 import io.raylytics.justmyweather.ui.theme.accentColor
 import io.raylytics.justmyweather.ui.theme.chipBorder
 import io.raylytics.justmyweather.ui.theme.onAccent
@@ -190,30 +187,36 @@ fun DensityPicker(
     }
 }
 
-/** One switch: which clock the screen's times read in. Off is the phone's;
- * on is the place's, for planning a day somewhere else. */
+/**
+ * Which clock the screen's times read in, asked as a place: the phone's,
+ * or the weather's. Two chips rather than the switch this was — "show times
+ * in the place's local time" made the reader work out what *off* meant,
+ * where two named places each say what they are.
+ */
 @Composable
 fun TimesInPicker(
     timesIn: TimesIn,
     onSet: (TimesIn) -> Unit,
+    showTitle: Boolean = true,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = if (showTitle) 10.dp else 0.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(Res.string.customize_show_times_place), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = stringResource(Res.string.customize_off_forecast_hours_sun),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        if (showTitle) {
+            Text(stringResource(Res.string.customize_show_times_in), style = MaterialTheme.typography.labelMedium)
         }
-        Switch(
-            checked = timesIn == TimesIn.PLACE,
-            onCheckedChange = { onSet(if (it) TimesIn.PLACE else TimesIn.DEVICE) },
-            modifier = Modifier.testTag("times-in-toggle"),
+        ChipRow(
+            options = TimesIn.entries,
+            selected = timesIn,
+            label = { it.label },
+            onSelect = onSet,
+            tag = { "times_in_${it.key}" },
+        )
+        Text(
+            text = stringResource(Res.string.customize_times_read_in_that_clock),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

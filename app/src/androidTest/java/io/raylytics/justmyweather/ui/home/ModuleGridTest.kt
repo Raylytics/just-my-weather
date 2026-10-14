@@ -9,7 +9,10 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -69,6 +72,7 @@ class ModuleGridTest {
     private val moves = mutableListOf<Pair<ModuleKey, Int>>()
     private val resizes = mutableListOf<Pair<ModuleKey, ModuleSize>>()
     private val opened = mutableListOf<ModuleKey>()
+    private val expansions = mutableListOf<Pair<ModuleKey, Boolean>>()
 
     private fun show(vararg modules: ModuleValue) = show(gridWidth, *modules)
 
@@ -86,6 +90,7 @@ class ModuleGridTest {
                         onMove = { field, index -> moves += field to index },
                         onSetForecastMode = {},
                         onOpenModule = { opened += it.module },
+                        onSetExpanded = { field, open -> expansions += field to open },
                     )
                 }
             }
@@ -366,6 +371,41 @@ class ModuleGridTest {
         // The accessibility action is the same tap for a user who cannot tap.
         invoke(WeatherField.TEMPERATURE, "Details")
         assertEquals(listOf(reading(WeatherField.WIND), reading(WeatherField.TEMPERATURE)), opened)
+    }
+
+    @Test
+    fun aFoldedTileIsItsNameAndATapOpensIt() {
+        show(
+            module(WeatherField.TEMPERATURE, 4, 2),
+            module(WeatherField.CONDITIONS, 1).copy(collapsible = true, collapsed = true),
+        )
+        // The name is the whole tile: nothing of the value shows.
+        compose.onNodeWithTag("module_conditions").assertTextContains("Conditions")
+        compose.onNode(hasTestTag("module_conditions") and hasText("—")).assertDoesNotExist()
+        // A tap opens it rather than opening its detail — the fold is the one
+        // case where the tile is the button, so this bypasses tap-for-details.
+        compose.onNodeWithTag("module_conditions").performClick()
+        compose.waitForIdle()
+        assertEquals(listOf(reading(WeatherField.CONDITIONS) to true), expansions)
+        assertEquals(emptyList<ModuleKey>(), opened)
+        // Folded, a cell is not a size to step from, and there is no detail.
+        assertEquals(listOf("Expand", "Move up"), actionsOn(WeatherField.CONDITIONS).map { it.label })
+    }
+
+    @Test
+    fun anOpenCollapsibleTileFoldsFromItsCorner() {
+        show(
+            module(WeatherField.TEMPERATURE, 4, 2),
+            module(WeatherField.CONDITIONS, 2).copy(collapsible = true),
+        )
+        compose.onNodeWithTag("collapse_conditions").performClick()
+        compose.waitForIdle()
+        assertEquals(listOf(reading(WeatherField.CONDITIONS) to false), expansions)
+        // The tile keeps its detail and its sizes; the way back is an action too.
+        val labels = actionsOn(WeatherField.CONDITIONS).map { it.label }
+        assertTrue("Collapse" in labels)
+        assertTrue("Details" in labels)
+        assertTrue("Wider" in labels)
     }
 
     @Test

@@ -114,6 +114,10 @@ class HomeViewModel(
      * the forecast grid. */
     private val chosenMode = MutableStateFlow<ForecastMode?>(null)
 
+    /** The collapsible modules opened by a tap this session. Not persisted:
+     * folded is a collapsible module's resting form (HomeUiState.expanded). */
+    private val expanded = MutableStateFlow<Set<ModuleKey>>(emptySet())
+
     // One fetch per framing at a time; re-entering a mode whose data already
     // arrived is a no-op, so chip-hopping never stampedes the API. Declared
     // before `init` — the collect launched there can call ensureForecast
@@ -142,13 +146,13 @@ class HomeViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    /** Paired so the five-flow limit of the typed [combine] still fits: these
-     * two are the "what to show for right now" half of the screen. */
-    private val glance = combine(weather, placeTimes) { load, times -> load to times }
+    /** Bundled so the five-flow limit of the typed [combine] still fits: these
+     * three are the "what to show for right now" half of the screen. */
+    private val glance = combine(weather, placeTimes, expanded) { load, times, open -> Triple(load, times, open) }
 
     val state: StateFlow<HomeUiState> =
         combine(glance, configRepository.config, forecast, forecasts, safetyAlerts) {
-                (load, times), config, forecastChoice, forecasts, alerts ->
+                (load, times, open), config, forecastChoice, forecasts, alerts ->
             // Before the stored config lands, fall back to what it will say:
             // the config flow itself has already emitted by the time a Ready
             // state can exist, so this only covers the first frame.
@@ -192,6 +196,7 @@ class HomeViewModel(
                         // formats its own observed time from its own zone (see
                         // ObservedLine).
                         zone = times.zone ?: zone(),
+                        expanded = open,
                     )
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)
@@ -410,6 +415,12 @@ class HomeViewModel(
 
     /** A drop from the arrange drag: land [module] at this visible slot. */
     fun moveModule(module: ModuleKey, toVisibleIndex: Int) = editConfig { it.moveVisible(module, toVisibleIndex) }
+
+    /** A tap on a folded tile opens it; its collapse control folds it back.
+     * Session state only — see [expanded]. */
+    fun setExpanded(module: ModuleKey, open: Boolean) {
+        expanded.value = if (open) expanded.value + module else expanded.value - module
+    }
 
     /**
      * Arrange-mode edits persist as atomic transforms of the stored config —

@@ -57,7 +57,11 @@ on, and a table rather than a value.
 
 1. **`view/ModuleKey.kt`** — add a subtype. Give it a stable `key` (never rename
    it), a `defaultLabel`, a `defaultSize` and a `minSize` (the floor the corner
-   drag stops at — size it to what the module has to say).
+   drag stops at — size it to what the module has to say). A `minSize` above
+   one cell makes the module *collapsible* for free (`ModuleKey.canCollapse`):
+   Customize offers a switch, and switched on the tile rests as a single cell
+   carrying its name until tapped (`ModuleSetting.collapsible`,
+   `ModuleValue.collapsed`, `ui/home/CollapsedModule.kt`).
 2. **`view/ViewRender.kt`** — add a `ModuleContent` variant carrying whatever
    the tile needs to draw, and a branch in `render`. If the data is not in
    `WeatherSnapshot` (sun times are not), pass it into `render` as its own

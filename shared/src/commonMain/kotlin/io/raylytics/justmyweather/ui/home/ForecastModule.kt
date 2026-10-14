@@ -53,6 +53,7 @@ import io.raylytics.justmyweather.view.ForecastElement
 import io.raylytics.justmyweather.view.ForecastMode
 import io.raylytics.justmyweather.view.ForecastTileLayout
 import io.raylytics.justmyweather.view.ModuleContent
+import io.raylytics.justmyweather.view.ModuleKey
 import io.raylytics.justmyweather.view.format
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -138,6 +139,10 @@ internal fun ForecastModuleContent(
      * tap-for-details is off. Inert while arranging, when a tap on a tile
      * is part of a gesture that belongs to the grid. */
     onOpenDetail: ((Detail) -> Unit)?,
+    /** Fold the module back to its cell; null when it is not collapsible.
+     * Drawn in the header, beside the framing toggle, because the corner
+     * every other tile uses is where this one's header already is. */
+    onCollapse: (() -> Unit)? = null,
 ) {
     val open = onOpenDetail?.takeIf { !arranging }
     val conventions = LocalConventions.current
@@ -149,6 +154,7 @@ internal fun ForecastModuleContent(
             mode = content.mode,
             onSetMode = onSetMode,
             showLabel = columns >= LABELLED_HEADER_MIN_COLUMNS,
+            onCollapse = onCollapse,
         )
         val scroll = rememberScrollState()
         val viewport =
@@ -303,6 +309,7 @@ private fun ForecastHeader(
     mode: ForecastMode,
     onSetMode: (ForecastMode) -> Unit,
     showLabel: Boolean,
+    onCollapse: (() -> Unit)?,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -316,7 +323,7 @@ private fun ForecastHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
             ForecastMode.entries.forEach { entry ->
                 val selected = entry == mode
                 Text(
@@ -344,6 +351,7 @@ private fun ForecastHeader(
                             .testTag("forecast_${entry.key}"),
                 )
             }
+            onCollapse?.let { CollapseControl(module = ModuleKey.Forecast, onCollapse = it) }
         }
     }
 }

@@ -7,6 +7,7 @@ import io.raylytics.justmyweather.data.nws.ActiveAlert
 import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.view.ForecastMode
+import io.raylytics.justmyweather.view.ModuleKey
 import io.raylytics.justmyweather.view.ViewConfig
 import kotlinx.datetime.TimeZone
 
@@ -75,6 +76,12 @@ sealed interface HomeUiState {
          * observed time from its own zone.
          */
         val zone: TimeZone = TimeZone.currentSystemDefault(),
+        /**
+         * The collapsible modules the user has opened with a tap. Session
+         * state like [forecastMode]: a fold is the module's resting form, so
+         * the next launch finds it folded again.
+         */
+        val expanded: Set<ModuleKey> = emptySet(),
     ) : HomeUiState
 
     /** Network or NWS failure, with a short plain-language message. */

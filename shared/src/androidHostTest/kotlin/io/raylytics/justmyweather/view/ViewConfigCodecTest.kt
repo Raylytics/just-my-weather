@@ -110,6 +110,19 @@ class ViewConfigCodecTest {
     }
 
     @Test
+    fun `collapsible round-trips, is off for an older config, and is refused for a cell-sized module`() {
+        val folded = ViewConfig.DEFAULT.setCollapsible(ModuleKey.Sun, true).let {
+            ViewConfigCodec.decode(ViewConfigCodec.encode(it))
+        }
+        assertTrue(folded.items.first { it.module == ModuleKey.Sun }.collapsible)
+        val older = """{"items":[{"key":"sun","visible":true}]}"""
+        assertFalse(ViewConfigCodec.decode(older).items.first { it.module == ModuleKey.Sun }.collapsible)
+        // Clamped like the size: a flag the module cannot honour reads as off.
+        val wind = """{"items":[{"key":"wind","visible":true,"collapsible":true}]}"""
+        assertFalse(ViewConfigCodec.decode(wind).items.first { it.module == reading(WeatherField.WIND) }.collapsible)
+    }
+
+    @Test
     fun `tap-for-details round-trips, and a config from before it reads as on`() {
         val off = ViewConfigCodec.decode(ViewConfigCodec.encode(ViewConfig.DEFAULT.setTapForDetails(false)))
         assertFalse(off.tapForDetails)

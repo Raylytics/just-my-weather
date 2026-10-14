@@ -112,6 +112,8 @@ fun HomeScreen(
     onAlerts: () -> Unit,
     onResizeModule: (ModuleKey, ModuleSize) -> Unit,
     onMoveModule: (ModuleKey, Int) -> Unit,
+    /** Open a folded collapsible module, or fold it back. */
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
     onPlaces: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -174,6 +176,7 @@ fun HomeScreen(
                             onDoneArranging = { arranging = false },
                             onResizeModule = onResizeModule,
                             onMoveModule = onMoveModule,
+                            onSetExpanded = onSetExpanded,
                             onPlaces = onPlaces,
                             // The option: off means no handler at all, so
                             // nothing below draws a tap affordance for a
@@ -217,6 +220,7 @@ private fun GlanceView(
     onDoneArranging: () -> Unit,
     onResizeModule: (ModuleKey, ModuleSize) -> Unit,
     onMoveModule: (ModuleKey, Int) -> Unit,
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
     onPlaces: () -> Unit,
     onOpenDetail: ((Detail) -> Unit)?,
 ) {
@@ -311,6 +315,8 @@ private fun GlanceView(
             onMoveModule = onMoveModule,
             onSetForecastMode = onSetMode,
             onOpenDetail = onOpenDetail,
+            expanded = state.expanded,
+            onSetExpanded = onSetExpanded,
         )
 
         if (config.alertBannerPosition == AlertBannerPosition.BOTTOM) {
@@ -419,9 +425,13 @@ private fun NowContent(
     onSetForecastMode: (ForecastMode) -> Unit,
     /** Null when the user has switched tap-for-details off. */
     onOpenDetail: ((Detail) -> Unit)?,
+    /** The collapsible modules opened this session, and the tap that opens
+     * or folds one. */
+    expanded: Set<ModuleKey>,
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
 ) {
     val conventions = LocalConventions.current
-    val rendered: RenderedView = config.render(snapshot, sunDays, zone, forecast, conventions)
+    val rendered: RenderedView = config.render(snapshot, sunDays, zone, forecast, conventions, expanded)
     val spec = config.density.spec()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -453,6 +463,7 @@ private fun NowContent(
                     { module -> Details.ofModule(module, snapshot, observedZone, conventions)?.let(open) }
                 },
                 onOpenDetail = onOpenDetail,
+                onSetExpanded = onSetExpanded,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

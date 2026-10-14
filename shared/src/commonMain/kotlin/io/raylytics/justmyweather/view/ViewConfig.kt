@@ -2,14 +2,22 @@ package io.raylytics.justmyweather.view
 
 /**
  * One module's place in the user's view: whether it shows, an optional label
- * override, and how much of the grid it occupies. The effective [label] falls
- * back to the module's default.
+ * override, how much of the grid it occupies, and whether it rests folded.
+ * The effective [label] falls back to the module's default.
+ *
+ * [collapsible] is for a module that cannot be shrunk to one cell
+ * ([ModuleKey.canCollapse]): on the glance it then rests as a single cell
+ * carrying only its name, and a tap opens it to [size] for the session. The
+ * flag is only ever true for a module that can collapse — [ViewConfig
+ * .setCollapsible] and the codec both refuse it for the others — so a reader
+ * of the flag never has to ask twice.
  */
 data class ModuleSetting(
     val module: ModuleKey,
     val visible: Boolean,
     val customLabel: String? = null,
     val size: ModuleSize = module.defaultSize,
+    val collapsible: Boolean = false,
 ) {
     val label: String
         get() = customLabel?.takeIf { it.isNotBlank() } ?: module.defaultLabel
@@ -89,6 +97,20 @@ data class ViewConfig(
         copy(items = items.map { if (it.module == module) it.copy(size = size.clamp(module.minSize)) else it })
 
     /**
+     * Let a module rest folded to one cell, or stop. Ignored for a module
+     * that can already be a cell ([ModuleKey.canCollapse]): resizing it is
+     * the honest way to make it small, and the customize screen never offers
+     * the switch for one, so a true here could only come from stale data.
+     */
+    fun setCollapsible(module: ModuleKey, collapsible: Boolean): ViewConfig =
+        copy(
+            items =
+                items.map {
+                    if (it.module == module) it.copy(collapsible = collapsible && module.canCollapse) else it
+                },
+        )
+
+    /**
      * Move a visible module so it lands at [toVisibleIndex] among the *visible*
      * modules — the drop half of the drag gesture, which only ever sees the
      * tiles actually on the grid. Hidden settings keep their relative order; an
@@ -126,7 +148,9 @@ data class ViewConfig(
      */
     fun showingOnly(module: ModuleKey): ViewConfig {
         if (items.none { it.module == module }) return this
-        return copy(items = items.map { it.copy(visible = it.module == module) })
+        // Never folded: a widget has no tap to open it with, so a collapsed
+        // tile there would be a name with no way to the weather behind it.
+        return copy(items = items.map { it.copy(visible = it.module == module, collapsible = false) })
     }
 
     fun setDensity(density: Density): ViewConfig = copy(density = density)

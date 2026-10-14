@@ -12,11 +12,13 @@ import kotlinx.datetime.TimeZone
  * reads three hours off from that clock is a sum to do. The place's clock is
  * for the traveller planning a day there, and is a switch away.
  *
- * [key] is the stable persistence token — never rename it.
+ * [key] is the stable persistence token — never rename it. [label] is the
+ * chip text on the customize screen, which asks it as a question of place:
+ * the phone's, or the weather's.
  */
-enum class TimesIn(val key: String) {
-    DEVICE("device"),
-    PLACE("place"),
+enum class TimesIn(val key: String, val label: String) {
+    DEVICE("device", "Phone location"),
+    PLACE("place", "Weather location"),
     ;
 
     /**

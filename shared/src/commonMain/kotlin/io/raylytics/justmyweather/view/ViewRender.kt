@@ -84,13 +84,22 @@ data class ForecastData(
     val extended: List<ExtendedDay>? = null,
 )
 
-/** A module resolved to what the screen shows: its label, its content, and
- * its footprint on the grid. */
+/**
+ * A module resolved to what the screen shows: its label, its content, and
+ * its footprint on the grid.
+ *
+ * [collapsed] is the folded form of a [collapsible] module: [size] is then
+ * the single cell it rests in, and the tile draws only [label] with a hint to
+ * tap. [content] still travels, so opening the tile has nothing to fetch. An
+ * open collapsible module carries the control that folds it back.
+ */
 data class ModuleValue(
     val module: ModuleKey,
     val label: String,
     val size: ModuleSize,
     val content: ModuleContent,
+    val collapsible: Boolean = false,
+    val collapsed: Boolean = false,
 )
 
 /**
@@ -122,13 +131,19 @@ fun ViewConfig.render(
     forecast: ForecastData = ForecastData(),
     /** How the readings read: units and all (view/Conventions). */
     conventions: Conventions,
+    /** The collapsible modules the user has opened this session. A
+     * collapsible module not named here draws folded, at one cell. */
+    expanded: Set<ModuleKey> = emptySet(),
 ): RenderedView =
     RenderedView(
         visible.map { setting ->
+            val collapsed = setting.collapsible && setting.module !in expanded
             ModuleValue(
                 module = setting.module,
                 label = setting.label,
-                size = setting.size,
+                size = if (collapsed) ModuleSize.CELL else setting.size,
+                collapsible = setting.collapsible,
+                collapsed = collapsed,
                 content =
                     when (val module = setting.module) {
                         is ModuleKey.Reading ->

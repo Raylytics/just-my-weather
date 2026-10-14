@@ -15,6 +15,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -48,7 +49,10 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.home_collapse
+import io.raylytics.justmyweather.resources.home_collapsed
 import io.raylytics.justmyweather.resources.home_details
+import io.raylytics.justmyweather.resources.home_expand
 import io.raylytics.justmyweather.resources.home_move_down
 import io.raylytics.justmyweather.resources.home_move_up
 import io.raylytics.justmyweather.resources.home_narrower
@@ -225,6 +229,9 @@ fun ModuleGrid(
     onOpenModule: ((ModuleValue) -> Unit)? = null,
     /** For the tiles INSIDE the forecast module, which build their own. */
     onOpenDetail: ((Detail) -> Unit)? = null,
+    /** A tap on a folded collapsible tile opens it (true); its collapse
+     * control folds it back (false). See ModuleValue.collapsed. */
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -244,6 +251,7 @@ fun ModuleGrid(
     val resize by rememberUpdatedState(onResize)
     val move by rememberUpdatedState(onMove)
     val openModule by rememberUpdatedState(onOpenModule)
+    val setExpanded by rememberUpdatedState(onSetExpanded)
 
     // Drag state. Positions are all in window-root coordinates — one shared
     // frame for the pointer and every tile's bounds, so nothing needs to know
@@ -310,10 +318,12 @@ fun ModuleGrid(
         currentModules.firstOrNull { bounds[it.module]?.contains(rootPos) == true }?.module
 
     /** The tile whose corner handle is under [rootPos], if any: inside the
-     * corner by [HANDLE_HIT], past it by [HANDLE_REACH]. */
+     * corner by [HANDLE_HIT], past it by [HANDLE_REACH]. A folded tile has
+     * no handle: its cell is not its size, so there is nothing to drag. */
     fun handleAt(rootPos: Offset): ModuleKey? =
         currentModules
             .firstOrNull {
+                if (it.collapsed) return@firstOrNull false
                 val rect = bounds[it.module] ?: return@firstOrNull false
                 rootPos.x in (rect.right - handleHitPx)..(rect.right + handleReachPx) &&
                     rootPos.y in (rect.bottom - handleHitPx)..(rect.bottom + handleReachPx)
@@ -575,7 +585,10 @@ fun ModuleGrid(
                         endDrag(DragOwner.IMMEDIATE)
                     }
                 }
-                // Outside arrange mode a tap on a tile opens its detail. In
+                // Outside arrange mode a tap on a tile opens its detail — or,
+                // on a folded tile, opens the tile: the fold is the one case
+                // where the tile itself is the button, whatever the
+                // tap-for-details option says. In
                 // arrange mode taps do nothing — and are still consumed, so
                 // they do nothing to anything else either: the
                 // tap-on-empty-ground detector above this grid leaves arrange
@@ -588,9 +601,13 @@ fun ModuleGrid(
                     var exitsAtPress = 0
                     detectTapGestures(onPress = { exitsAtPress = holdExits }) { local ->
                         if (isArranging || holdExits != exitsAtPress) return@detectTapGestures
-                        val open = openModule ?: return@detectTapGestures
                         val field = tileAt(toRoot(local)) ?: return@detectTapGestures
-                        currentModules.firstOrNull { it.module == field }?.let(open)
+                        val module = currentModules.firstOrNull { it.module == field } ?: return@detectTapGestures
+                        if (module.collapsed) {
+                            setExpanded(field, true)
+                        } else {
+                            openModule?.invoke(module)
+                        }
                     }
                 },
     ) { module, index, tileModifier ->
@@ -610,6 +627,7 @@ fun ModuleGrid(
             onSetForecastMode = onSetForecastMode,
             onOpenModule = onOpenModule,
             onOpenDetail = onOpenDetail,
+            onSetExpanded = onSetExpanded,
             module = module,
             arranging = arranging,
             spec = spec,
@@ -710,12 +728,16 @@ private fun ModuleTile(
     onSetForecastMode: (ForecastMode) -> Unit,
     onOpenModule: ((ModuleValue) -> Unit)?,
     onOpenDetail: ((Detail) -> Unit)?,
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // The screen-reader actions' names, read here because the semantics block
     // below is not composable.
     val a11y = TileActionLabels(
         details = stringResource(Res.string.home_details),
+        expand = stringResource(Res.string.home_expand),
+        collapse = stringResource(Res.string.home_collapse),
+        collapsed = stringResource(Res.string.home_collapsed),
         moveUp = stringResource(Res.string.home_move_up),
         moveDown = stringResource(Res.string.home_move_down),
         wider = stringResource(Res.string.home_wider),
@@ -762,8 +784,9 @@ private fun ModuleTile(
                     // colour so it reads as sitting ON the border rather than
                     // as a thickening of it. Drawn, not composed, so it adds
                     // no node to the tile's semantics and no layout to its
-                    // cells.
-                    if (arranging) {
+                    // cells. A folded tile has none: its cell is not its
+                    // size (see handleAt).
+                    if (arranging && !module.collapsed) {
                         val inset = HANDLE_INSET.toPx()
                         val center = Offset(this.size.width - inset, this.size.height - inset)
                         drawCircle(handleRing, radius = HANDLE_RADIUS.toPx() + 2.dp.toPx(), center = center)
@@ -775,14 +798,32 @@ private fun ModuleTile(
                     // user and is what the resize actions act on, so it
                     // belongs where a screen reader re-reads it rather than
                     // in the name.
-                    stateDescription = size.label
+                    // Folded, the tile's size is a cell by definition, and
+                    // "collapsed" is the state worth hearing.
+                    stateDescription = if (module.collapsed) a11y.collapsed else size.label
                     customActions =
                         buildList {
                             // The tap, for a user who cannot tap: offered
                             // only when the tap itself would do something.
                             // The forecast's hours and days are their own
                             // clickable nodes and need no action here.
-                            if (onOpenModule != null && module.content !is ModuleContent.Forecast) {
+                            if (module.collapsed) {
+                                add(
+                                    CustomAccessibilityAction(a11y.expand) {
+                                        onSetExpanded(module.module, true)
+                                        true
+                                    },
+                                )
+                            } else if (module.collapsible) {
+                                add(
+                                    CustomAccessibilityAction(a11y.collapse) {
+                                        onSetExpanded(module.module, false)
+                                        true
+                                    },
+                                )
+                            }
+                            val hasDetail = onOpenModule != null && module.content !is ModuleContent.Forecast
+                            if (hasDetail && !module.collapsed) {
                                 add(
                                     CustomAccessibilityAction(a11y.details) {
                                         onOpenModule(module)
@@ -811,6 +852,9 @@ private fun ModuleTile(
                             // is not offered "Wider", one at its module's
                             // minimum is not offered "Narrower". An action
                             // that would do nothing is absent, not ignored.
+                            // A folded tile is offered none: its cell is not
+                            // its size, so a step from it means nothing.
+                            if (module.collapsed) return@buildList
                             if (size.columns < ModuleSize.COLUMNS) {
                                 add(
                                     CustomAccessibilityAction(a11y.wider) {
@@ -846,8 +890,18 @@ private fun ModuleTile(
                         }
                 },
     ) {
+        // Folded: the name is the whole tile, whatever the module draws
+        // open. Nothing else below applies to a cell that is only a button.
+        if (module.collapsed) {
+            CollapsedModuleContent(label = module.label)
+            return@TileShell
+        }
+        // The way back for an open collapsible tile. Not while arranging:
+        // every tap on a wiggling tile belongs to the grid.
+        val onCollapse = if (module.collapsible && !arranging) ({ onSetExpanded(module.module, false) }) else null
         // The forecast fills its tile edge to edge — it is a grid with a
-        // header, not a value to centre — so it skips the label column.
+        // header, not a value to centre — so it skips the label column, and
+        // its collapse control sits in that header.
         val content = module.content
         if (content is ModuleContent.Forecast) {
             ForecastModuleContent(
@@ -857,8 +911,18 @@ private fun ModuleTile(
                 arranging = arranging,
                 onSetMode = onSetForecastMode,
                 onOpenDetail = onOpenDetail,
+                onCollapse = onCollapse,
             )
             return@TileShell
+        }
+        // In the corner, pushed out into the tile's own padding so it sits
+        // beside the content rather than over it.
+        onCollapse?.let {
+            CollapseControl(
+                module = module.module,
+                onCollapse = it,
+                modifier = Modifier.align(Alignment.TopEnd).offset(x = TILE_PADDING / 2, y = -TILE_PADDING / 2),
+            )
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (showLabel) {
@@ -932,9 +996,13 @@ private fun wiggleAngle(active: Boolean, phase: Int): State<Float> {
     )
 }
 
-/** The custom actions a tile offers a screen reader, by name. */
+/** The custom actions a tile offers a screen reader, by name, and the state
+ * a folded tile announces. */
 private class TileActionLabels(
     val details: String,
+    val expand: String,
+    val collapse: String,
+    val collapsed: String,
     val moveUp: String,
     val moveDown: String,
     val wider: String,

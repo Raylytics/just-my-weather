@@ -23,7 +23,10 @@
     <string name="common_sunset">Sunset</string>
     <!-- home -->
     <string name="home_change_place">Change place</string>
+    <string name="home_collapse">Collapse</string>
+    <string name="home_collapsed">Collapsed</string>
     <string name="home_details">Details</string>
+    <string name="home_expand">Expand</string>
     <string name="home_done_arranging">Done arranging</string>
     <string name="home_drag_move_drag_corner">Drag to move · Drag a corner to resize</string>
     <string name="home_move_down">Move down</string>
@@ -42,6 +45,8 @@
     <!-- customize -->
     <string name="customize_collapse">Collapse</string>
     <string name="customize_collapsed">Collapsed</string>
+    <string name="customize_collapsible">Collapsible</string>
+    <string name="customize_collapsible_rests_as_cell">Rests as a single cell with its name; tap it on the glance to open it</string>
     <string name="customize_couldn_find_what">Couldn't find what you're looking for?</string>
     <string name="customize_customize_view">Customize view</string>
     <string name="customize_daily_shows_1_day">Daily shows 1 day</string>
@@ -54,14 +59,16 @@
     <string name="customize_hidden">Hidden</string>
     <string name="customize_hourly_shows_hours">Hourly shows %1$s hours</string>
     <string name="customize_look">Look</string>
+    <string name="customize_modules">Modules</string>
     <string name="customize_name">Name</string>
-    <string name="customize_off_forecast_hours_sun">Off: the forecast hours, sun times and observed time read in this phone's clock</string>
     <string name="customize_opens">Opens on</string>
+    <string name="customize_options">Options</string>
     <string name="customize_order">Order</string>
     <string name="customize_preview">Preview</string>
     <string name="customize_safety_alerts">Safety alerts</string>
     <string name="customize_show_fields_care_about">Show the fields you care about, in the order you read them. Size is prominence: the widest, tallest tile is the big one. You can also long-press any tile on the glance to drag and resize it in place.</string>
-    <string name="customize_show_times_place">Show times in the place's local time</string>
+    <string name="customize_show_times_in">Show times in</string>
+    <string name="customize_times_read_in_that_clock">The forecast hours, sun times and observed time read in that clock: the phone's where it is, or the weather's where it is.</string>
     <string name="customize_submit_idea_developer">Submit your idea to the developer.</string>
     <string name="customize_sun_shows_1_day">Sun shows 1 day</string>
     <string name="customize_sun_shows_days">Sun shows %1$s days</string>

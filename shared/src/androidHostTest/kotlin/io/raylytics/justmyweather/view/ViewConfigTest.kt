@@ -337,4 +337,50 @@ class ViewConfigTest {
         assertEquals("Breeze", only.items.first { it.module == ModuleKey.Reading(WeatherField.WIND) }.label)
         assertEquals(Density.COMPACT, only.density)
     }
+
+    @Test
+    fun `only a module that cannot shrink to a cell can be made collapsible`() {
+        // The phrase, the table and the forecast grid stop above one cell;
+        // every number already fits one.
+        assertEquals(
+            listOf(reading(WeatherField.CONDITIONS), ModuleKey.Sun, ModuleKey.Forecast),
+            ModuleKey.catalog.filter { it.canCollapse },
+        )
+        val folded = ViewConfig.DEFAULT.setCollapsible(reading(WeatherField.CONDITIONS), true)
+        assertTrue(folded.items.first { it.module == reading(WeatherField.CONDITIONS) }.collapsible)
+        assertFalse(folded.setCollapsible(reading(WeatherField.CONDITIONS), false).items.any { it.collapsible })
+        // A number is made small by resizing it; the flag is refused, not
+        // stored and ignored.
+        val wind = ViewConfig.DEFAULT.setCollapsible(reading(WeatherField.WIND), true)
+        assertFalse(wind.items.first { it.module == reading(WeatherField.WIND) }.collapsible)
+    }
+
+    @Test
+    fun `a collapsible module renders as one cell until it is opened`() {
+        val config = ViewConfig.DEFAULT.setCollapsible(ModuleKey.Forecast, true)
+        val folded = config.render(snapshot, conventions = Conventions.US).modules.last()
+        assertEquals(ModuleKey.Forecast, folded.module)
+        assertTrue(folded.collapsed)
+        assertTrue(folded.collapsible)
+        assertEquals(ModuleSize.CELL, folded.size)
+        // The content still travels: opening the tile has nothing to fetch.
+        assertTrue(folded.content is ModuleContent.Forecast)
+        // Opened for the session, it is its configured self again — and still
+        // collapsible, so the tile offers the way back.
+        val open =
+            config.render(snapshot, conventions = Conventions.US, expanded = setOf(ModuleKey.Forecast)).modules.last()
+        assertFalse(open.collapsed)
+        assertTrue(open.collapsible)
+        assertEquals(ModuleSize(4, 4), open.size)
+        // A module that is not collapsible is never collapsed, named or not.
+        val temperature = config.render(snapshot, conventions = Conventions.US).modules.first()
+        assertFalse(temperature.collapsed)
+        assertFalse(temperature.collapsible)
+    }
+
+    @Test
+    fun `showingOnly never leaves a module collapsible, since a widget has no tap to open it`() {
+        val only = ViewConfig.DEFAULT.setCollapsible(ModuleKey.Sun, true).showingOnly(ModuleKey.Sun)
+        assertFalse(only.items.any { it.collapsible })
+    }
 }

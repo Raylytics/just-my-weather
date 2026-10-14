@@ -145,6 +145,7 @@ fun App(
                     onRefresh = homeViewModel::refresh,
                     onSetMode = homeViewModel::setForecastMode,
                     onResizeModule = homeViewModel::resizeModule,
+                    onSetExpanded = homeViewModel::setExpanded,
                     onPlaces = {
                         placesFrom = Screen.HOME
                         screen = Screen.PLACES
@@ -174,6 +175,7 @@ fun App(
                 onToggle = customizeViewModel::toggle,
                 onRelabel = customizeViewModel::relabel,
                 onResize = customizeViewModel::resize,
+                onSetCollapsible = customizeViewModel::setCollapsible,
                 onMoveUp = customizeViewModel::moveUp,
                 onMoveDown = customizeViewModel::moveDown,
                 onSetDensity = customizeViewModel::setDensity,

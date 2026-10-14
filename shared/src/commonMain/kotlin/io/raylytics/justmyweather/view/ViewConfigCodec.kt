@@ -28,6 +28,9 @@ object ViewConfigCodec {
         // value is clamped, not rejected: config is user data.
         val columns: Int? = null,
         val rows: Int? = null,
+        // Defaulted off: a config written before modules could fold rests
+        // every tile open, which is what it always showed.
+        val collapsible: Boolean = false,
     )
 
     @Serializable
@@ -103,6 +106,7 @@ object ViewConfigCodec {
                             label = it.customLabel,
                             columns = it.size.columns,
                             rows = it.size.rows,
+                            collapsible = it.collapsible,
                         )
                     },
             ),
@@ -130,7 +134,10 @@ object ViewConfigCodec {
         val settings =
             stored.items.mapNotNull { s ->
                 ModuleKey.byKey(s.key)?.let { module ->
-                    ModuleSetting(module, s.visible, s.label, s.size(module))
+                    // Like the size, the fold is clamped to what the module
+                    // can do: a stored flag on a module that can already be
+                    // a cell reads as off rather than as a tap for nothing.
+                    ModuleSetting(module, s.visible, s.label, s.size(module), s.collapsible && module.canCollapse)
                 }
             }
         // No recognised settings means this wasn't really a config — an empty or

@@ -33,17 +33,22 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.resources.Res
 import io.raylytics.justmyweather.resources.common_done
+import io.raylytics.justmyweather.resources.customize_collapsible
+import io.raylytics.justmyweather.resources.customize_collapsible_rests_as_cell
 import io.raylytics.justmyweather.resources.customize_couldn_find_what
 import io.raylytics.justmyweather.resources.customize_customize_view
 import io.raylytics.justmyweather.resources.customize_density
 import io.raylytics.justmyweather.resources.customize_height
 import io.raylytics.justmyweather.resources.customize_hidden
 import io.raylytics.justmyweather.resources.customize_look
+import io.raylytics.justmyweather.resources.customize_modules
 import io.raylytics.justmyweather.resources.customize_name
+import io.raylytics.justmyweather.resources.customize_options
 import io.raylytics.justmyweather.resources.customize_order
 import io.raylytics.justmyweather.resources.customize_preview
 import io.raylytics.justmyweather.resources.customize_safety_alerts
 import io.raylytics.justmyweather.resources.customize_show_fields_care_about
+import io.raylytics.justmyweather.resources.customize_show_times_in
 import io.raylytics.justmyweather.resources.customize_submit_idea_developer
 import io.raylytics.justmyweather.resources.customize_tap_tile_details
 import io.raylytics.justmyweather.resources.customize_tornado_severe_storm_hurricane
@@ -64,6 +69,7 @@ import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.ThemeConfig
 import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.ViewConfig
+import io.raylytics.justmyweather.view.canCollapse
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 
@@ -79,6 +85,11 @@ private const val RELABEL_DEBOUNCE_MS = 400L
  * is also the grid's non-gesture path: the arrows and width chips do what
  * arrange mode's drag and tap do, for anyone who can't or won't long-press
  * (docs/modular-v2-evaluation.md, criterion 3).
+ *
+ * Two groups, in this order: the modules, then everything about the view as
+ * a whole (tap-for-details, which clock, the look with its density, where a
+ * safety banner sits). The modules lead because they are what people come
+ * here to edit; the rest is set once and left.
  */
 @Composable
 fun CustomizeScreen(
@@ -86,6 +97,7 @@ fun CustomizeScreen(
     onToggle: (ModuleKey) -> Unit,
     onRelabel: (ModuleKey, String?) -> Unit,
     onResize: (ModuleKey, ModuleSize) -> Unit,
+    onSetCollapsible: (ModuleKey, Boolean) -> Unit,
     onMoveUp: (Int) -> Unit,
     onMoveDown: (Int) -> Unit,
     onSetDensity: (Density) -> Unit,
@@ -127,31 +139,7 @@ fun CustomizeScreen(
             // Everything below the header scrolls as one page — the option
             // sections have outgrown a fixed header on small screens.
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                CollapsibleSection(
-                    title = stringResource(Res.string.customize_density),
-                    summary = config.density.label,
-                    tag = "section_density",
-                ) {
-                    DensityPicker(selected = config.density, onSelect = onSetDensity, showTitle = false)
-                    // The chips' names alone say little ("Comfortable" than
-                    // what?), so the choice is shown, drawn the way the
-                    // glance will draw it.
-                    Text(
-                        text = stringResource(Res.string.customize_preview),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                    DensityPreview(density = config.density)
-                }
-                SectionDivider()
-                TapForDetailsPicker(enabled = config.tapForDetails, onSet = onSetTapForDetails)
-                TimesInPicker(timesIn = config.timesIn, onSet = onSetTimesIn)
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-
+                GroupHeading(stringResource(Res.string.customize_modules), tag = "group_modules")
                 config.items.forEachIndexed { index, setting ->
                     // Keyed by module so a field's open-or-folded state, and
                     // its half-typed name, move with it when it is reordered.
@@ -163,6 +151,7 @@ fun CustomizeScreen(
                             onToggle = { onToggle(setting.module) },
                             onRelabel = { onRelabel(setting.module, it) },
                             onResize = { onResize(setting.module, it) },
+                            onSetCollapsible = { onSetCollapsible(setting.module, it) },
                             onMoveUp = { onMoveUp(index) },
                             onMoveDown = { onMoveDown(index) },
                         ) {
@@ -202,16 +191,50 @@ fun CustomizeScreen(
                     SectionDivider()
                 }
 
-                // Below the field list, with the other set-once settings: the
-                // fields are what people come here to edit, and putting a
-                // rarely-touched picker above them pushed the list off the
-                // first screenful.
+                // Under the modules, with more air above it than between
+                // folds: the rest is about the view as a whole, set once
+                // and left, and a heading says where the module list ends.
+                GroupHeading(stringResource(Res.string.customize_options), tag = "group_options")
+                TapForDetailsPicker(enabled = config.tapForDetails, onSet = onSetTapForDetails)
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                CollapsibleSection(
+                    title = stringResource(Res.string.customize_show_times_in),
+                    summary = config.timesIn.label,
+                    tag = "section_times",
+                ) {
+                    TimesInPicker(timesIn = config.timesIn, onSet = onSetTimesIn, showTitle = false)
+                }
+                SectionDivider()
+                // Density lives with the look: both are "how it is drawn",
+                // and a reader setting one is likely to want the other.
                 CollapsibleSection(
                     title = stringResource(Res.string.customize_look),
-                    summary = "${theme.mood.label} · ${theme.accent.label} · ${theme.type.label}",
+                    summary =
+                        listOf(theme.mood.label, theme.accent.label, theme.type.label, config.density.label)
+                            .joinToString(" · "),
                     tag = "section_look",
                 ) {
                     ThemePicker(theme = theme, onChange = onThemeChange, showTitle = false)
+                    Text(
+                        text = stringResource(Res.string.customize_density),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    DensityPicker(selected = config.density, onSelect = onSetDensity, showTitle = false)
+                    // The chips' names alone say little ("Comfortable" than
+                    // what?), so the choice is shown, drawn the way the
+                    // glance will draw it.
+                    Text(
+                        text = stringResource(Res.string.customize_preview),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    DensityPreview(density = config.density)
                 }
                 SectionDivider()
                 AlertBannerPicker(
@@ -341,10 +364,61 @@ private fun SectionDivider() {
 }
 
 /**
+ * The heading over one of the page's two groups. A line of text rather than
+ * a card or a box: the folds below it already draw their own rules, and a
+ * heading's job here is to say where one list ends and the other begins.
+ */
+@Composable
+private fun GroupHeading(
+    text: String,
+    tag: String,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 20.dp, bottom = 2.dp).testTag(tag),
+    )
+}
+
+/**
+ * One switch, in the fold of a module that cannot shrink to a cell: let it
+ * rest as one anyway, as a name to tap. Only for those modules — a number
+ * is made small by resizing it (see ModuleKey.canCollapse) — and only while
+ * the module shows, like its size chips.
+ */
+@Composable
+private fun CollapsiblePicker(
+    setting: ModuleSetting,
+    onSet: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(Res.string.customize_collapsible), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = stringResource(Res.string.customize_collapsible_rests_as_cell),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = setting.collapsible,
+            onCheckedChange = onSet,
+            modifier = Modifier.testTag("collapsible_${setting.module.key}"),
+        )
+    }
+}
+
+/**
  * One module, folded to its name, its footprint and its on/off switch. Open,
  * it holds everything else about the module: the name it shows under, its
- * place in the order, its size, and [moduleSettings] — the forecast's
- * framing and reach, the sun's days — for the modules that have any.
+ * place in the order, its size, whether it rests folded (for the modules
+ * that can), and [moduleSettings] — the forecast's framing and reach, the
+ * sun's days — for the modules that have any.
  */
 @Composable
 private fun FieldRow(
@@ -354,6 +428,7 @@ private fun FieldRow(
     onToggle: () -> Unit,
     onRelabel: (String?) -> Unit,
     onResize: (ModuleSize) -> Unit,
+    onSetCollapsible: (Boolean) -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     moduleSettings: @Composable ColumnScope.() -> Unit,
@@ -363,7 +438,12 @@ private fun FieldRow(
     val key = setting.module.key
     CollapsibleSection(
         title = setting.customLabel ?: setting.module.defaultLabel,
-        summary = if (setting.visible) setting.size.label else stringResource(Res.string.customize_hidden),
+        summary =
+            when {
+                !setting.visible -> stringResource(Res.string.customize_hidden)
+                setting.collapsible -> "${setting.size.label} · ${stringResource(Res.string.customize_collapsible)}"
+                else -> setting.size.label
+            },
         tag = "field_$key",
         // On the line, not in the fold: showing or hiding a module is the
         // thing most visits come to do, and it should not take two taps.
@@ -422,6 +502,9 @@ private fun FieldRow(
                 onSelect = { onResize(setting.size.copy(rows = it)) },
                 tag = { "height_${key}_$it" },
             )
+            if (setting.module.canCollapse) {
+                CollapsiblePicker(setting = setting, onSet = onSetCollapsible)
+            }
         }
         moduleSettings()
     }

@@ -19,9 +19,9 @@ appId: io.raylytics.justmyweather
     timeout: 60000
 - assertNotVisible: "Wind"
 
-# Into customize, flip Wind on, and come back to the glance. The field list
-# sits below the option pickers and grew a Width chip row per shown field when
-# the glance became a module grid, so Wind's switch needs a scroll to reach.
+# Into customize, flip Wind on, and come back to the glance. The module list
+# leads the page (the whole-view options sit under it), but every module is a
+# line and Wind is well down the list, so its switch may need a scroll.
 - tapOn: "Customize"
 - assertVisible: "Customize view"
 - scrollUntilVisible:

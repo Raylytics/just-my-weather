@@ -101,6 +101,7 @@ class HomeScreenControlsTest {
                     onAlerts = {},
                     onResizeModule = { _, _ -> },
                     onMoveModule = { _, _ -> },
+                    onSetExpanded = { _, _ -> },
                     onPlaces = {},
                 )
             }

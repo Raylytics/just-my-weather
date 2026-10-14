@@ -36,6 +36,8 @@ class CustomizeViewModel(
 
     fun resize(module: ModuleKey, size: ModuleSize) = edit { it.resize(module, size) }
 
+    fun setCollapsible(module: ModuleKey, collapsible: Boolean) = edit { it.setCollapsible(module, collapsible) }
+
     fun moveUp(index: Int) = edit { it.moveUp(index) }
 
     fun moveDown(index: Int) = edit { it.moveDown(index) }

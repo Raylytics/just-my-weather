@@ -376,6 +376,24 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `opening a folded module is session state the ready state carries, and folds back`() = runTest(dispatcher) {
+        val h = harness(config = ViewConfig.DEFAULT.setCollapsible(ModuleKey.Forecast, true))
+        advanceUntilIdle()
+        assertEquals(emptySet<ModuleKey>(), h.vm.ready().expanded)
+
+        h.vm.setExpanded(ModuleKey.Forecast, true)
+        advanceUntilIdle()
+        assertEquals(setOf(ModuleKey.Forecast), h.vm.ready().expanded)
+        // Nothing was written: the fold is the module's resting form, so the
+        // stored config still says collapsible and nothing else.
+        assertTrue(h.vm.ready().config.items.first { it.module == ModuleKey.Forecast }.collapsible)
+
+        h.vm.setExpanded(ModuleKey.Forecast, false)
+        advanceUntilIdle()
+        assertEquals(emptySet<ModuleKey>(), h.vm.ready().expanded)
+    }
+
+    @Test
     fun `the config default drives the opening framing until setMode overrides it`() = runTest(dispatcher) {
         val h = harness(config = ViewConfig.DEFAULT.setDefaultForecastMode(ForecastMode.DAILY))
         advanceUntilIdle()

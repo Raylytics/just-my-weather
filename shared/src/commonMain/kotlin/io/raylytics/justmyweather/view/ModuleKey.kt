@@ -94,3 +94,14 @@ sealed interface ModuleKey {
  * one. Saves callers a `when` when all they want is "is this a reading?". */
 val ModuleKey.field: WeatherField?
     get() = (this as? ModuleKey.Reading)?.field
+
+/**
+ * Whether this module may be folded to a single cell that carries only its
+ * name, to be opened with a tap ([ModuleSetting.collapsible]). Offered only
+ * to a module that cannot simply be *resized* to a cell: a number already
+ * shrinks to one cell on its own, so a fold would add a tap for nothing,
+ * while a phrase, a table or the forecast grid stop at two cells or more
+ * and otherwise have no small form at all.
+ */
+val ModuleKey.canCollapse: Boolean
+    get() = minSize != ModuleSize.CELL

@@ -46,7 +46,7 @@ iPhone 16 simulator, iOS 27, 8/9 passed. Last Android run: Pixel 7, API 35,
 | Glance: modules on the lattice, tap for details | shared Compose UI (`ui/home/`) | same code | parity | — | `00-smoke` |
 | Arrange mode: drag to move, corner-drag to resize | shared `ui/home/ModuleGrid` | same code; the arrange bar replaces the action bar at the foot while arranging | parity | — | `06-arrange` (both) |
 | Forecast module: Hourly / Daily toggle, up to nine days | shared `ui/home/ForecastModule`; NWS plus MET Norway | same code | parity | — | `07-forecast` |
-| Customize: which modules, sizes, density | shared `ui/customize/` | same code | parity | — | `01-customize` |
+| Customize: which modules, sizes, collapsible modules, look + density, which clock | shared `ui/customize/` | same code | parity | — | `01-customize` |
 | Themes: light/dark/system, accent, typeface | shared `ui/theme/` | same code, but the "system sans" typeface is bundled Roboto on iOS (ledger: `sansFamily`) | parity | — | `01-customize` |
 | Places: offline gazetteer search, saved places | shared `ui/places/`; `places.tsv` from assets (`AssetPlaceSource`) | same code; the same `places.tsv` bundled (`BundlePlaceSource`) | parity | — | `08-places` |
 | Region & units | shared `region/`; clues from `AndroidRegionSignals` | shared `region/`; clues from `IosRegionSignals` (storefront, fix, place, Region setting, time zone) | parity, platform-shaped (see docs/REGIONS.md "On iOS") | — | — (unit-tested: `RegionResolverTest`, `StorefrontsTest`) |
