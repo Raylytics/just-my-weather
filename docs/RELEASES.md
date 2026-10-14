@@ -47,6 +47,30 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
+## 0.4.0 — versionCode 10, Play internal 2026-10-14 (supersedes 9)
+
+Same version, a respin for internal testers with the whole-row move. Cut
+with Evan's go-ahead; CI green on PR #1 at the cut commit.
+
+### Store-facing (≤500 chars)
+
+> Customize is easier to read: every setting folds to one line until you tap
+> it, and Density shows a preview of how the glance will look. Buttons now
+> have a light outline. Your place name is boxed on the glance: tap it to
+> switch places. Long forecasts show a scrollbar. Moving a full-width tile in
+> arrange mode now carries it past the whole row it lands on. Ads are
+> personalized only if you agree in Google's consent form.
+
+### Internal
+
+- Added: `view/wholeRowTarget`, a full-width tile dragged (or moved with the
+  screen reader's Move up/down) crosses a whole lattice band (3a6bd4c).
+- Fixed: the drag no longer bounces back over the band it just crossed;
+  settle step pure in `ui/home/MovePlan.kt` (3d57a56, roborev 5942).
+- Pre-tests: verify.sh 503; instrumented 28/28 and Maestro 10/10 on API 35;
+  Maestro 9/9 on the iOS 27 simulator (3a6bd4c); emulator drag checks down,
+  up and off-centre (3d57a56).
+
 ## 0.4.0 — versionCode 9, Play internal 2026-10-13
 
 Cut from 64877b5 on `ios-port` with Evan's go-ahead (CI green on PR #1, which
