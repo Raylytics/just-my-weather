@@ -9,6 +9,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
 
 // Material 3 1.4 (the Compose Multiplatform line the iOS port needs) re-tuned
 // a few defaults toward fainter outlines and greyer disabled states. These pin
@@ -45,4 +46,19 @@ fun buttonColors(): ButtonColors =
     ButtonDefaults.buttonColors(
         disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+    )
+
+/**
+ * The faint outline an in-content button wears, so a word that does something
+ * reads as a button rather than as a label (the Hourly/Daily toggle, bare,
+ * looked like a caption). Muted ink at low alpha rather than `outlineVariant`,
+ * which in Material's baseline is tinted purple against this neutral palette.
+ * A header's "Done" stays bare: it is navigation, where a plain word is the
+ * platform convention.
+ */
+@Composable
+fun subtleBorder(enabled: Boolean = true): BorderStroke =
+    BorderStroke(
+        width = 1.dp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.3f else 0.12f),
     )

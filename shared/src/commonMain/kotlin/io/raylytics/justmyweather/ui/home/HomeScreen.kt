@@ -55,6 +55,7 @@ import io.raylytics.justmyweather.resources.home_refresh
 import io.raylytics.justmyweather.resources.home_refreshing
 import io.raylytics.justmyweather.resources.home_try_again
 import io.raylytics.justmyweather.ui.theme.LocalConventions
+import io.raylytics.justmyweather.ui.theme.subtleBorder
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.AlertBannerPosition
 import io.raylytics.justmyweather.view.Conventions
@@ -341,7 +342,7 @@ private fun ArrangeBar(onDone: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.testTag("arrangeHint"),
         )
-        TextButton(onClick = onDone, modifier = Modifier.testTag("doneArranging")) {
+        TextButton(onClick = onDone, border = subtleBorder(), modifier = Modifier.testTag("doneArranging")) {
             Text(stringResource(Res.string.home_done_arranging))
         }
     }
@@ -583,26 +584,34 @@ private fun ActionBar(
             )
         }
         // Four labels at TextButton's default 12dp padding are just wider than
-        // a Pixel 7, so the buttons sit closer than the default; the FlowRow is
-        // the fallback for narrower phones, where a wrapped button beats one
-        // clipped off the edge.
-        val padding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
-        FlowRow(horizontalArrangement = Arrangement.Center) {
+        // a Pixel 7, so the buttons are tighter than the default — 8dp, which
+        // pays for the 4dp gaps their outlines need (two borders touching read
+        // as one thick line). The FlowRow is the fallback for narrower phones,
+        // where a wrapped button beats one clipped off the edge.
+        val padding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+        val border = subtleBorder()
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             // The button label reflects the refreshing flag, so a re-fetch is an
             // observable state change (and the flag stops being dead state).
             TextButton(
                 onClick = onRefresh,
                 enabled = !refreshing,
                 colors = textButtonColors(),
+                border = subtleBorder(enabled = !refreshing),
                 contentPadding = padding,
             ) {
                 Text(stringResource(if (refreshing) Res.string.home_refreshing else Res.string.home_refresh))
             }
-            TextButton(onClick = onAppSettings, contentPadding = padding) { Text("App Settings") }
-            TextButton(onClick = onCustomize, contentPadding = padding) {
+            TextButton(onClick = onAppSettings, border = border, contentPadding = padding) { Text("App Settings") }
+            TextButton(onClick = onCustomize, border = border, contentPadding = padding) {
                 Text(stringResource(Res.string.common_customize))
             }
-            TextButton(onClick = onAlerts, contentPadding = padding) { Text(stringResource(Res.string.common_alerts)) }
+            TextButton(onClick = onAlerts, border = border, contentPadding = padding) {
+                Text(stringResource(Res.string.common_alerts))
+            }
         }
     }
 }
@@ -622,7 +631,7 @@ private fun ErrorView(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        TextButton(onClick = onRefresh) { Text(stringResource(Res.string.home_try_again)) }
+        TextButton(onClick = onRefresh, border = subtleBorder()) { Text(stringResource(Res.string.home_try_again)) }
     }
 }
 

@@ -1,5 +1,7 @@
 package io.raylytics.justmyweather.ui.home
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalDensity
@@ -41,6 +45,7 @@ import io.raylytics.justmyweather.resources.forecast_no_forecast_available
 import io.raylytics.justmyweather.resources.forecast_rh
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
+import io.raylytics.justmyweather.ui.theme.subtleBorder
 import io.raylytics.justmyweather.view.DailyStyle
 import io.raylytics.justmyweather.view.Detail
 import io.raylytics.justmyweather.view.Details
@@ -279,12 +284,16 @@ internal fun ForecastModuleContent(
 private fun Modifier.opens(open: ((Detail) -> Unit)?, detail: () -> Detail): Modifier =
     if (open == null) this else clickable { open(detail()) }
 
+private val Pill = RoundedCornerShape(percent = 50)
+
 /**
  * The module's label row: "Forecast" on the left, the framing on the right.
  *
  * The framing is two words rather than two chips. Chips need a row to
  * themselves at two cells wide, and this header has one line — so the chosen
  * framing is the bold, accented word and the other is quiet and tappable.
+ * Each word wears a faint pill outline (accented on the chosen one): bare,
+ * they read as a caption, and nobody tried tapping them.
  * The label stands for the provenance the glance's "Observed" line gives its
  * side: everything in this tile is model output for a grid cell, not a
  * station's measurement, and the two legitimately disagree.
@@ -322,8 +331,16 @@ private fun ForecastHeader(
                         },
                     modifier =
                         Modifier
-                            .clickable { onSetMode(entry) }
-                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                            .clip(Pill)
+                            .border(
+                                if (selected) {
+                                    BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+                                } else {
+                                    subtleBorder()
+                                },
+                                Pill,
+                            ).clickable { onSetMode(entry) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                             .testTag("forecast_${entry.key}"),
                 )
             }
