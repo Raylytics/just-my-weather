@@ -286,6 +286,8 @@ fun ModuleGrid(
     // the save round-trips through DataStore, and re-requesting the same move
     // on every drag event in that window would thrash.
     var pendingTarget by remember { mutableStateOf<Int?>(null) }
+    // The band a full-width tile last crossed in this drag (planMove).
+    var crossing by remember { mutableStateOf<RowCrossing<ModuleKey>?>(null) }
     // The resize's twin of pendingTarget.
     var pendingSize by remember { mutableStateOf<ModuleSize?>(null) }
     // Counts drags, so a drop's deferred clean-up can tell whether the drag it
@@ -335,6 +337,7 @@ fun ModuleGrid(
         dragKind = kind
         dragPosition = rootPos
         pendingTarget = null
+        crossing = null
         pendingSize = null
         val rest = bounds[field]?.topLeft ?: rootPos
         when (kind) {
@@ -359,6 +362,7 @@ fun ModuleGrid(
         val kind = dragKind
         dragOwner = null
         pendingTarget = null
+        crossing = null
         pendingSize = null
         if (field == null) return
         if (kind == DragKind.RESIZE) {
@@ -390,28 +394,31 @@ fun ModuleGrid(
         }
     }
 
-    // Nearest-center wins, not rect containment: once a tile moves under the
-    // pointer, ITS center is the nearest, so the arrangement is stable by
-    // construction — rect hit-testing oscillates when tiles of different sizes
-    // land where the pointer already is. A full-width tile then crosses the
-    // whole row it lands on (wholeRowTarget), so it is never left splitting
-    // a row the user would have to chase sideways.
+    // Nearest-center wins, not rect containment: rect hit-testing oscillates
+    // when tiles of different sizes land where the pointer already is. A
+    // full-width tile crosses the whole row it lands on, with a memory of the
+    // band it crossed so the drag cannot bounce straight back (planMove).
     fun settleMove() {
         val field = dragged ?: return
         val current = currentModules.indexOfFirst { it.module == field }
         if (current == -1) return
-        val nearest =
-            currentModules.indices.minByOrNull { i ->
-                val center = bounds[currentModules[i].module]?.center ?: return@minByOrNull Float.MAX_VALUE
-                (center - dragPosition).getDistanceSquared()
-            } ?: return
-        val target = wholeRowTarget(currentModules, current, nearest) { it.size }
-        if (target != current && target != pendingTarget) {
-            pendingTarget = target
+        val plan =
+            planMove(
+                order = currentModules,
+                current = current,
+                key = { it.module },
+                size = { it.size },
+                bounds = { bounds[it] },
+                pointer = dragPosition,
+                lastCrossing = crossing,
+            ) ?: return
+        if (plan.target != pendingTarget) {
+            pendingTarget = plan.target
+            crossing = plan.crossing
             // A tick per slot, the launcher's way of letting the thumb feel
             // the grid it cannot see under itself.
             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            move(field, target)
+            move(field, plan.target)
         }
     }
 
