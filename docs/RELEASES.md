@@ -50,7 +50,10 @@ arrange-bar fix (nyt.13), the App Store product id
 ## 0.4.0 — versionCode 10, Play internal 2026-10-14 (supersedes 9)
 
 Same version, a respin for internal testers with the whole-row move. Cut
-with Evan's go-ahead; CI green on PR #1 at the cut commit.
+from 3f8df5f with Evan's go-ahead; CI green on PR #1 at that commit
+(unit + ktlint + build, Maestro). The optional API 36 device pass was
+skipped: an unclaimed Pixel_7_API_35 emulator was running (not this
+session's) and only one device may run at a time.
 
 ### Store-facing (≤500 chars)
 
