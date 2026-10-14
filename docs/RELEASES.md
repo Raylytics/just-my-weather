@@ -47,11 +47,13 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
-## 0.4.0 — versionCode 11, Play internal (pending Evan's go-ahead)
+## 0.4.0 — versionCode 11, Play internal 2026-10-14 (supersedes 10)
 
 Same version, a respin for internal testers with collapsible modules and
-the regrouped Customize page (4750cc7, just-my-weather-9pz). 0.4.0 has not
-reached production, so the version name stays; only the counter ticks.
+the regrouped Customize page (4750cc7, just-my-weather-9pz). Cut from
+22c5892 with Evan's go-ahead; CI green on PR #1 at that commit (unit +
+ktlint + build, Maestro). 0.4.0 has not reached production, so the version
+name stays; only the counter ticks.
 
 ### Store-facing (≤500 chars)
 
