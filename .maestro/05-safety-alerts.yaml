@@ -60,6 +60,16 @@ appId: io.raylytics.justmyweather
 - extendedWaitUntil:
     visible: "Customize view"
     timeout: 10000
+# The position chips sit inside the folded "Safety alerts" section, which
+# opens folded on every visit.
+- scrollUntilVisible:
+    element:
+      id: "section_banner"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "section_banner"
 - scrollUntilVisible:
     element:
       id: "banner_bottom"
@@ -81,6 +91,16 @@ appId: io.raylytics.justmyweather
 - extendedWaitUntil:
     visible: "Customize view"
     timeout: 10000
+# The position chips sit inside the folded "Safety alerts" section, which
+# opens folded on every visit.
+- scrollUntilVisible:
+    element:
+      id: "section_banner"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "section_banner"
 - scrollUntilVisible:
     element:
       id: "banner_bottom"

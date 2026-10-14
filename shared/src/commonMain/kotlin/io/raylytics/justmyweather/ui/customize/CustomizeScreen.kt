@@ -2,6 +2,7 @@ package io.raylytics.justmyweather.ui.customize
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -33,7 +35,13 @@ import io.raylytics.justmyweather.resources.Res
 import io.raylytics.justmyweather.resources.common_done
 import io.raylytics.justmyweather.resources.customize_couldn_find_what
 import io.raylytics.justmyweather.resources.customize_customize_view
+import io.raylytics.justmyweather.resources.customize_density
 import io.raylytics.justmyweather.resources.customize_height
+import io.raylytics.justmyweather.resources.customize_hidden
+import io.raylytics.justmyweather.resources.customize_look
+import io.raylytics.justmyweather.resources.customize_name
+import io.raylytics.justmyweather.resources.customize_order
+import io.raylytics.justmyweather.resources.customize_preview
 import io.raylytics.justmyweather.resources.customize_safety_alerts
 import io.raylytics.justmyweather.resources.customize_show_fields_care_about
 import io.raylytics.justmyweather.resources.customize_submit_idea_developer
@@ -41,6 +49,8 @@ import io.raylytics.justmyweather.resources.customize_tap_tile_details
 import io.raylytics.justmyweather.resources.customize_tornado_severe_storm_hurricane
 import io.raylytics.justmyweather.resources.customize_whole_observation_behind_reading
 import io.raylytics.justmyweather.resources.customize_width
+import io.raylytics.justmyweather.ui.home.DensityPreview
+import io.raylytics.justmyweather.ui.theme.subtleBorder
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.AlertBannerPosition
 import io.raylytics.justmyweather.view.DailyStyle
@@ -63,9 +73,11 @@ private const val RELABEL_DEBOUNCE_MS = 400L
  * The customization layer: pick which data points appear, set how wide each
  * sits on the glance grid, reorder and relabel them. Edits persist immediately
  * and the home view reflects them live. Deliberately a plain list — the power
- * is in editing down, not in a wall of controls. Everything here is also the
- * grid's non-gesture path: the arrows and width chips do what arrange mode's
- * drag and tap do, for anyone who can't or won't long-press
+ * is in editing down, not in a wall of controls — and each entry is folded to
+ * one line until tapped (CollapsibleSection), with every setting a module has,
+ * the forecast's and the sun's included, inside its own fold. Everything here
+ * is also the grid's non-gesture path: the arrows and width chips do what
+ * arrange mode's drag and tap do, for anyone who can't or won't long-press
  * (docs/modular-v2-evaluation.md, criterion 3).
  */
 @Composable
@@ -115,53 +127,98 @@ fun CustomizeScreen(
             // Everything below the header scrolls as one page — the option
             // sections have outgrown a fixed header on small screens.
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                DensityPicker(selected = config.density, onSelect = onSetDensity)
+                CollapsibleSection(
+                    title = stringResource(Res.string.customize_density),
+                    summary = config.density.label,
+                    tag = "section_density",
+                ) {
+                    DensityPicker(selected = config.density, onSelect = onSetDensity, showTitle = false)
+                    // The chips' names alone say little ("Comfortable" than
+                    // what?), so the choice is shown, drawn the way the
+                    // glance will draw it.
+                    Text(
+                        text = stringResource(Res.string.customize_preview),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    DensityPreview(density = config.density)
+                }
+                SectionDivider()
                 TapForDetailsPicker(enabled = config.tapForDetails, onSet = onSetTapForDetails)
                 TimesInPicker(timesIn = config.timesIn, onSet = onSetTimesIn)
-                ForecastPicker(
-                    show = config.shows(ModuleKey.Forecast),
-                    mode = config.defaultForecastMode,
-                    dailyStyle = config.dailyStyle,
-                    onSetMode = onSetDefaultForecastMode,
-                    onSetDailyStyle = onSetDailyStyle,
-                    hourlyHours = config.hourlyHours,
-                    onSetHourlyHours = onSetHourlyHours,
-                    dailyDays = config.dailyDays,
-                    onSetDailyDays = onSetDailyDays,
-                    elements = config.forecastElements,
-                    onToggleElement = onToggleForecastElement,
-                    tileLayout = config.forecastTileLayout,
-                    onSetTileLayout = onSetForecastTileLayout,
-                )
-                SunPicker(show = config.shows(ModuleKey.Sun), sunDays = config.sunDays, onSetSunDays = onSetSunDays)
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp),
+                    modifier = Modifier.padding(top = 12.dp),
                 )
 
                 config.items.forEachIndexed { index, setting ->
-                    FieldRow(
-                        setting = setting,
-                        canMoveUp = index > 0,
-                        canMoveDown = index < config.items.lastIndex,
-                        onToggle = { onToggle(setting.module) },
-                        onRelabel = { onRelabel(setting.module, it) },
-                        onResize = { onResize(setting.module, it) },
-                        onMoveUp = { onMoveUp(index) },
-                        onMoveDown = { onMoveDown(index) },
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                    // Keyed by module so a field's open-or-folded state, and
+                    // its half-typed name, move with it when it is reordered.
+                    key(setting.module) {
+                        FieldRow(
+                            setting = setting,
+                            canMoveUp = index > 0,
+                            canMoveDown = index < config.items.lastIndex,
+                            onToggle = { onToggle(setting.module) },
+                            onRelabel = { onRelabel(setting.module, it) },
+                            onResize = { onResize(setting.module, it) },
+                            onMoveUp = { onMoveUp(index) },
+                            onMoveDown = { onMoveDown(index) },
+                        ) {
+                            // A module's own options live in its fold, with
+                            // its name and size: "everything about the
+                            // forecast" is one tap, not a hunt between a
+                            // picker up top and a row further down.
+                            when (setting.module) {
+                                ModuleKey.Forecast ->
+                                    ForecastPicker(
+                                        show = setting.visible,
+                                        mode = config.defaultForecastMode,
+                                        dailyStyle = config.dailyStyle,
+                                        onSetMode = onSetDefaultForecastMode,
+                                        onSetDailyStyle = onSetDailyStyle,
+                                        hourlyHours = config.hourlyHours,
+                                        onSetHourlyHours = onSetHourlyHours,
+                                        dailyDays = config.dailyDays,
+                                        onSetDailyDays = onSetDailyDays,
+                                        elements = config.forecastElements,
+                                        onToggleElement = onToggleForecastElement,
+                                        tileLayout = config.forecastTileLayout,
+                                        onSetTileLayout = onSetForecastTileLayout,
+                                        showTitle = false,
+                                    )
+                                ModuleKey.Sun ->
+                                    SunPicker(
+                                        show = setting.visible,
+                                        sunDays = config.sunDays,
+                                        onSetSunDays = onSetSunDays,
+                                        showTitle = false,
+                                    )
+                                else -> Unit
+                            }
+                        }
+                    }
+                    SectionDivider()
                 }
 
-                ThemePicker(theme = theme, onChange = onThemeChange)
                 // Below the field list, with the other set-once settings: the
                 // fields are what people come here to edit, and putting a
                 // rarely-touched picker above them pushed the list off the
                 // first screenful.
+                CollapsibleSection(
+                    title = stringResource(Res.string.customize_look),
+                    summary = "${theme.mood.label} · ${theme.accent.label} · ${theme.type.label}",
+                    tag = "section_look",
+                ) {
+                    ThemePicker(theme = theme, onChange = onThemeChange, showTitle = false)
+                }
+                SectionDivider()
                 AlertBannerPicker(
                     position = config.alertBannerPosition,
                     onSelect = onSetAlertBannerPosition,
                 )
+                SectionDivider()
                 IdeaPrompt(onSubmitIdea = onSubmitIdea)
             }
         }
@@ -200,11 +257,11 @@ private fun AlertBannerPicker(
     position: AlertBannerPosition,
     onSelect: (AlertBannerPosition) -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+    CollapsibleSection(
+        title = stringResource(Res.string.customize_safety_alerts),
+        summary = position.label,
+        tag = "section_banner",
     ) {
-        Text(stringResource(Res.string.customize_safety_alerts), style = MaterialTheme.typography.labelMedium)
         ChipRow(
             options = AlertBannerPosition.entries,
             selected = position,
@@ -277,17 +334,18 @@ private fun TapForDetailsPicker(
     }
 }
 
-/**
- * Everything about the forecast module, in one block: whether it appears, which
- * framing it opens on, and how a day is drawn.
- *
- * These used to be three separate sections — "Opens on", "Hourly view", "Daily
- * view" — because the framing was a property of the whole screen. It is a
- * property of the forecast now, so its settings sit together, and the two
- * "which direction does the list run" pickers are gone entirely: the grid flows
- * its tiles, so there is no longer a direction to choose.
- */
+/** The faint rule between folded sections. */
+@Composable
+private fun SectionDivider() {
+    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+}
 
+/**
+ * One module, folded to its name, its footprint and its on/off switch. Open,
+ * it holds everything else about the module: the name it shows under, its
+ * place in the order, its size, and [moduleSettings] — the forecast's
+ * framing and reach, the sun's days — for the modules that have any.
+ */
 @Composable
 private fun FieldRow(
     setting: ModuleSetting,
@@ -298,69 +356,51 @@ private fun FieldRow(
     onResize: (ModuleSize) -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    moduleSettings: @Composable ColumnScope.() -> Unit,
 ) {
     // testTags (per field key) give UI tests a stable handle on controls
     // that otherwise carry only a glyph or no text.
     val key = setting.module.key
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // Reorder controls. Arrows as text keep us off an icon dependency.
-            Column {
-                TextButton(
-                    onClick = onMoveUp,
-                    enabled = canMoveUp,
-                    colors = textButtonColors(),
-                    modifier = Modifier.testTag("moveUp_$key"),
-                ) { Text("↑") }
-                TextButton(
-                    onClick = onMoveDown,
-                    enabled = canMoveDown,
-                    colors = textButtonColors(),
-                    modifier = Modifier.testTag("moveDown_$key"),
-                ) { Text("↓") }
-            }
-            // Local edit state keyed by field so the cursor stays put while the
-            // persisted config streams back in; the field's default name shows as
-            // the placeholder, so an empty box clearly means "use the default".
-            var label by remember(setting.module) { mutableStateOf(setting.customLabel ?: "") }
-            // Debounce persistence: typing only writes to DataStore once the user
-            // pauses, instead of a disk write per keystroke. The delay is cancelled
-            // and restarted on each change; the guard skips the no-op initial write.
-            LaunchedEffect(label) {
-                delay(RELABEL_DEBOUNCE_MS)
-                val normalized = label.ifBlank { null }
-                if (normalized != setting.customLabel) onRelabel(normalized)
-            }
-            // Flush a still-pending edit if the row leaves composition before the
-            // debounce fires — tapping Done or pressing back. Without this, the last
-            // keystroke is silently dropped. rememberUpdatedState keeps onDispose
-            // reading the latest typed value and the latest persisted label, so the
-            // guard compares against the current value and skips an already-saved one.
-            val latestLabel by rememberUpdatedState(label)
-            val latestSaved by rememberUpdatedState(setting.customLabel)
-            DisposableEffect(setting.module) {
-                onDispose {
-                    val normalized = latestLabel.ifBlank { null }
-                    if (normalized != latestSaved) onRelabel(normalized)
-                }
-            }
-            OutlinedTextField(
-                value = label,
-                onValueChange = { label = it },
-                placeholder = { Text(setting.module.defaultLabel) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                modifier = Modifier.weight(1f),
-            )
+    CollapsibleSection(
+        title = setting.customLabel ?: setting.module.defaultLabel,
+        summary = if (setting.visible) setting.size.label else stringResource(Res.string.customize_hidden),
+        tag = "field_$key",
+        // On the line, not in the fold: showing or hiding a module is the
+        // thing most visits come to do, and it should not take two taps.
+        trailing = {
             Switch(
                 checked = setting.visible,
                 onCheckedChange = { onToggle() },
                 modifier = Modifier.testTag("toggle_$key"),
             )
+        },
+    ) {
+        NameField(setting = setting, onRelabel = onRelabel)
+        // Reorder controls. Arrows as text keep us off an icon dependency;
+        // the outline says they are buttons, which a bare arrow did not.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.customize_order),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(
+                onClick = onMoveUp,
+                enabled = canMoveUp,
+                colors = textButtonColors(),
+                border = subtleBorder(enabled = canMoveUp),
+                modifier = Modifier.testTag("moveUp_$key"),
+            ) { Text("↑") }
+            TextButton(
+                onClick = onMoveDown,
+                enabled = canMoveDown,
+                colors = textButtonColors(),
+                border = subtleBorder(enabled = canMoveDown),
+                modifier = Modifier.testTag("moveDown_$key"),
+            ) { Text("↓") }
         }
         // Footprint on the glance grid — the non-gesture twin of dragging the
         // tile's corner in arrange mode. Only for shown fields: a hidden field
@@ -383,5 +423,49 @@ private fun FieldRow(
                 tag = { "height_${key}_$it" },
             )
         }
+        moduleSettings()
     }
+}
+
+/** The name a module shows under on the glance; empty means its default. */
+@Composable
+private fun NameField(
+    setting: ModuleSetting,
+    onRelabel: (String?) -> Unit,
+) {
+    // Local edit state keyed by field so the cursor stays put while the
+    // persisted config streams back in; the field's default name shows as
+    // the placeholder, so an empty box clearly means "use the default".
+    var label by remember(setting.module) { mutableStateOf(setting.customLabel ?: "") }
+    // Debounce persistence: typing only writes to DataStore once the user
+    // pauses, instead of a disk write per keystroke. The delay is cancelled
+    // and restarted on each change; the guard skips the no-op initial write.
+    LaunchedEffect(label) {
+        delay(RELABEL_DEBOUNCE_MS)
+        val normalized = label.ifBlank { null }
+        if (normalized != setting.customLabel) onRelabel(normalized)
+    }
+    // Flush a still-pending edit if the box leaves composition before the
+    // debounce fires — tapping Done, pressing back, or folding the section.
+    // Without this, the last keystroke is silently dropped. rememberUpdatedState
+    // keeps onDispose reading the latest typed value and the latest persisted
+    // label, so the guard compares against the current value and skips an
+    // already-saved one.
+    val latestLabel by rememberUpdatedState(label)
+    val latestSaved by rememberUpdatedState(setting.customLabel)
+    DisposableEffect(setting.module) {
+        onDispose {
+            val normalized = latestLabel.ifBlank { null }
+            if (normalized != latestSaved) onRelabel(normalized)
+        }
+    }
+    OutlinedTextField(
+        value = label,
+        onValueChange = { label = it },
+        label = { Text(stringResource(Res.string.customize_name)) },
+        placeholder = { Text(setting.module.defaultLabel) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

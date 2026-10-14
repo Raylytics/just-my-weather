@@ -42,6 +42,21 @@ appId: io.raylytics.justmyweather
       - assertVisible:
           id: "toggle_wind"
           checked: true
+
+# Each field is folded to one line: its settings appear only once the line
+# is tapped. The switch sits on the line itself, so the tap above did not
+# open it.
+- assertNotVisible:
+    id: "moveUp_wind"
+- tapOn:
+    id: "field_wind"
+- scrollUntilVisible:
+    element:
+      id: "moveUp_wind"
+    direction: DOWN
+    timeout: 10000
+- assertVisible:
+    id: "width_wind_2"
 - tapOn: "Done"
 
 # The glance now carries a Wind module, driven by the persisted config.

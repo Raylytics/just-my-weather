@@ -40,17 +40,25 @@
     <string name="forecast_no_forecast_available">No forecast available.</string>
     <string name="forecast_rh">RH %1$s%</string>
     <!-- customize -->
+    <string name="customize_collapse">Collapse</string>
+    <string name="customize_collapsed">Collapsed</string>
     <string name="customize_couldn_find_what">Couldn't find what you're looking for?</string>
     <string name="customize_customize_view">Customize view</string>
     <string name="customize_daily_shows_1_day">Daily shows 1 day</string>
     <string name="customize_daily_shows_days">Daily shows %1$s days</string>
     <string name="customize_density">Density</string>
     <string name="customize_each_day_shows">Each day shows</string>
+    <string name="customize_expand">Expand</string>
+    <string name="customize_expanded">Expanded</string>
     <string name="customize_height">Height</string>
+    <string name="customize_hidden">Hidden</string>
     <string name="customize_hourly_shows_hours">Hourly shows %1$s hours</string>
     <string name="customize_look">Look</string>
+    <string name="customize_name">Name</string>
     <string name="customize_off_forecast_hours_sun">Off: the forecast hours, sun times and observed time read in this phone's clock</string>
     <string name="customize_opens">Opens on</string>
+    <string name="customize_order">Order</string>
+    <string name="customize_preview">Preview</string>
     <string name="customize_safety_alerts">Safety alerts</string>
     <string name="customize_show_fields_care_about">Show the fields you care about, in the order you read them. Size is prominence: the widest, tallest tile is the big one. You can also long-press any tile on the glance to drag and resize it in place.</string>
     <string name="customize_show_times_place">Show times in the place's local time</string>

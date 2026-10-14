@@ -59,18 +59,23 @@ import kotlin.math.roundToInt
  * glance's options, so it is set up with the glance's controls — the same
  * chips, sliders and switches, not a second set that would drift. Internal,
  * not private to a screen, for exactly that reason.
+ *
+ * Each titled picker takes `showTitle`: the widget screen lays them out open,
+ * under their own titles, while Customize folds each into a section whose
+ * header already says the name (CollapsibleSection).
  */
 
 @Composable
 fun ThemePicker(
     theme: ThemeConfig,
     onChange: (ThemeConfig) -> Unit,
+    showTitle: Boolean = true,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = if (showTitle) 16.dp else 0.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(stringResource(Res.string.customize_look), style = MaterialTheme.typography.labelMedium)
+        if (showTitle) Text(stringResource(Res.string.customize_look), style = MaterialTheme.typography.labelMedium)
         ChipRow(
             options = ThemeMood.entries,
             selected = theme.mood,
@@ -170,9 +175,10 @@ fun <T> ChipRow(
 fun DensityPicker(
     selected: Density,
     onSelect: (Density) -> Unit,
+    showTitle: Boolean = true,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(Res.string.customize_density), style = MaterialTheme.typography.labelMedium)
+        if (showTitle) Text(stringResource(Res.string.customize_density), style = MaterialTheme.typography.labelMedium)
         // Shares the one FilterChip loop with the theme rows, so spacing and
         // wrap behaviour can't drift between the two.
         ChipRow(
@@ -223,13 +229,16 @@ fun SunPicker(
     show: Boolean,
     sunDays: Int,
     onSetSunDays: (Int) -> Unit,
+    showTitle: Boolean = true,
 ) {
     if (!show) return
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = if (showTitle) 10.dp else 0.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(stringResource(Res.string.customize_sun_times), style = MaterialTheme.typography.labelMedium)
+        if (showTitle) {
+            Text(stringResource(Res.string.customize_sun_times), style = MaterialTheme.typography.labelMedium)
+        }
         Text(
             text =
                 if (sunDays == 1) {
@@ -268,6 +277,7 @@ fun ForecastPicker(
     onToggleElement: (ForecastElement) -> Unit,
     tileLayout: ForecastTileLayout,
     onSetTileLayout: (ForecastTileLayout) -> Unit,
+    showTitle: Boolean = true,
 ) {
     // The framing options only mean something when there is a forecast to
     // frame; offered for a hidden module they read as controls that do
@@ -275,10 +285,10 @@ fun ForecastPicker(
     // list below is where it is switched back on.
     if (!show) return
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = if (showTitle) 10.dp else 0.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(stringResource(Res.string.common_forecast), style = MaterialTheme.typography.labelMedium)
+        if (showTitle) Text(stringResource(Res.string.common_forecast), style = MaterialTheme.typography.labelMedium)
         Text(
             text = stringResource(Res.string.customize_opens),
             style = MaterialTheme.typography.bodyMedium,
