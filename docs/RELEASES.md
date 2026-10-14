@@ -47,6 +47,39 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
+## 0.4.0 — versionCode 11, Play internal (pending Evan's go-ahead)
+
+Same version, a respin for internal testers with collapsible modules and
+the regrouped Customize page (4750cc7, just-my-weather-9pz). 0.4.0 has not
+reached production, so the version name stays; only the counter ticks.
+
+### Store-facing (≤500 chars)
+
+> Conditions, Sun and the Forecast can now be collapsible: switch it on in
+> Customize and the tile rests as a small cell with its name. Tap it to open,
+> tap the arrow to fold it back. Customize lists your modules first, with the
+> view's other options underneath; Density now sits under Look, with its
+> preview. "Show times in" is a choice between your phone's location and the
+> weather's.
+
+### Internal
+
+- Added: `ModuleSetting.collapsible` + `ModuleKey.canCollapse` (persisted,
+  codec-clamped, cleared by `showingOnly` for widgets); `ModuleValue
+  .collapsed` and the session set `HomeUiState.expanded`; the folded tile
+  and its ▴ control in `ui/home/CollapsedModule.kt` (the forecast draws
+  the control in its header). A folded tile has no handle, size actions or
+  detail; "Expand"/"Collapse" are screen-reader actions.
+- Changed: Customize is two groups, Modules then Options; Density inside
+  the Look fold; `TimesInPicker` is a chip row (`TimesIn.label`: Phone
+  location / Weather location) in a "Show times in" fold. Test tags:
+  `section_density` and `times-in-toggle` are gone; `group_modules`,
+  `group_options`, `section_times`, `times_in_<key>`, `collapsible_<key>`,
+  `collapse_<key>` are new.
+- Pre-tests: verify.sh 508; shared module compiles for the iOS simulator;
+  ModuleGridTest 23/23 (2 new) on API 35; Maestro 01-customize and
+  05-safety-alerts on API 35; screenshots of each state.
+
 ## 0.4.0 — versionCode 10, Play internal 2026-10-14 (supersedes 9)
 
 Same version, a respin for internal testers with the whole-row move. Cut
