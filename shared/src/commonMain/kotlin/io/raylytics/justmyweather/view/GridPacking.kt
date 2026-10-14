@@ -107,3 +107,56 @@ fun <T> packGrid(
 /** How many rows a packing occupies — the lattice's height. */
 val List<GridPlacement<*>>.rowCount: Int
     get() = maxOfOrNull { it.row + it.size.rows } ?: 0
+
+/**
+ * Where a move of `items[from]` toward `items[to]` should land, so a
+ * full-width item crosses a whole row at a time.
+ *
+ * A full-width tile can never share a row, so stepping it one place at a
+ * time past a row of smaller tiles only splits that row: drag the full-width
+ * temperature onto the first of two half-width readings and that reading
+ * jumps above it alone, while its neighbour stays below. The user then had
+ * to chase the rest of the row sideways. Instead, a full-width item moving
+ * down lands after every item of the row it is moved onto, and moving up
+ * lands before all of them, the row travelling as one.
+ *
+ * "The row" is the band of the lattice the target occupies: every item
+ * whose rows overlap the target's, widened until no further item overlaps,
+ * so a two-row hero with a column of cells beside it is one band. It is
+ * read from the packing WITHOUT the moving item, which is the arrangement
+ * the item is being inserted into. Anything narrower than the grid moves
+ * exactly where it was asked to: `to` is returned unchanged.
+ */
+fun <T> wholeRowTarget(
+    items: List<T>,
+    from: Int,
+    to: Int,
+    columns: Int = ModuleSize.COLUMNS,
+    size: (T) -> ModuleSize,
+): Int {
+    if (from !in items.indices || to !in items.indices || from == to) return to
+    if (size(items[from]).columns < columns) return to
+    val others = items.filterIndexed { index, _ -> index != from }
+    val placements = packGrid(others, columns, size)
+    // The target's index among the others: past `from`, everything shifts up.
+    val target = if (to > from) to - 1 else to
+    var top = placements[target].row
+    var bottom = top + placements[target].size.rows
+    var band: List<Int>
+    do {
+        band = placements.indices.filter { i -> placements[i].overlaps(top, bottom) }
+        val newTop = band.minOf { placements[it].row }
+        val newBottom = band.maxOf { placements[it].row + placements[it].size.rows }
+        val grew = newTop < top || newBottom > bottom
+        top = newTop
+        bottom = newBottom
+    } while (grew)
+    // An insertion index among the others is the item's final index.
+    return if (to > from) band.max() + 1 else band.min()
+}
+
+/** Whether this placement's rows meet the half-open row range [top, bottom). */
+private fun GridPlacement<*>.overlaps(
+    top: Int,
+    bottom: Int,
+): Boolean = row < bottom && row + size.rows > top

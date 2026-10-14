@@ -61,6 +61,7 @@ import io.raylytics.justmyweather.view.ModuleContent
 import io.raylytics.justmyweather.view.ModuleKey
 import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.ModuleValue
+import io.raylytics.justmyweather.view.wholeRowTarget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -392,16 +393,19 @@ fun ModuleGrid(
     // Nearest-center wins, not rect containment: once a tile moves under the
     // pointer, ITS center is the nearest, so the arrangement is stable by
     // construction — rect hit-testing oscillates when tiles of different sizes
-    // land where the pointer already is.
+    // land where the pointer already is. A full-width tile then crosses the
+    // whole row it lands on (wholeRowTarget), so it is never left splitting
+    // a row the user would have to chase sideways.
     fun settleMove() {
         val field = dragged ?: return
         val current = currentModules.indexOfFirst { it.module == field }
         if (current == -1) return
-        val target =
+        val nearest =
             currentModules.indices.minByOrNull { i ->
                 val center = bounds[currentModules[i].module]?.center ?: return@minByOrNull Float.MAX_VALUE
                 (center - dragPosition).getDistanceSquared()
             } ?: return
+        val target = wholeRowTarget(currentModules, current, nearest) { it.size }
         if (target != current && target != pendingTarget) {
             pendingTarget = target
             // A tick per slot, the launcher's way of letting the thumb feel
@@ -592,7 +596,9 @@ fun ModuleGrid(
         ModuleTile(
             index = index,
             lastIndex = modules.lastIndex,
-            onMove = onMove,
+            // The screen reader's "Move up/down" steps one place; through
+            // the same rule as the drag, a full-width tile steps a row.
+            onMove = { key, to -> onMove(key, wholeRowTarget(modules, index, to) { it.size }) },
             onResize = onResize,
             onSetForecastMode = onSetForecastMode,
             onOpenModule = onOpenModule,

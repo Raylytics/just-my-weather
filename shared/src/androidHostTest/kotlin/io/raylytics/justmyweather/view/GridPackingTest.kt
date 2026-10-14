@@ -102,4 +102,57 @@ class GridPackingTest {
         assertEquals(listOf(listOf(0, 1, 1, 1), listOf(1)), pack(0, 1, 1, 1, 1))
         assertEquals(emptyList<List<Int>>(), pack())
     }
+
+    // wholeRowTarget: items are named footprints, so a test reads as the grid.
+    private data class Tile(val name: String, val size: ModuleSize)
+
+    private val hero = Tile("hero", ModuleSize(4, 2))
+    private val left = Tile("left", ModuleSize(2, 1))
+    private val right = Tile("right", ModuleSize(2, 1))
+    private val forecast = Tile("forecast", ModuleSize(4, 4))
+
+    private fun moved(items: List<Tile>, from: Int, to: Int): List<String> {
+        val target = wholeRowTarget(items, from, to) { it.size }
+        return items.toMutableList().apply { add(target, removeAt(from)) }.map { it.name }
+    }
+
+    @Test
+    fun `a full-width tile moved down onto a row lands after the whole row`() {
+        val glance = listOf(hero, left, right, forecast)
+        // Onto either half of the row: the row moves up as one.
+        assertEquals(listOf("left", "right", "hero", "forecast"), moved(glance, 0, 1))
+        assertEquals(listOf("left", "right", "hero", "forecast"), moved(glance, 0, 2))
+    }
+
+    @Test
+    fun `a full-width tile moved up onto a row lands before the whole row`() {
+        val glance = listOf(left, right, hero)
+        assertEquals(listOf("hero", "left", "right"), moved(glance, 2, 1))
+        assertEquals(listOf("hero", "left", "right"), moved(glance, 2, 0))
+    }
+
+    @Test
+    fun `a full-width tile swaps with another full-width tile one place at a time`() {
+        assertEquals(listOf("forecast", "hero"), moved(listOf(hero, forecast), 0, 1))
+        assertEquals(listOf("forecast", "hero"), moved(listOf(hero, forecast), 1, 0))
+    }
+
+    @Test
+    fun `a band joined by a tall tile travels as one`() {
+        // A 2x2 beside two stacked half-width cells is one band of two rows.
+        val tall = Tile("tall", ModuleSize(2, 2))
+        val top = Tile("top", ModuleSize(2, 1))
+        val bottom = Tile("bottom", ModuleSize(2, 1))
+        val band = listOf(forecast, tall, top, bottom)
+        // Onto the tall tile or onto the lower of the two cells beside it.
+        assertEquals(listOf("tall", "top", "bottom", "forecast"), moved(band, 0, 1))
+        assertEquals(listOf("tall", "top", "bottom", "forecast"), moved(band, 0, 3))
+    }
+
+    @Test
+    fun `a narrower tile moves exactly where it was asked`() {
+        val glance = listOf(hero, left, right)
+        assertEquals(1, wholeRowTarget(glance, 2, 1) { it.size })
+        assertEquals(0, wholeRowTarget(glance, 2, 0) { it.size })
+    }
 }
