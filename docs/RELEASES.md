@@ -47,10 +47,10 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
-## 0.4.0 — versionCode 9, Play internal (NOT YET CUT; pre-tested 2026-10-13)
+## 0.4.0 — versionCode 9, Play internal 2026-10-13
 
-Pre-tested at the VERSION bump on `ios-port`; the cut itself needs Evan's
-go-ahead. Fill in the versionCode, date and cut commit when it lands.
+Cut from 64877b5 on `ios-port` with Evan's go-ahead (CI green on PR #1, which
+is not merged). Internal testers only; promoting to production is Evan's.
 
 ### Store-facing (≤500 chars)
 
