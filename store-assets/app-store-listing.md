@@ -92,10 +92,11 @@ keyword field. Reserves: `Custom weather, your alerts` (27),
 ### Promotional Text (170 chars max, editable without a new build)
 
 ```
-Your own weather view: pick the numbers, size the tiles, set alerts for the conditions you care about. Free, with one small banner.
+Your own weather view: pick the numbers, size the tiles, and get alerts for the conditions you care about.
 ```
 
-(131 chars.)
+(106 chars. No "free" or ads here: the store already shows the price, and
+the description covers the banner.)
 
 ### Description (4000 chars max)
 
