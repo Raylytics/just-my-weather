@@ -73,6 +73,10 @@ the regrouped Customize page (4750cc7, just-my-weather-9pz). Cut from
 ktlint + build, Maestro). 0.4.0 has not reached production, so the version
 name stays; only the counter ticks.
 
+Submitted for production review 2026-10-15 by Evan, from the Play Console.
+The review restarted the same day when the new full description (no "FREE,
+WITH ONE SMALL BANNER" section, 5244273) was saved alongside it.
+
 ### Store-facing (≤500 chars)
 
 > Conditions, Sun and the Forecast can now be collapsible: switch it on in
