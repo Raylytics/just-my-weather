@@ -34,6 +34,17 @@ A version that reaches both stores gets an entry in each.
 
 # iOS (App Store)
 
+## 0.4.0 — build 3, TestFlight 2026-10-15
+
+Cut from fce707e with Evan's go-ahead (he ran the upload himself);
+delivery 6d43f101-dc33-4889-a4c3-b1ed59ae6aec. The build for the first App
+Store submission. Over build 2 it adds everything in Android's 0.4.0 that
+lives in shared/: collapsible Customize modules and the regrouped page,
+full-width tiles moving a whole row at a time (and not bouncing back), the
+faint outline on in-content buttons, and the iOS keyboard fix (n52: tap
+outside, after Add, after picking a place). Gates: verify.sh,
+`:shared:allTests`; Maestro 02-alerts and 08-places on the iOS 27 simulator.
+
 ## 0.3.1 — build 2, TestFlight 2026-10-13
 
 The first iOS build (just-my-weather-nyt.10), cut from 4003b7f with Evan's
