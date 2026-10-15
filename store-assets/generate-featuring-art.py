@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """App Store promotional artwork: the header and search-results backdrops.
 
-App Store Connect's featuring slots take a header (5244x2950) and a
-search-results banner (3840x1646). Apple sets the app's name over this art,
+App Store Connect's featuring slots take a header (5244x2950 or 3840x1646) and a
+search-results image (3840x2560; it also takes 5244x2950 or 1920x1280). Apple sets the app's name over this art,
 so it carries no text: the launcher mark (icon-512.svg) on the icon's dark
 field, over a faint lattice of glance tiles that says "you lay it out".
 
@@ -123,7 +123,7 @@ def art(width, height, seed):
 
 
 def main():
-    for name, w, h in [("featuring-header-5244x2950", 5244, 2950), ("featuring-search-3840x1646", 3840, 1646)]:
+    for name, w, h in [("featuring-header-5244x2950", 5244, 2950), ("featuring-search-3840x2560", 3840, 2560)]:
         svg = HERE / f"{name}.svg"
         svg.write_text(art(w, h, seed=7))
         png = HERE / f"{name}.png"
