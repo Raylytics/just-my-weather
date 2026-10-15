@@ -131,23 +131,18 @@ FORECASTS FROM THE SOURCE
 • Units, dates and the clock follow your region automatically, or set them yourself.
 • Saved places: search a bundled offline list of about 60,000 towns and cities worldwide, or enter coordinates. No geocoding service sees what you type.
 
-FREE, WITH ONE SMALL BANNER
-
-• Just My Weather is free. A single banner ad sits at the bottom of the screen, out of the way of your weather.
-• A one-time $0.99 purchase removes it for good, on every device signed in to your Apple Account.
-
 NO ACCOUNT, YOUR DATA STAYS PUT
 
 • No sign-up and no analytics of our own. Your view, places, and alert rules stay on your iPhone.
 • Location is approximate and optional. The weather services receive only the coordinates of the place you are looking at.
-• The banner is served by Google AdMob, which measures its own ads. Ads are personalized only if you allow tracking and, where the law asks, consent.
+• Ads are served by Google AdMob, which measures its own ads. Ads are personalized only if you allow tracking and, where the law asks, consent.
 
 If you have been looking for a customizable weather app that shows only what you ask for, this is it.
 
 Weather from the US National Weather Service in the United States and from MET Norway elsewhere. Official weather warnings are available in the US only.
 ```
 
-(3073 chars, measured with `wc -m`.)
+(2827 chars, measured with `wc -m`.)
 
 ### Keywords (100 chars max, comma-separated, no spaces)
 
