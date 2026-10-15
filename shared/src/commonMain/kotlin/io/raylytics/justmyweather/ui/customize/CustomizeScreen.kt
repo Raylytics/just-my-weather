@@ -45,6 +45,9 @@ import io.raylytics.justmyweather.resources.customize_modules
 import io.raylytics.justmyweather.resources.customize_name
 import io.raylytics.justmyweather.resources.customize_options
 import io.raylytics.justmyweather.resources.customize_order
+import io.raylytics.justmyweather.resources.customize_order_hint
+import io.raylytics.justmyweather.resources.customize_order_hint_full_width
+import io.raylytics.justmyweather.resources.customize_order_hint_hidden
 import io.raylytics.justmyweather.resources.customize_preview
 import io.raylytics.justmyweather.resources.customize_safety_alerts
 import io.raylytics.justmyweather.resources.customize_show_fields_care_about
@@ -99,8 +102,8 @@ fun CustomizeScreen(
     onRelabel: (ModuleKey, String?) -> Unit,
     onResize: (ModuleKey, ModuleSize) -> Unit,
     onSetCollapsible: (ModuleKey, Boolean) -> Unit,
-    onMoveUp: (Int) -> Unit,
-    onMoveDown: (Int) -> Unit,
+    onStepUp: (ModuleKey) -> Unit,
+    onStepDown: (ModuleKey) -> Unit,
     onSetDensity: (Density) -> Unit,
     onSetTapForDetails: (Boolean) -> Unit,
     onSetTimesIn: (TimesIn) -> Unit,
@@ -141,20 +144,22 @@ fun CustomizeScreen(
             // sections have outgrown a fixed header on small screens.
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 GroupHeading(stringResource(Res.string.customize_modules), tag = "group_modules")
-                config.items.forEachIndexed { index, setting ->
+                config.items.forEach { setting ->
                     // Keyed by module so a field's open-or-folded state, and
                     // its half-typed name, move with it when it is reordered.
                     key(setting.module) {
                         FieldRow(
                             setting = setting,
-                            canMoveUp = index > 0,
-                            canMoveDown = index < config.items.lastIndex,
+                            // An arrow is live when a press would change
+                            // something: the step's own rule, asked directly.
+                            canMoveUp = config.stepUp(setting.module) != config,
+                            canMoveDown = config.stepDown(setting.module) != config,
                             onToggle = { onToggle(setting.module) },
                             onRelabel = { onRelabel(setting.module, it) },
                             onResize = { onResize(setting.module, it) },
                             onSetCollapsible = { onSetCollapsible(setting.module, it) },
-                            onMoveUp = { onMoveUp(index) },
-                            onMoveDown = { onMoveDown(index) },
+                            onMoveUp = { onStepUp(setting.module) },
+                            onMoveDown = { onStepDown(setting.module) },
                         ) {
                             // A module's own options live in its fold, with
                             // its name and size: "everything about the
@@ -483,6 +488,22 @@ private fun FieldRow(
                 modifier = Modifier.testTag("moveDown_$key"),
             ) { Text("↓") }
         }
+        // What a press does is not obvious from two arrows: say it, for the
+        // case this field is in. The rule itself is ViewConfig.step.
+        Text(
+            text =
+                stringResource(
+                    when {
+                        !setting.visible -> Res.string.customize_order_hint_hidden
+                        !setting.collapsible && setting.size.columns >= ModuleSize.COLUMNS ->
+                            Res.string.customize_order_hint_full_width
+                        else -> Res.string.customize_order_hint
+                    },
+                ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag("orderHint_$key"),
+        )
         // Footprint on the glance grid — the non-gesture twin of dragging the
         // tile's corner in arrange mode. Only for shown fields: a hidden field
         // has no tile for the size to describe. Each row offers only the

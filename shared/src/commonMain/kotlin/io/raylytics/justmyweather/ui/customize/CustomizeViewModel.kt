@@ -38,9 +38,9 @@ class CustomizeViewModel(
 
     fun setCollapsible(module: ModuleKey, collapsible: Boolean) = edit { it.setCollapsible(module, collapsible) }
 
-    fun moveUp(index: Int) = edit { it.moveUp(index) }
+    fun stepUp(module: ModuleKey) = edit { it.stepUp(module) }
 
-    fun moveDown(index: Int) = edit { it.moveDown(index) }
+    fun stepDown(module: ModuleKey) = edit { it.stepDown(module) }
 
     fun setDensity(density: Density) = edit { it.setDensity(density) }
 

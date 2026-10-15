@@ -71,14 +71,80 @@ class ViewConfigTest {
     }
 
     @Test
-    fun `moveUp reorders and is a no-op at the top`() {
-        // Catalog order opens temperature, feels-like; moving the second up
-        // swaps the two.
-        val moved = ViewConfig.DEFAULT.moveUp(1)
+    fun `a hidden field steps one place in the list`() {
+        // Catalog order opens temperature, feels-like; feels-like is hidden,
+        // so ↑ swaps it with its list neighbor.
+        val moved = ViewConfig.DEFAULT.stepUp(reading(WeatherField.FEELS_LIKE))
         assertEquals(reading(WeatherField.FEELS_LIKE), moved.items[0].module)
         assertEquals(reading(WeatherField.TEMPERATURE), moved.items[1].module)
-        // Out-of-range is ignored, not a crash.
-        assertEquals(ViewConfig.DEFAULT, ViewConfig.DEFAULT.moveUp(0))
+    }
+
+    @Test
+    fun `a shown field steps past the next shown field, not a hidden one`() {
+        // Hidden feels-like sits between temperature and conditions in the
+        // list; stepping past it changed nothing on the glance.
+        val moved = ViewConfig.DEFAULT.stepDown(reading(WeatherField.TEMPERATURE))
+        assertEquals(
+            listOf(reading(WeatherField.CONDITIONS), reading(WeatherField.TEMPERATURE), ModuleKey.Forecast),
+            moved.visible.map { it.module },
+        )
+    }
+
+    @Test
+    fun `stepping off either end of the glance changes nothing`() {
+        assertEquals(ViewConfig.DEFAULT, ViewConfig.DEFAULT.stepUp(reading(WeatherField.TEMPERATURE)))
+        assertEquals(ViewConfig.DEFAULT, ViewConfig.DEFAULT.stepDown(ModuleKey.Forecast))
+    }
+
+    /** Temperature (full width), then conditions and wind sharing a row, then the forecast. */
+    private val banded =
+        ViewConfig.DEFAULT
+            .toggle(reading(WeatherField.WIND))
+            .resize(reading(WeatherField.WIND), ModuleSize(2, 1))
+            .moveVisible(reading(WeatherField.WIND), 2)
+
+    @Test
+    fun `a full-width field crosses a whole row of smaller tiles`() {
+        val down = banded.stepDown(reading(WeatherField.TEMPERATURE))
+        assertEquals(
+            listOf(
+                reading(WeatherField.CONDITIONS),
+                reading(WeatherField.WIND),
+                reading(WeatherField.TEMPERATURE),
+                ModuleKey.Forecast,
+            ),
+            down.visible.map { it.module },
+        )
+        // And ↑ carries it straight back over the same row.
+        assertEquals(banded.visible, down.stepUp(reading(WeatherField.TEMPERATURE)).visible)
+    }
+
+    @Test
+    fun `a narrower field steps one tile at a time`() {
+        val moved = banded.stepDown(reading(WeatherField.CONDITIONS))
+        assertEquals(
+            listOf(
+                reading(WeatherField.TEMPERATURE),
+                reading(WeatherField.WIND),
+                reading(WeatherField.CONDITIONS),
+                ModuleKey.Forecast,
+            ),
+            moved.visible.map { it.module },
+        )
+    }
+
+    @Test
+    fun `a folded full-width field counts as the one cell it rests at`() {
+        val moved = banded.setCollapsible(ModuleKey.Forecast, true).stepUp(ModuleKey.Forecast)
+        assertEquals(
+            listOf(
+                reading(WeatherField.TEMPERATURE),
+                reading(WeatherField.CONDITIONS),
+                ModuleKey.Forecast,
+                reading(WeatherField.WIND),
+            ),
+            moved.visible.map { it.module },
+        )
     }
 
     @Test
@@ -323,7 +389,11 @@ class ViewConfigTest {
     fun `field edits preserve the chosen density`() {
         // Density and field layout are independent axes — editing one must not
         // reset the other.
-        val config = ViewConfig.DEFAULT.setDensity(Density.SPACIOUS).toggle(reading(WeatherField.WIND)).moveUp(2)
+        val config =
+            ViewConfig.DEFAULT
+                .setDensity(Density.SPACIOUS)
+                .toggle(reading(WeatherField.WIND))
+                .stepUp(reading(WeatherField.WIND))
         assertEquals(Density.SPACIOUS, config.density)
     }
 
