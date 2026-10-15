@@ -48,6 +48,7 @@ import io.raylytics.justmyweather.resources.region_temperature
 import io.raylytics.justmyweather.resources.region_units
 import io.raylytics.justmyweather.resources.region_wind
 import io.raylytics.justmyweather.ui.customize.ChipRow
+import io.raylytics.justmyweather.ui.dismissKeyboardOnTap
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.DateOrder
 import io.raylytics.justmyweather.view.PrecipitationUnit
@@ -88,7 +89,7 @@ fun RegionScreen(
             val q = query.trim().lowercase()
             if (q.isEmpty()) countries else countries.filter { Regions.displayName(it).lowercase().contains(q) }
         }
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = Modifier.fillMaxSize().dismissKeyboardOnTap(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {
             item {
                 Row(

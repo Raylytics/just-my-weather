@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,6 +53,7 @@ import io.raylytics.justmyweather.resources.places_search_towns_cities
 import io.raylytics.justmyweather.resources.places_showing
 import io.raylytics.justmyweather.resources.places_united_states_forecast
 import io.raylytics.justmyweather.resources.places_use_my_location
+import io.raylytics.justmyweather.ui.dismissKeyboardOnTap
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.fixedDecimals
@@ -80,8 +83,11 @@ fun PlacesScreen(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focus = LocalFocusManager.current
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Column(
+            modifier = Modifier.fillMaxSize().dismissKeyboardOnTap().padding(horizontal = 20.dp, vertical = 16.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -97,6 +103,7 @@ fun PlacesScreen(
                 placeholder = { Text(stringResource(Res.string.places_search_towns_cities)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("place-search"),
             )
 
@@ -154,6 +161,9 @@ fun PlacesScreen(
                                     onClick = {
                                         onSave(place)
                                         onQueryChange("")
+                                        // Picked: the search is over, so is
+                                        // the keyboard (it hid the saved list).
+                                        focus.clearFocus()
                                     },
                                     tag = "place-result",
                                 )

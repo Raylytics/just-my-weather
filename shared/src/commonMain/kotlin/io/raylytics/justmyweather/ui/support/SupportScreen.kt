@@ -45,6 +45,7 @@ import io.raylytics.justmyweather.resources.support_what_happened
 import io.raylytics.justmyweather.resources.support_would_great_if
 import io.raylytics.justmyweather.support.SUPPORT_ADDRESS
 import io.raylytics.justmyweather.support.SupportKind
+import io.raylytics.justmyweather.ui.dismissKeyboardOnTap
 import io.raylytics.justmyweather.ui.theme.buttonColors
 import org.jetbrains.compose.resources.stringResource
 
@@ -105,7 +106,7 @@ fun SupportScreen(
     // Saveable: rotating the phone mid-sentence must not eat the sentence.
     var message by rememberSaveable { mutableStateOf("") }
     var noMailApp by rememberSaveable { mutableStateOf(false) }
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = modifier.fillMaxSize().dismissKeyboardOnTap(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier =
                 Modifier

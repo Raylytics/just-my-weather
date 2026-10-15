@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -39,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
@@ -77,6 +79,7 @@ import io.raylytics.justmyweather.resources.common_done
 import io.raylytics.justmyweather.resources.common_quiet_hours
 import io.raylytics.justmyweather.resources.common_remove
 import io.raylytics.justmyweather.resources.common_save
+import io.raylytics.justmyweather.ui.dismissKeyboardOnTap
 import io.raylytics.justmyweather.ui.exposeTestTags
 import io.raylytics.justmyweather.ui.scrollbar
 import io.raylytics.justmyweather.ui.theme.LocalConventions
@@ -141,7 +144,8 @@ fun AlertsScreen(
         },
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 16.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).dismissKeyboardOnTap()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
             Row(
@@ -509,6 +513,7 @@ private fun AddRuleForm(
     var subject by remember { mutableStateOf(AlertSubject.current.first()) }
     var comparison by remember { mutableStateOf(Comparison.BELOW) }
     var thresholdText by remember { mutableStateOf("") }
+    val focus = LocalFocusManager.current
     // Typed in the user's unit; stored canonical (AlertSubject.toCanonical).
     val conventions = LocalConventions.current
     val threshold = thresholdText.toDoubleOrNull()
@@ -570,6 +575,7 @@ private fun AddRuleForm(
                 singleLine = true,
                 keyboardOptions =
                     KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),
                 modifier = Modifier.weight(1f).testTag("thresholdValue"),
             )
             TextButton(
@@ -578,6 +584,9 @@ private fun AddRuleForm(
                     threshold?.let {
                         onAdd(subject, comparison, subject.toCanonical(it, conventions), window, chosen)
                         thresholdText = ""
+                        // The rule is made: put the keyboard away so the new
+                        // row and the rest of the form are not left under it.
+                        focus.clearFocus()
                     }
                 },
                 enabled = threshold != null && limit != null,
@@ -610,6 +619,7 @@ private fun AddRuleForm(
                     singleLine = true,
                     keyboardOptions =
                         KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),
                     modifier = Modifier.width(96.dp).testTag("limitTimes"),
                 )
             }

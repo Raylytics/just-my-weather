@@ -54,6 +54,7 @@ import io.raylytics.justmyweather.resources.customize_tap_tile_details
 import io.raylytics.justmyweather.resources.customize_tornado_severe_storm_hurricane
 import io.raylytics.justmyweather.resources.customize_whole_observation_behind_reading
 import io.raylytics.justmyweather.resources.customize_width
+import io.raylytics.justmyweather.ui.dismissKeyboardOnTap
 import io.raylytics.justmyweather.ui.home.DensityPreview
 import io.raylytics.justmyweather.ui.theme.subtleBorder
 import io.raylytics.justmyweather.ui.theme.textButtonColors
@@ -117,7 +118,7 @@ fun CustomizeScreen(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = modifier.fillMaxSize().dismissKeyboardOnTap(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
         ) {
