@@ -1,8 +1,17 @@
 # iOS screenshots
 
-App Store screenshots for Just My Weather. None have been captured yet
-(2026-10-13). The Android set lives one level up, in `screenshots/` and
+App Store screenshots for Just My Weather: the 6.9" set (1320 × 2868),
+captured 2026-10-14 on a temporary iPhone 16 Pro Max simulator (iOS 27),
+plus `iap-review-remove-ads.png` for the Remove ads purchase's review
+screenshot. The Android set lives one level up, in `screenshots/` and
 `screenshots/final/`.
+
+How the 2026-10-14 set was made: Google's test banner was painted over with
+the page background on 01, 02 and 04 (the buy sheet asks for a real sandbox
+Apple Account when the app is installed with `simctl install`, so the local
+StoreKit configuration does not apply); 08 was taken before the first ad
+loaded. The alert number pad has no way to dismiss it on iOS, so 05 was
+taken after leaving and reopening Alerts.
 
 ## Sizes
 
