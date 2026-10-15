@@ -1,0 +1,29 @@
+{
+  "identifier" : "6750000000",
+  "nonRenewingSubscriptions" : [ ],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "6750000001",
+      "localizations" : [
+        {
+          "description" : "One purchase removes the banner for good.",
+          "displayName" : "Remove ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "remove_ads_just_my_weather",
+      "referenceName" : "Remove ads",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [ ]
+  },
+  "subscriptionGroups" : [ ],
+  "version" : { "major" : 4, "minor" : 0 }
+}

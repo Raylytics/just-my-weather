@@ -50,7 +50,18 @@ appId: io.raylytics.justmyweather
 - assertVisible:
     text: ".*· Forecast"
 - assertVisible: "Chance of precipitation"
-- pressKey: Back
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: Back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # No Back key on iPhone: a tap on the scrim above a sheet closes it.
+      - tapOn:
+          point: "50%,8%"
 - assertNotVisible: "Chance of precipitation"
 - assertVisible:
     id: "module_temperature"
@@ -65,6 +76,7 @@ appId: io.raylytics.justmyweather
       id: "toggle_forecast"
     direction: DOWN
     timeout: 20000
+    centerElement: true
 - tapOn:
     id: "toggle_forecast"
 - tapOn: "Done"
@@ -85,6 +97,7 @@ appId: io.raylytics.justmyweather
       id: "toggle_forecast"
     direction: DOWN
     timeout: 20000
+    centerElement: true
 - tapOn:
     id: "toggle_forecast"
 - tapOn: "Done"

@@ -46,6 +46,7 @@ appId: io.raylytics.justmyweather
     element:
       id: "addRule"
     direction: DOWN
+    centerElement: true
 # Assert it is genuinely disabled first — Maestro will happily "tap" a disabled
 # Compose button and report success, so without this the enabling is untested.
 - assertVisible:
@@ -54,7 +55,11 @@ appId: io.raylytics.justmyweather
 - tapOn:
     id: "thresholdValue"
 - inputText: "40"
-- hideKeyboard
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
 - assertVisible:
     id: "addRule"
     enabled: true
@@ -74,20 +79,29 @@ appId: io.raylytics.justmyweather
     element:
       id: "toggleRule"
     direction: UP
+    centerElement: true
 - assertVisible:
     text: "Temperature below 40.*"
 
 # Toggles: assert the CHECKED STATE either side of each tap. The descriptive
 # line under "Quiet hours" renders unconditionally, so asserting on it would
 # pass even if the switch were wired to nothing.
-- assertVisible:
-    id: "toggleRule"
-    checked: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "toggleRule"
+          checked: true
 - tapOn:
     id: "toggleRule"
-- assertVisible:
-    id: "toggleRule"
-    checked: false
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "toggleRule"
+          checked: false
 
 # Quiet hours sits below the fold once a rule row exists, and CI runs a
 # different device profile than local, so scroll to it rather than assuming
@@ -100,20 +114,30 @@ appId: io.raylytics.justmyweather
     element:
       id: "quietHours"
     direction: DOWN
-- assertVisible:
-    id: "quietHours"
-    checked: false
+    centerElement: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "quietHours"
+          checked: false
 - tapOn:
     id: "quietHours"
-- assertVisible:
-    id: "quietHours"
-    checked: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "quietHours"
+          checked: true
 
 # Removing the last rule returns the calm empty state.
 - scrollUntilVisible:
     element:
       id: "removeRule"
     direction: UP
+    centerElement: true
 - tapOn:
     id: "removeRule"
 - extendedWaitUntil:
@@ -121,6 +145,11 @@ appId: io.raylytics.justmyweather
     timeout: 10000
 
 # Back to the glance, still rendering weather.
+# The whole Alerts screen scrolls, header included: bring Done back first.
+- scrollUntilVisible:
+    element:
+      text: "Done"
+    direction: UP
 - tapOn: "Done"
 - extendedWaitUntil:
     visible: "Refresh"

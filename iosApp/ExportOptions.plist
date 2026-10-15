@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ExportOptions for `xcodebuild -exportArchive`.
+
+REPLACE_WITH_TEAM_ID stays as committed: `scripts/ios/export-ipa.sh
+--method <m>` writes a temporary copy with the requested method and this
+machine's team (from the gitignored Config/Team.xcconfig that
+`scripts/ios/setup-team.sh` writes). So no one's team id is committed, and
+this file is never churned by a setup or a release.
+
+Committed as the release path: method app-store-connect with MANUAL
+signing. export-ipa.sh pins the "Just My Weather App Store" profile into
+the temp copy; manual signing reads that profile from disk instead of
+asking Apple's cloud-signing service, which an App Manager-role API key
+may not drive ("Cloud signing permission error"). For development /
+ad-hoc exports the temp copy is flipped to automatic. Keep the
+signingStyle key: export-ipa.sh refuses to run if the flip can't land.
+
+Method values (Xcode 15.3+ names):
+- "app-store-connect" → upload to App Store Connect / TestFlight (default here)
+- "development"       → install on devices registered in your team
+- "ad-hoc"            → install on a specific device list, outside the App Store
+
+Bitcode (uploadBitcode / compileBitcode) was deprecated in Xcode 14
+and removed in Xcode 15+, so those keys are intentionally omitted —
+they'd be no-ops with current toolchains and only invite confusion.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store-connect</string>
+    <key>teamID</key>
+    <string>REPLACE_WITH_TEAM_ID</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>uploadSymbols</key>
+    <true/>
+</dict>
+</plist>

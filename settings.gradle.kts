@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "JustMyWeather"
 include(":app")
+include(":shared")

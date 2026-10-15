@@ -46,7 +46,8 @@ state may be someone else's WIP.
 
 ## What this app is
 
-**Just My Weather** is a minimalist, customizable weather app for Android. The
+**Just My Weather** is a minimalist, customizable weather app for Android and
+iPhone (the iOS app has not shipped yet; `docs/PARITY.md`). The
 default is calm and sparse — one glance answers "what's it like right now." The
 power is letting users build their own view (which data points, order, density,
 look) and their own *personal* alerts (rule-based: "tell me when the overnight
@@ -69,8 +70,10 @@ scripts/hooks/install.sh            # verify/install the pre-commit gate wiring
 scripts/android/release-internal.sh # cut + upload a Play internal build (needs approval)
 ```
 
-The pre-commit hook runs `:app:testDebugUnitTest :app:ktlintCheck` on any
-Kotlin/resource change (see "The pre-commit gate" below for how it is wired
+iOS commands are under "iOS app" below.
+
+The pre-commit hook runs `:app:testDebugUnitTest :shared:testAndroidHostTest
+:app:ktlintCheck :shared:ktlintCheck` on any Kotlin/resource change (see "The pre-commit gate" below for how it is wired
 under bd's `core.hooksPath`). Bypass with `--no-verify` only in emergencies.
 
 ## Commit cadence
@@ -120,6 +123,13 @@ scripts (`scripts/android/release-internal.sh`, `upload-play.sh`,
 `promote-play.sh`) are the only things that upload; `bundleRelease` alone is
 local and safe.
 
+The same rule covers Apple: every upload to App Store Connect (TestFlight's
+internal group included) and every App Store submission for review needs its
+own explicit go-ahead. `scripts/ios/release-testflight.sh --confirm-upload`
+and `scripts/ios/upload-testflight.sh` are what upload; never pass
+`--confirm-upload` on your own initiative. `release-testflight.sh` with no
+flag is a rehearsal (gates, archive, export; no bump, no upload) and is safe.
+
 ## Play Store Releases
 
 See `docs/PLAY_STORE.md` for the bootstrap, console quirks, and signing;
@@ -129,7 +139,9 @@ See `docs/PLAY_STORE.md` for the bootstrap, console quirks, and signing;
 ### Versioning
 
 - **`versionName`** (semver, human-facing) and **`versionCode`** (integer,
-  Play-facing) both live in `app/build.gradle.kts`.
+  Play-facing) both live in `app/build.gradle.kts`. `versionName` is written
+  there from the repo-root `VERSION` by `scripts/sync-version.sh`, which also
+  sets iOS's version (see "One version, two apps").
 - `versionCode` must increase on **every upload** to Play, failed and
   internal ones included. Play rejects a reused number; gaps are fine.
   `scripts/android/bump-version-code.sh` bumps by one.
@@ -159,6 +171,69 @@ scripts/android/promote-play.sh [--rollout 0.2]
 CI's `ui` job (Maestro on API 35) must be green on the commit being cut; the
 orchestrator does not run the flows itself. The very first upload is manual
 (Play's API refuses an app with no prior console upload).
+
+## iOS app
+
+The iOS app is a thin SwiftUI host (`iosApp/`) around the shared Compose UI.
+Needs Xcode with the iOS 27 SDK, `xcodegen` (`brew install xcodegen`) and,
+for the UI flows, Maestro. The `.xcodeproj` is generated from
+`iosApp/project.yml` and not committed: edit `project.yml`, never the
+project. Building runs `./gradlew :shared:embedAndSignAppleFrameworkForXcode`
+from the target's pre-build phase, so the Kotlin is compiled by the same
+build. `<udid>` is this project's simulator (see "iOS simulator hygiene").
+
+```bash
+./gradlew :shared:allTests          # shared tests on the JVM AND the iOS simulator (Mac only)
+(cd iosApp && xcodegen generate)    # regenerate the Xcode project after any project.yml change
+xcodebuild build -project iosApp/JustMyWeather.xcodeproj -scheme JustMyWeather \
+  -configuration Debug -destination "id=<udid>" -derivedDataPath build/ios/DerivedData
+xcrun simctl install <udid> build/ios/DerivedData/Build/Products/Debug-iphonesimulator/JustMyWeather.app
+xcodebuild test -project iosApp/JustMyWeather.xcodeproj -scheme JustMyWeather \
+  -destination "id=<udid>" -derivedDataPath build/ios/DerivedData   # StoreKit tests (SKTestSession)
+scripts/e2e.sh ios <udid>           # the Maestro suite on that simulator (installs nothing)
+scripts/e2e.sh android <serial>     # the same suite on your emulator
+scripts/ios/release-testflight.sh   # release rehearsal; see docs/APP_STORE.md
+```
+
+- Always pass `-destination "id=<udid>"`. A destination by name, or none,
+  lets Xcode pick a simulator, which may be another session's.
+- Boot the simulator and wait (`xcrun simctl boot <udid> && xcrun simctl
+  bootstatus <udid> -b`) before `xcodebuild test`. On a simulator xcodebuild
+  cold-boots itself, the StoreKit test service is not ready and every
+  StoreKit test fails with "no products" (seen 2026-10-13; 4/4 pass once the
+  simulator is up).
+- `:shared:allTests` boots and shuts down its own simulator. It is still a
+  simulator: don't run it while the Android emulator is up.
+- The pre-commit hook does not look at `.swift` or `project.yml`: a
+  Swift-only change is checked only by building it. Build it before
+  committing.
+- iOS is gated locally only (plan decision 7). CI runs the Android jobs and
+  skips the shared module's iOS targets.
+- Debug builds always use Google's sample AdMob ids. Signing, AdMob ids and
+  releases: `docs/APP_STORE.md`.
+
+## App Store Releases
+
+See `docs/APP_STORE.md` for the bootstrap, signing, the release procedure
+and the gotchas; `store-assets/app-store-listing.md` for every App Store
+Connect field; `docs/RELEASES.md` ("iOS") for the per-version log. Uploads
+fall under "Release confirmation gate" above.
+
+### One version, two apps
+
+- **`VERSION`** (repo root) is the one semver for both apps.
+  `scripts/sync-version.sh` writes it into Android's `versionName` and iOS's
+  `MARKETING_VERSION` (`iosApp/project.yml`); `--check` only verifies.
+  Change `VERSION` and run the script, never the two fields by hand. The
+  frozen-version rule under "Versioning" above applies to `VERSION`.
+- The build counters stay per platform: `versionCode` on Android,
+  `CURRENT_PROJECT_VERSION` on iOS (`scripts/ios/bump-build-number.sh`).
+- **Drift is allowed** (plan decision 8): each platform cuts on its own
+  schedule, and iOS is expected to trail. `scripts/release-drift.sh` is
+  advisory: it lists the `shared/` commits since the last iOS build
+  (`docs/PARITY.md` "Last iOS build") and whether the three version fields
+  agree. It never blocks. After every iOS cut, update that `shared-commit:`
+  line.
 
 ## Devices & background processes — leave the machine as you found it
 
@@ -460,11 +535,55 @@ Rules that follow from this:
   pins back to whatever the BOM offers without re-running the suite on a
   current device.
 
+## iOS simulator hygiene
+
+The same principle as the emulator rules above: leave the machine as you
+found it. A booted simulator costs CPU and memory for as long as it runs.
+
+- **This project's simulator is "JMW iPhone (iOS 27)"**: an iPhone 16 on the
+  iOS 27 runtime. Find its UDID with
+  `xcrun simctl list devices | grep 'JMW iPhone (iOS 27)'`. Use it and no
+  other; never boot, shut down, erase or install onto another simulator.
+- **Boot per task, shut down what you boot.** `xcrun simctl boot <udid>`,
+  then `xcrun simctl shutdown <udid>` when you are done. `xcodebuild` with
+  `-destination "id=<udid>"` boots the simulator by itself (a build, not
+  only a test) and leaves it running: shut it down after that too. If it is already
+  Booted when you start, you did not boot it: it may be a peer session's, so
+  don't shut it down or install over it. Report it and let a human decide,
+  as with an unclaimed emulator.
+- **Never run the simulator while the Android emulator is up, and the other
+  way round.** One device at a time; `:shared:allTests` counts as a
+  simulator.
+- **Run the iOS gate on a simulator whose iOS major matches the SDK** (iOS 27
+  today). An older runtime can pass a build that the shipping SDK's runtime
+  breaks; that is how API-34-vs-35 once shipped a broken layout on Android.
+- **A fresh state is an uninstall.** Like the emulator's quick-boot
+  snapshot, a simulator keeps the app's data between installs. Before any
+  first-run check or screenshot: `xcrun simctl uninstall <udid>
+  io.raylytics.justmyweather`, then install again. That also resets the
+  location, notification and tracking answers. Maestro's `clearState: true`,
+  which every flow starts with, does the same for a flow run.
+- **Always target the device explicitly**: `-destination "id=<udid>"` for
+  xcodebuild, the UDID for `simctl`, `maestro --device <udid>` (which
+  `scripts/e2e.sh` does). Never `booted` as a device name: with two
+  simulators up it means whichever one simctl picks.
+- **Physical iPhones:** `scripts/ios/install-device.sh <udid>` installs over
+  the existing app and keeps its data. Never run Maestro or `scripts/e2e.sh`
+  on a phone: `clearState` wipes the app's data (`e2e.sh` refuses anything
+  that is not a booted simulator).
+
 ## Architecture Overview
 
-Single `app` module, Kotlin + Jetpack Compose + Material 3, MVVM. Manual DI (one
-readable `AppContainer` in `JustMyWeatherApp.kt` — no Hilt). Package layout under
-`io.raylytics.justmyweather`:
+Kotlin Multiplatform + Compose Multiplatform + Material 3, MVVM, in three
+modules: **`shared/`** (the app itself: `commonMain` runs on both platforms,
+`androidMain`/`iosMain` hold the `actual`s and Kotlin twins), **`app/`** (the
+Android host and Android-only services) and **`iosApp/`** (the SwiftUI host,
+generated by XcodeGen, with Swift twins in `JustMyWeather/Platform/`). Manual
+DI: one readable `AppGraph` (`shared/…/AppGraph.kt`) that Android's
+`AppContainer` extends and iOS's `IosApp` builds — no Hilt. The packages below
+are under `shared/src/commonMain/kotlin/io/raylytics/justmyweather/` unless
+marked (app); `docs/architecture.md` has the seams and `docs/PARITY.md` every
+platform difference:
 
 - **`data/nws/`** — the weather backbone, ported from `almanac-bell`. `NwsClient`
   talks to the free public NWS API (api.weather.gov, no key); `HttpTransport`
@@ -474,10 +593,11 @@ readable `AppContainer` in `JustMyWeatherApp.kt` — no Hilt). Package layout un
 - **`data/`** — `WeatherRepository` is the single seam between NWS and the app
   (cache point resolution, fill labels). `WeatherSnapshot` is the one domain
   object the UI depends on — wire shapes never leak past the repository.
-- **`ads/`** + **`billing/`** — the banner and the purchase that removes it.
+- **`ads/`** (app) + **`billing/`** — the banner and the purchase that removes it.
   `AdBanner` is the only composable that draws an ad (one, at the foot of the
-  glance, non-personalized per `AdPolicy`); `RemoveAdsManager` keeps the
-  on-device entitlement in step with Play behind the `BillingGateway` seam.
+  glance; personalization follows the user's consent, per `AdPolicy`);
+  `RemoveAdsManager` keeps the on-device entitlement in step with Play behind
+  the `BillingGateway` seam.
   See `docs/architecture.md`.
 - **`data/metno/`** — MET Norway, the second source: the whole forecast for a
   place NWS doesn't cover (routed in `WeatherRepository`, which caches "not
@@ -485,18 +605,22 @@ readable `AppContainer` in `JustMyWeatherApp.kt` — no Hilt). Package layout un
 - **`data/places/`** — the bundled gazetteer (US Census + GeoNames, with a
   country and zone per foreign place) and `PlaceLookup`, "nearest place to a
   coordinate" with no geocoder.
-- **`region/`** — a region is a Google Play country. `Regions.kt` is the
+- **`region/`** — a region is a Google Play country (on iOS, an App Store
+  storefront, mapped in `Storefronts.kt`). `Regions.kt` is the
   registry; `RegionResolver` picks the region (manual choice > phone network
-  > last fix > place shown > language settings). It drives units, dates
+  > last fix > place shown > language settings; the iPhone's order is in
+  docs/REGIONS.md "On iOS"). It drives units, dates
   and clock. Whether ads may run is Google's UMP consent SDK's call
   (`ads/AdsConsent`), not the region's. **docs/REGIONS.md** has how it works and the
   step-by-step for adding, opening, pausing or removing a region. Never
-  change the Play Console country list yourself — hand it off.
+  change the Play Console country list or App Store Connect's availability
+  yourself — hand it off.
 - **`view/Conventions.kt`** — the ONE place a canonical value (°F, mph, inHg,
   in) becomes display text; every formatter takes a `Conventions`, provided
   to Compose as `LocalConventions`. Data and alert thresholds stay canonical.
-- **`location/`** — `LocationProvider` over the platform `LocationManager`
-  (coarse only, no Play Services, so it builds from source anywhere).
+- **`location/`** — `LocationSource`; Android's `LocationProvider` (app) over
+  the platform `LocationManager` (coarse only, no Play Services, so it builds
+  from source anywhere).
 - **`ui/theme/`** — the small palette + type scale, all in one place so the
   customization layer has obvious files to drive.
 - **`ui/home/`** — the default glance: `HomeViewModel` exposes a single sealed
@@ -505,7 +629,7 @@ readable `AppContainer` in `JustMyWeatherApp.kt` — no Hilt). Package layout un
   canvas (the bug-report and idea entries; the Gadgetbridge hand-off, folded
   under an Advanced switch). Customize stays about what the glance shows and
   how it looks.
-- **`widget/`** + **`ui/widget/`** — home screen widgets: one glance tile
+- **`widget/`** + **`ui/widget/`** (app; Android only) — home screen widgets: one glance tile
   each. `WidgetConfig` = a `ViewConfig` with one visible module + a
   `ThemeConfig`, so the glance's render, codecs and Customize pickers are
   reused; `WidgetRefreshWorker` (15 min, one fetch for all widgets) stores a
@@ -513,7 +637,7 @@ readable `AppContainer` in `JustMyWeatherApp.kt` — no Hilt). Package layout un
   (`WidgetState` — never read stores in `provideGlance`, a live session won't
   re-run it). See `docs/architecture.md`.
 - **`support/`** — the two mails to the developer, ported from open-frame:
-  `SupportMail.kt` builds them (pure, tested), `SupportIntents.kt` reads the
+  `SupportMail.kt` builds them (pure, tested), `SupportIntents.kt` (app) reads the
   device and own logcat and hands off to the email app. A bug report carries
   full diagnostics; an idea (from the bottom of Customize, or App Settings)
   carries only a four-line context. `ui/support/SupportScreen` is the form for both.
@@ -535,7 +659,25 @@ Data flow: `HomeViewModel` → `WeatherRepository` → `NwsClient` → `HttpTran
   an alert rule type, or a theme should be obvious — keep those extension points
   in one file each.
 - **Tests:** JUnit 5 (`useJUnitPlatform`), Mockito-Kotlin, `runTest` for
-  coroutines. Unit tests mirror the main package under `app/src/test/`.
+  coroutines. Unit tests mirror the main package: `shared/src/commonTest/`
+  (runs on the JVM and the iOS simulator), `shared/src/androidHostTest/`
+  (JVM only), and `app/src/test/` for the Android-only code.
+
+## Parity definition of done
+
+A shared feature is **done** when:
+
+1. `docs/PARITY.md` has its row: what Android does, what iOS does, the
+   status, and the bd id of any gap. Any new `expect`/`actual` or platform
+   twin also gets a row in the divergence ledger, justified or open (the
+   file has the `git grep` that lists them).
+2. Its Maestro flow passes on both platforms (`scripts/e2e.sh android` and
+   `scripts/e2e.sh ios`), or carries a `when: platform:` block or an
+   `android-only` tag with the reason written in the flow.
+
+A feature that cannot exist on one platform is recorded as Deferred or
+Dropped in `docs/PARITY.md`, not left out. "Fixed in shared" is not "shipped
+on iOS": check `scripts/release-drift.sh`.
 
 <!-- BEGIN WYK CONVENTIONS v:1 -->
 ## wyk — planning & handoff over bd

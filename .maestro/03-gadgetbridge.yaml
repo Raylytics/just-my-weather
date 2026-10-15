@@ -11,6 +11,9 @@
 # flow. The payload is covered exhaustively by GadgetbridgeWeatherTest, and
 # the toggle-to-broadcast wiring by the app's own log line.
 appId: io.raylytics.justmyweather
+# Gadgetbridge is an Android app; iOS has no hand-off (docs/PARITY.md).
+tags:
+  - android-only
 ---
 - launchApp:
     clearState: true
@@ -28,25 +31,38 @@ appId: io.raylytics.justmyweather
 - scrollUntilVisible:
     element:
       id: "advanced-toggle"
-- assertVisible:
-    id: "advanced-toggle"
-    checked: false
+    centerElement: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "advanced-toggle"
+          checked: false
 - tapOn:
     id: "advanced-toggle"
 - assertVisible: "Send to Gadgetbridge"
 
 # Off by default. The Switch carries no text, so it's targeted by testTag,
 # surfaced as a resource-id by the root semantics modifier in MainActivity.
-- assertVisible:
-    id: "gadgetbridge-toggle"
-    checked: false
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "gadgetbridge-toggle"
+          checked: false
 
 # Turning it on sticks across a trip back to the glance and in again.
 - tapOn:
     id: "gadgetbridge-toggle"
-- assertVisible:
-    id: "gadgetbridge-toggle"
-    checked: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "gadgetbridge-toggle"
+          checked: true
 # Advanced opens itself when something inside it is on, so an active
 # hand-off is never hidden.
 - tapOn: "Done"
@@ -54,9 +70,18 @@ appId: io.raylytics.justmyweather
 - scrollUntilVisible:
     element:
       id: "gadgetbridge-toggle"
-- assertVisible:
-    id: "advanced-toggle"
-    checked: true
-- assertVisible:
-    id: "gadgetbridge-toggle"
-    checked: true
+    centerElement: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "advanced-toggle"
+          checked: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "gadgetbridge-toggle"
+          checked: true

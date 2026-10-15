@@ -2,7 +2,10 @@
 
 How Just My Weather adapts to where its user is, and the exact steps for
 adding, opening, pausing and removing a region. If you are about to touch
-the Play Console's country list, or `region/Regions.kt`, read this first.
+the Play Console's country list, App Store Connect's availability list, or
+`region/Regions.kt`, read this first. The region code is shared: both apps
+run it from `shared/src/commonMain/kotlin/io/raylytics/justmyweather/region/`.
+Where the iPhone differs, see "On iOS" below.
 
 ## What a region is
 
@@ -38,7 +41,8 @@ clock always follow the region; choosing a region is how to change them.
 
 ## How the app decides which region it is in
 
-`region/RegionResolver.kt`, in this order. The first clue that names a real
+`region/RegionResolver.kt`, in this order (Android; the iPhone's order is
+under "On iOS"). The first clue that names a real
 country wins:
 
 1. **The user's choice**, if they made one in App settings → Region &
@@ -68,7 +72,7 @@ that decided it*. Look there first when someone reports the wrong units.
 
 ## The registry
 
-`app/src/main/java/io/raylytics/justmyweather/region/Regions.kt` holds
+`shared/src/commonMain/kotlin/io/raylytics/justmyweather/region/Regions.kt` holds
 `PREPARED`, one entry per region we ship to or intend to:
 
 ```kotlin
@@ -82,14 +86,19 @@ Prepared(
 ```
 
 The date order and clock are written down rather than derived. CLDR data
-changes between Java and Android versions: Java 17 and 21 disagree for a
-wave-2 country. A region we ship to must read the same on every phone.
+changes between Java and Android versions (Java 17 and 21 disagree for a
+wave-2 country), and iOS ships its own CLDR through Foundation
+(`region/CountryLocale.kt` is an `expect` with one `actual` per platform).
+A region we ship to must read the same on every phone, Android or iPhone.
 
 | `PlayStatus` | Means | Who sets it |
 |---|---|---|
 | `PLANNED` | On the plan; not yet through the gate below | An agent or developer, when it's added |
 | `READY` | Every gate item passed; waiting on the console | An agent or developer, after the gate |
 | `LIVE` | Selected in the Play Console's **production** track | Only after a human has made the console change |
+
+`PlayStatus` tracks Google Play. App Store availability is not in the
+registry; it must match the `LIVE` set by hand (see "On iOS").
 
 Any country *not* in `PREPARED` still works: `Regions.of` derives its
 conventions. It just isn't a region we ship to, and it has no first-run
@@ -113,7 +122,8 @@ A region moves from `PLANNED` to `READY` only when every item holds:
 4. **Place search.** The region's major cities resolve from the gazetteer
    with the right label and time zone. Add them to `BundledGazetteerTest`.
 5. **Ads and billing.** AdMob serves there and the `remove_ads` product is
-   purchasable (Play Billing's country list). Consent is handled by UMP
+   purchasable (Play Billing's country list; on iOS, the App Store
+   storefront exists and the in-app purchase is available there). Consent is handled by UMP
    (see "Ads and consent"), so nothing per region is needed in code.
 6. **Privacy.** The privacy policy's claims hold there. If the country has
    a privacy law of its own beyond GDPR (India's DPDP, US state laws), it
@@ -158,6 +168,13 @@ A region moves from `PLANNED` to `READY` only when every item holds:
    and Play agree. Commit.
 10. **Update the listing if needed:** `store-assets/play-store-listing.md`
     (it names the data sources), and the release notes.
+11. **iOS.** Add the storefront's row to `region/Storefronts.kt` (alpha-3
+    → alpha-2), in a build that reaches the App Store before or with the
+    change below. Do it with step 1: `StorefrontsTest` fails once the region
+    is `LIVE` without a row. Then, as a human hand-off: App
+    Store Connect → Just My Weather → Pricing and Availability →
+    Availability → tick the country → Save. Update
+    `store-assets/app-store-listing.md` if its copy names countries.
 
 Order matters. Never mark a region `LIVE` before the console says so, and
 never open a region on the console in a build whose registry doesn't have
@@ -167,7 +184,8 @@ it at least `READY`: the build would serve the wrong units.
 
 1. **Console first (human only):** Production → Countries / regions →
    untick the region → Save → publish. Existing installs keep working;
-   new installs stop.
+   new installs stop. Do the same in App Store Connect → Pricing and
+   Availability, so the two stores keep offering the same countries.
 2. Set the region back to `READY` (paused, still passes the gate) or
    `PLANNED` (it needs work), and say why in the commit message.
 3. Run `scripts/check-regions.sh` and commit.
@@ -183,7 +201,8 @@ platform for ad traffic from the EEA, the UK and Switzerland, even for
 non-personalized ads. The app uses **Google's UMP SDK** (`ads/AdsConsent`,
 `ads/UmpConsentGateway`, decided 2026-10-07):
 
-- Every launch, MainActivity asks UMP whether consent is needed. Google
+- Every launch, MainActivity (on iOS, `AdsService.swift`) asks UMP whether
+  consent is needed. Google
   decides that from the request, not the app, so a phone with no SIM and no
   location is handled like any other. Where consent is needed, UMP shows the
   form published in the **AdMob console** (Privacy & messaging, then the
@@ -194,9 +213,62 @@ non-personalized ads. The app uses **Google's UMP SDK** (`ads/AdsConsent`,
 - Where a form applies, App settings shows **Privacy choices**, which Google
   requires and which reopens the form. Remove Ads is offered wherever ads
   can run.
-- Requests stay non-personalized (`AdPolicy`), whatever the user chose.
+- Requests carry no personalization override (`AdPolicy`): the SDK applies
+  the user's choice, serving personalized ads only with consent or where
+  none is required (decided 2026-10-13 with the iOS port, as open-frame).
 - To test from anywhere: `./gradlew :app:assembleDebug -PumpGeography=eea`
-  (or `not_eea`). It's ignored in release builds.
+  (or `not_eea`). It's ignored in release builds. iOS has no equivalent
+  switch yet.
+- On iOS, once UMP allows ads, Apple's App Tracking Transparency prompt
+  follows (after Google's explainer, where one is published in AdMob). It
+  is never shown on top of Google's form, and never where ads won't run.
+  Declining it means AdMob never gets the advertising identifier.
+
+## On iOS
+
+The registry, the resolver, the conventions and the gate are the same code
+on the iPhone. What differs is where the clues come from
+(`region/IosRegionSignals.kt` in `shared/src/iosMain`), because an iPhone
+app cannot read the mobile network's country.
+
+**What a region is, on iOS.** The analogue of a Play country is the **App
+Store storefront**: the country of the Apple Account's App Store
+(`Storefront.current.countryCode`, read at launch by `StoreService.swift`).
+Apple names storefronts in ISO alpha-3 (`GBR`); the registry keys by
+alpha-2 (`GB`). `region/Storefronts.kt` maps between them, for the
+storefronts the app is offered in only. An unknown storefront maps to null,
+and the resolver moves to the next clue. **When a region opens on the App
+Store, `Storefronts.kt` must gain its row**; `StorefrontsTest` checks that
+every `LIVE` region has one.
+
+**The order on iOS.** The same `RegionResolver`, in which the network clue is
+always empty on an iPhone:
+
+1. **The user's choice** (App settings → Region & units).
+2. **The App Store storefront.**
+3. **The phone's last location fix**, through the gazetteer, as on Android.
+4. **The country of the place the app is showing.**
+5. **The device's Region setting** (Settings → General → Language & Region →
+   Region; `NSLocale.currentLocale.countryCode`). This is a choice the user
+   made, unlike a language. The Region & units screen still labels this clue
+   "from your phone's language settings" on both platforms.
+6. **The device's time zone**, turned into a country through the
+   gazetteer's IANA zones (`PlaceLookup.countryOfZone`).
+7. **The United States.**
+
+Android's signals return null for the storefront and time zone, so the
+Android order and its stored clues are unchanged.
+
+**Availability must match.** The App Store must offer the app in exactly the
+`LIVE` regions: today the 15 in waves 0–2. That is a manual setting in App
+Store Connect, with "make available in new countries automatically" off.
+Set to those 15 on 2026-10-13 (just-my-weather-aoi): US, CA, AU, NZ, GB,
+IE, IN, PH, NG, ZA, PK, KE, GH, SG, MY. Nothing compares the two
+automatically yet: `scripts/check-regions.sh` reads only Play.
+
+**Adding, opening or pausing a region** also touches App Store Connect's
+availability list and `Storefronts.kt`; see step 11 of "Adding a region" and
+step 1 of "Pausing or removing a region".
 
 ## Rollout waves
 
@@ -213,10 +285,12 @@ first. The detail is in `localization/PLAN.md`.
 ## Files at a glance
 
 - `region/Region.kt`: what a region is (`Region`, `PlayStatus`).
-- `ads/AdsConsent.kt`, `ads/UmpConsentGateway.kt`: whether ads may run (Google's UMP).
+- `ads/AdsConsent.kt`, `ads/UmpConsentGateway.kt` (app): whether ads may run (Google's UMP). iOS: `iosApp/JustMyWeather/Platform/AdsService.swift`.
 - `region/Regions.kt`: **the registry**, plus derived conventions for every country.
 - `region/RegionResolver.kt`: the decision order, the user's settings, and the clues.
-- `region/RegionRepository.kt`, `AndroidRegionSignals.kt`: gathering and remembering clues.
+- `region/RegionRepository.kt`, `AndroidRegionSignals.kt` (app), `IosRegionSignals.kt` (iosMain): gathering and remembering clues.
+- `region/Storefronts.kt`: App Store storefront (alpha-3) to region (alpha-2).
+- `region/CountryLocale.kt`: country names and CLDR date/time patterns, one `actual` per platform.
 - `view/Conventions.kt`: every unit conversion and date/time format, in one file.
 - `ui/settings/RegionScreen.kt`: the Region & units screen.
 - `scripts/android/play-countries.sh`: lists a track's countries from Play (read-only).

@@ -5,8 +5,9 @@ import io.raylytics.justmyweather.data.nws.Units
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.time.Instant
 import kotlin.math.roundToInt
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /*
  * Builds the JSON Gadgetbridge expects for a weather update, so it can reach a
@@ -45,7 +46,7 @@ object GadgetbridgeWeather {
      * [now] is injected for deterministic tests and is used only as the
      * timestamp fallback described below.
      */
-    fun payloadFor(snapshot: WeatherSnapshot, now: Instant = Instant.now()): String? {
+    fun payloadFor(snapshot: WeatherSnapshot, now: Instant = Clock.System.now()): String? {
         val tempF = snapshot.temperatureF ?: return null
 
         val obj =
@@ -57,7 +58,7 @@ object GadgetbridgeWeather {
                 // showing stale data as fresh, whereas here an absent field
                 // serialises to 0 and the watch renders 1970 — strictly worse
                 // than "about now" for a consumer that keys freshness off it.
-                put("timestamp", (snapshot.observedAt ?: now).epochSecond)
+                put("timestamp", (snapshot.observedAt ?: now).epochSeconds)
                 put("location", snapshot.locationLabel)
                 put("currentTemp", Units.fahrenheitToKelvin(tempF).roundToInt())
 

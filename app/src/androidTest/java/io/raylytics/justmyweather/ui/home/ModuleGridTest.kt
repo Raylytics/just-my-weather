@@ -9,7 +9,10 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -29,14 +32,14 @@ import io.raylytics.justmyweather.view.ModuleKey
 import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.ModuleValue
 import io.raylytics.justmyweather.view.WeatherField
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Instant
 
 /**
  * The two things about the module grid that only a device can answer: what the
@@ -69,6 +72,7 @@ class ModuleGridTest {
     private val moves = mutableListOf<Pair<ModuleKey, Int>>()
     private val resizes = mutableListOf<Pair<ModuleKey, ModuleSize>>()
     private val opened = mutableListOf<ModuleKey>()
+    private val expansions = mutableListOf<Pair<ModuleKey, Boolean>>()
 
     private fun show(vararg modules: ModuleValue) = show(gridWidth, *modules)
 
@@ -86,6 +90,7 @@ class ModuleGridTest {
                         onMove = { field, index -> moves += field to index },
                         onSetForecastMode = {},
                         onOpenModule = { opened += it.module },
+                        onSetExpanded = { field, open -> expansions += field to open },
                     )
                 }
             }
@@ -107,7 +112,7 @@ class ModuleGridTest {
             content =
                 when (key) {
                     is ModuleKey.Reading -> ModuleContent.Reading("—")
-                    ModuleKey.Sun -> ModuleContent.Sun(sunDays, ZoneId.systemDefault())
+                    ModuleKey.Sun -> ModuleContent.Sun(sunDays, TimeZone.currentSystemDefault())
                     ModuleKey.Forecast ->
                         ModuleContent.Forecast(
                             hours = null,
@@ -119,8 +124,8 @@ class ModuleGridTest {
                             dailyDays = 7,
                             elements = ForecastElement.DEFAULT,
                             layout = ForecastTileLayout.DEFAULT,
-                            zone = ZoneId.systemDefault(),
-                            placeZone = ZoneId.systemDefault(),
+                            zone = TimeZone.currentSystemDefault(),
+                            placeZone = TimeZone.currentSystemDefault(),
                         )
                 },
         )
@@ -129,12 +134,12 @@ class ModuleGridTest {
     private val sunDays =
         listOf(
             SunDay(
-                LocalDate.of(2026, 8, 15),
+                LocalDate(2026, 8, 15),
                 Instant.parse("2026-08-15T10:57:00Z"),
                 Instant.parse("2026-08-16T00:36:00Z"),
             ),
             SunDay(
-                LocalDate.of(2026, 8, 16),
+                LocalDate(2026, 8, 16),
                 Instant.parse("2026-08-16T10:58:00Z"),
                 Instant.parse("2026-08-17T00:35:00Z"),
             ),
@@ -369,6 +374,41 @@ class ModuleGridTest {
     }
 
     @Test
+    fun aFoldedTileIsItsNameAndATapOpensIt() {
+        show(
+            module(WeatherField.TEMPERATURE, 4, 2),
+            module(WeatherField.CONDITIONS, 1).copy(collapsible = true, collapsed = true),
+        )
+        // The name is the whole tile: nothing of the value shows.
+        compose.onNodeWithTag("module_conditions").assertTextContains("Conditions")
+        compose.onNode(hasTestTag("module_conditions") and hasText("—")).assertDoesNotExist()
+        // A tap opens it rather than opening its detail — the fold is the one
+        // case where the tile is the button, so this bypasses tap-for-details.
+        compose.onNodeWithTag("module_conditions").performClick()
+        compose.waitForIdle()
+        assertEquals(listOf(reading(WeatherField.CONDITIONS) to true), expansions)
+        assertEquals(emptyList<ModuleKey>(), opened)
+        // Folded, a cell is not a size to step from, and there is no detail.
+        assertEquals(listOf("Expand", "Move up"), actionsOn(WeatherField.CONDITIONS).map { it.label })
+    }
+
+    @Test
+    fun anOpenCollapsibleTileFoldsFromItsCorner() {
+        show(
+            module(WeatherField.TEMPERATURE, 4, 2),
+            module(WeatherField.CONDITIONS, 2).copy(collapsible = true),
+        )
+        compose.onNodeWithTag("collapse_conditions").performClick()
+        compose.waitForIdle()
+        assertEquals(listOf(reading(WeatherField.CONDITIONS) to false), expansions)
+        // The tile keeps its detail and its sizes; the way back is an action too.
+        val labels = actionsOn(WeatherField.CONDITIONS).map { it.label }
+        assertTrue("Collapse" in labels)
+        assertTrue("Details" in labels)
+        assertTrue("Wider" in labels)
+    }
+
+    @Test
     fun theForecastIsATileWithTheSameActionsAndItsOwnHeader() {
         // The ask: every tile carries the same interaction. So the forecast
         // module offers the same move and resize actions as a reading, and
@@ -393,7 +433,7 @@ class ModuleGridTest {
      * The second tile is the one with surplus height — where SPREAD and
      * STACKED differ. */
     private fun forecastWithHours(layout: ForecastTileLayout): ModuleValue {
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val hours =
             listOf(
                 ForecastPoint(
@@ -471,7 +511,7 @@ class ModuleGridTest {
         // itself now, in both passes; this pins that the two tiles agree on
         // where the middle is, and that the one-liner's row is as tall as its
         // neighbour's.
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val hours =
             listOf(
                 ForecastPoint(Instant.parse("2026-09-06T23:00:00Z"), 72.0, null, shortForecast = "Clear"),
@@ -525,7 +565,7 @@ class ModuleGridTest {
         // same y as its neighbour's (found in review). The width is chosen
         // between the two measured extremes: at 400dp neither shrinks, at
         // 300dp both do.
-        val zone = ZoneId.of("America/New_York")
+        val zone = TimeZone.of("America/New_York")
         val hours =
             listOf(
                 ForecastPoint(Instant.parse("2026-09-02T22:00:00Z"), 63.0, null, shortForecast = "Clear"),
@@ -596,7 +636,7 @@ class ModuleGridTest {
     @Test
     fun theSunTileKeepsItsCaptionWhenItHasNoTimesYet() {
         // No location yet: a lone dash, so the caption is what names it.
-        show(module(ModuleKey.Sun, 2).copy(content = ModuleContent.Sun(emptyList(), ZoneId.systemDefault())))
+        show(module(ModuleKey.Sun, 2).copy(content = ModuleContent.Sun(emptyList(), TimeZone.currentSystemDefault())))
         compose.onNodeWithText("Sun", useUnmergedTree = true).assertIsDisplayed()
     }
 

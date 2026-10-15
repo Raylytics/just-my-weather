@@ -10,32 +10,14 @@ import io.raylytics.justmyweather.alerts.AlertNotifier
 import io.raylytics.justmyweather.alerts.AlertScheduling
 import io.raylytics.justmyweather.alerts.AlertWorker
 import io.raylytics.justmyweather.billing.PlayBillingGateway
-import io.raylytics.justmyweather.billing.RemoveAdsManager
-import io.raylytics.justmyweather.data.AdsEntitlementRepository
-import io.raylytics.justmyweather.data.AlertRulesRepository
-import io.raylytics.justmyweather.data.AlertSettingsRepository
-import io.raylytics.justmyweather.data.DataStoreLastLocationStore
-import io.raylytics.justmyweather.data.DataStorePointCache
-import io.raylytics.justmyweather.data.DataStoreSnapshotCache
-import io.raylytics.justmyweather.data.GadgetbridgeSettingsRepository
-import io.raylytics.justmyweather.data.ThemeConfigRepository
-import io.raylytics.justmyweather.data.ViewConfigRepository
-import io.raylytics.justmyweather.data.WeatherLocation
-import io.raylytics.justmyweather.data.WeatherRepository
 import io.raylytics.justmyweather.data.WidgetConfigRepository
 import io.raylytics.justmyweather.data.WidgetDataStore
 import io.raylytics.justmyweather.data.gadgetbridge.GadgetbridgeBroadcaster
 import io.raylytics.justmyweather.data.gadgetbridge.GadgetbridgeExporter
-import io.raylytics.justmyweather.data.metno.MetNoClient
-import io.raylytics.justmyweather.data.nws.NwsClient
 import io.raylytics.justmyweather.data.nws.OkHttpTransport
 import io.raylytics.justmyweather.data.places.AssetPlaceSource
-import io.raylytics.justmyweather.data.places.PlaceLookup
-import io.raylytics.justmyweather.data.places.SavedPlacesRepository
 import io.raylytics.justmyweather.location.LocationProvider
-import io.raylytics.justmyweather.location.LocationResolver
 import io.raylytics.justmyweather.region.AndroidRegionSignals
-import io.raylytics.justmyweather.region.RegionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -48,88 +30,47 @@ import java.io.File
 private val Context.dataStore by preferencesDataStore(name = "settings")
 
 /**
- * Plain manual dependency wiring — no DI framework. For an app this size a
- * single readable container beats annotations a first-time contributor would
- * have to learn: every dependency is constructed in one place, in plain sight.
+ * The Android app's dependencies: the shared [AppGraph], built from Android's
+ * pieces (OkHttp, the settings DataStore, the bundled gazetteer asset,
+ * LocationManager, the telephony/locale region signals, Play Billing, the
+ * notification channels), plus what only Android has — home screen widgets,
+ * the Gadgetbridge hand-off and Google's consent SDK.
  */
-class AppContainer(context: Context, scope: CoroutineScope) {
-    private val nwsClient = NwsClient(transport = OkHttpTransport())
-
-    private val appContext = context.applicationContext
-
-    // Only for days eight and nine of the Daily view, which NWS does not
-    // forecast. Its OWN OkHttp client, with a small disk cache: MET's terms
-    // ask that a client honour Expires and revalidate with If-Modified-Since,
-    // which OkHttp does by itself once it has somewhere to keep the response.
-    // NWS deliberately stays uncached — a tap on Refresh must reach the
-    // network, and NWS's cache headers would otherwise swallow it.
-    private val metNoClient =
-        MetNoClient(
-            transport =
-                OkHttpTransport(
-                    OkHttpTransport.defaultClient
-                        .newBuilder()
-                        .cache(Cache(File(appContext.cacheDir, "metno-http"), MET_NO_CACHE_BYTES))
-                        .build(),
-                ),
-        )
-
+class AppContainer private constructor(
+    private val appContext: Context,
+    scope: CoroutineScope,
     /** The gazetteer is opened only when the places screen asks; nothing here
      * holds its rows for the life of the process. */
-    val placeSource = AssetPlaceSource(appContext)
-
-    /** Nearest-place answers for a bare coordinate (a fix abroad, the
-     * region). Loads its own copy of the gazetteer on first use only. */
-    val placeLookup = PlaceLookup(load = placeSource::load)
-
-    // Both caches are persisted so a cold start has something to work with: the
-    // point cache reuses the resolved grid instead of re-hitting /points +
-    // /stations, and the snapshot cache gives the home screen a real reading to
-    // paint while the live fetch is in flight.
-    val weatherRepository =
-        WeatherRepository(
-            nws = nwsClient,
-            metNo = metNoClient,
-            pointCache = DataStorePointCache(appContext.dataStore),
-            snapshotCache = DataStoreSnapshotCache(appContext.dataStore),
-            nearest = placeLookup::nearest,
-        )
-    val locationProvider = LocationProvider(appContext)
-
-    // Everything that needs a place asks this, not the provider directly: a
-    // moment without a fix must fall back to where we last knew the user to
-    // be, not to a default city. The background poll is the caller that most
-    // depends on it — it never gets a fix at all.
-    val savedPlacesRepository = SavedPlacesRepository(appContext.dataStore)
-
-    // A chosen place outranks the device fix, for the alert worker as much as
-    // for the glance — they share this one resolver, which is why the choice
-    // reaches background polling without any extra wiring.
-    // The region — units, dates, ads — and the user's choices about it. Its
-    // clues are re-read on every refresh of the glance and the workers;
-    // docs/REGIONS.md is the whole story.
-    val regionRepository =
-        RegionRepository(
-            appContext.dataStore,
-            AndroidRegionSignals(appContext, locationProvider, placeLookup),
-        )
-
-    val locationResolver =
-        LocationResolver(
-            locationProvider,
-            DataStoreLastLocationStore(appContext.dataStore),
-            chosenPlace = savedPlacesRepository::current,
-            fallback = {
-                regionRepository.currentRegion().defaultPlace?.let { place ->
-                    WeatherLocation(place.latitude, place.longitude, place.label, place.timeZone)
-                } ?: WeatherLocation.DEFAULT
-            },
-        )
-    val viewConfigRepository = ViewConfigRepository(appContext.dataStore)
-    val themeConfigRepository = ThemeConfigRepository(appContext.dataStore)
-    val alertRulesRepository = AlertRulesRepository(appContext.dataStore)
-    val alertSettingsRepository = AlertSettingsRepository(appContext.dataStore)
-    val alertNotifier = AlertNotifier(appContext)
+    val placeSource: AssetPlaceSource,
+    val locationProvider: LocationProvider,
+    val alertNotifier: AlertNotifier,
+) : AppGraph(
+        dataStore = appContext.dataStore,
+        nwsTransport = OkHttpTransport(),
+        // Its OWN OkHttp client, with a small disk cache: MET's terms ask that
+        // a client honour Expires and revalidate with If-Modified-Since, which
+        // OkHttp does by itself once it has somewhere to keep the response.
+        metNoTransport =
+            OkHttpTransport(
+                OkHttpTransport.defaultClient
+                    .newBuilder()
+                    .cache(Cache(File(appContext.cacheDir, "metno-http"), MET_NO_CACHE_BYTES))
+                    .build(),
+            ),
+        loadPlaces = placeSource::load,
+        locationSource = locationProvider,
+        regionSignals = { lookup -> AndroidRegionSignals(appContext, locationProvider, lookup) },
+        billingGateway = PlayBillingGateway(appContext),
+        alertNotifications = alertNotifier,
+        scope = scope,
+    ) {
+    constructor(context: Context, scope: CoroutineScope) : this(
+        context.applicationContext,
+        scope,
+        AssetPlaceSource(context.applicationContext),
+        LocationProvider(context.applicationContext),
+        AlertNotifier(context.applicationContext),
+    )
 
     // Home screen widgets: each one's settings, and the one fetched dataset
     // they all draw from. Both are read by the launcher-driven draw and the
@@ -140,18 +81,11 @@ class AppContainer(context: Context, scope: CoroutineScope) {
     // Optional hand-off of each reading to Gadgetbridge, which relays it to a
     // paired watch. Constructed unconditionally but inert until switched on:
     // the exporter reads the setting before building anything.
-    val gadgetbridgeSettingsRepository = GadgetbridgeSettingsRepository(appContext.dataStore)
     val gadgetbridgeExporter =
         GadgetbridgeExporter(
             settings = gadgetbridgeSettingsRepository,
             broadcaster = GadgetbridgeBroadcaster(appContext),
         )
-
-    // The banner and the $0.99 that removes it. The entitlement is the
-    // device's copy of what Play says; the manager keeps the two in step and
-    // is the only thing that talks to Play Billing.
-    val adsEntitlementRepository = AdsEntitlementRepository(appContext.dataStore)
-    val removeAdsManager = RemoveAdsManager(PlayBillingGateway(appContext), adsEntitlementRepository, scope)
 
     // Whether ads may run at all is Google's consent SDK's call (UMP): it asks
     // the user where the law requires it and says "not required" elsewhere.

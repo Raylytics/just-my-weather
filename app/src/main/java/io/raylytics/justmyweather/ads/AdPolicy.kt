@@ -4,20 +4,19 @@ package io.raylytics.justmyweather.ads
  * The rules the banner is served under, as plain values so they test on the
  * JVM and the privacy policy's promises have one place to point at:
  *
- * - every request is non-personalized ([NPA_KEY] = [NPA_VALUE]), which is
- *   what the policy says — whatever the user chose in Google's consent form
- *   (ads/AdsConsent decides whether ads run at all);
+ * - personalization is the user's consent, applied by the SDK: a request
+ *   carries no override of its own, so Google reads the choice made in its
+ *   consent form (ads/AdsConsent) and serves personalized, non-personalized
+ *   or limited ads accordingly — open-frame's policy, and the privacy
+ *   policy's (store-assets/privacy-policy.md, "Ads and purchases");
  * - a debug build never serves a real ad unit — Google's sample units show
  *   labelled test ads and earn nothing, and clicking one's own live ads is
  *   how AdMob accounts get suspended.
  *
  * Nothing about the place, the weather or the rules ever reaches a request:
- * AdRequests builds one from these constants and nothing else.
+ * AdRequests builds a bare one.
  */
 object AdPolicy {
-    const val NPA_KEY = "npa"
-    const val NPA_VALUE = "1"
-
     /** Google's sample app id and anchored-adaptive-banner unit. */
     const val SAMPLE_APP_ID = "ca-app-pub-3940256099942544~3347511713"
     const val SAMPLE_BANNER_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"

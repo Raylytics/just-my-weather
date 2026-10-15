@@ -54,7 +54,7 @@ jobs:
       # already be broken by the time anyone ran them.
       - name: Test, ktlint, and assemble
         run: >-
-          ./gradlew :app:testDebugUnitTest :app:ktlintCheck :app:assembleDebug
+          ./gradlew :app:testDebugUnitTest :shared:testAndroidHostTest :app:ktlintCheck :shared:ktlintCheck :app:assembleDebug
           :app:assembleDebugAndroidTest --no-daemon --stacktrace
 
       - name: Upload unit-test report on failure

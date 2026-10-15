@@ -50,7 +50,8 @@ Pre-1.0, but the core product is in place:
   cadence
 - ✅ Saved places — search bundled US towns and cities offline, or enter
   coordinates; a chosen place drives the glance and the alert poll alike
-- ✅ Free with one banner ad at the foot of the glance (non-personalized);
+- ✅ Free with one banner ad at the foot of the glance (personalized only
+  with consent, through Google's consent form);
   a one-time $0.99 purchase in App settings removes it
 - ⏳ Custom quiet-hours window, per-rule tone/snooze
 

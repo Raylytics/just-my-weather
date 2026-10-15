@@ -40,6 +40,13 @@ appId: io.raylytics.justmyweather
 - assertVisible: "Deliver silently 22:00–07:00"
 
 # Open the picker and choose a different window that still wraps midnight.
+# Bring the row up first: on a shorter screen, or under iOS's notice about
+# background checks, it starts at the bottom edge where a tap misses.
+- scrollUntilVisible:
+    element:
+      id: "quietWindow"
+    direction: DOWN
+    centerElement: true
 - tapOn:
     id: "quietWindow"
 - assertVisible: "Starts"
@@ -62,6 +69,11 @@ appId: io.raylytics.justmyweather
 # still match this screen's title, the next tap would hit that same title as a
 # no-op, and the final assert would pass against unchanged in-memory state —
 # a persistence test that cannot fail.
+# The whole Alerts screen scrolls, header included: bring Done back first.
+- scrollUntilVisible:
+    element:
+      text: "Done"
+    direction: UP
 - tapOn: "Done"
 - extendedWaitUntil:
     visible: "Refresh"

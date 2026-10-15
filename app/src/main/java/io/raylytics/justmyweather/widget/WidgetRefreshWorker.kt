@@ -16,9 +16,10 @@ import io.raylytics.justmyweather.JustMyWeatherApp
 import io.raylytics.justmyweather.data.metno.ExtendedDay
 import io.raylytics.justmyweather.ui.home.weatherErrorMessage
 import io.raylytics.justmyweather.view.Conventions
-import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.TimeUnit
+import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * The widgets' refresh: fetch what the widgets on the phone need, store it,
@@ -93,7 +94,7 @@ class WidgetRefreshWorker(
         // list carried while fresh, or nothing — is `settle`'s rule, pure and
         // tested; each list keeps its own fetch time. `previous` is the same
         // place's, gated above.
-        val now = Instant.now()
+        val now = Clock.System.now()
         val hours =
             settle(
                 needs.hours,
@@ -185,7 +186,7 @@ class WidgetRefreshWorker(
 
         /** How long an unneeded forecast is carried before it is dropped:
          * two ticks, which outlasts the reconfiguration race it is kept for. */
-        private val CARRY_WINDOW: Duration = Duration.ofMinutes(REFRESH_MINUTES * 2)
+        private val CARRY_WINDOW: Duration = (REFRESH_MINUTES * 2).minutes
 
         /**
          * KEEP, not UPDATE: the cadence is a constant, and re-enqueueing on

@@ -4,9 +4,10 @@ import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.ui.home.ObservationAge
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.ReadingHeading
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 /**
  * The widget's footer line, as the glance words it. Pure, so what a
@@ -25,7 +26,7 @@ import java.time.ZoneId
  */
 internal fun readingLine(
     snapshot: WeatherSnapshot,
-    zone: ZoneId,
+    zone: TimeZone,
     now: Instant,
     wide: Boolean,
     conventions: Conventions,
@@ -33,7 +34,7 @@ internal fun readingLine(
     val observedAt = snapshot.observedAt
     val time = observedAt?.let { conventions.clock(it, zone) }
     if (snapshot.fromForecast) {
-        val stale = observedAt != null && Duration.between(observedAt, now) > STALE_FORECAST
+        val stale = observedAt != null && now - observedAt > STALE_FORECAST
         val age = if (stale) ObservationAge.label(observedAt!!, now) else null
         return if (wide) {
             listOfNotNull(ReadingHeading.of(fromForecast = true, time = time), age, ReadingHeading.FORECAST_SOURCE)
@@ -53,4 +54,4 @@ internal fun readingLine(
 
 /** A forecast hour is at most an hour old when shown, plus a tick (15 min)
  * before the next one replaces it; past this it was carried by a failure. */
-internal val STALE_FORECAST: Duration = Duration.ofMinutes(90)
+internal val STALE_FORECAST: Duration = 90.minutes

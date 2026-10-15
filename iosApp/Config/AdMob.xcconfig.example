@@ -1,0 +1,5 @@
+// Copy to AdMob.xcconfig (gitignored) and fill in from the AdMob console
+// (Apps → Just My Weather (iOS)). Slashes are written as /$()/ because
+// xcconfig treats // as a comment.
+ADMOB_APP_ID = ca-app-pub-XXXXXXXXXXXXXXXX~NNNNNNNNNN
+ADMOB_BANNER_UNIT_ID = ca-app-pub-XXXXXXXXXXXXXXXX/$()NNNNNNNNNN

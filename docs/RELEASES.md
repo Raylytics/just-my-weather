@@ -3,21 +3,155 @@
 Per-version log of what shipped where. Two audiences:
 
 - **Store-facing** copy is what goes in Play Console "What's new in this
-  release" (≤500 chars). User language: what they will notice, no issue ids.
+  release" (≤500 chars), or App Store Connect "What's New in This Version".
+  User language: what they will notice, no issue ids.
 - **Internal notes** capture the changeset for bisecting later. Issue ids
   (`just-my-weather-xxx`) and roborev review numbers are fine here.
 
+The two apps share one version name but ship on their own schedules (plan
+decision 8), so each platform has its own section: iOS first, then Android.
+A version that reaches both stores gets an entry in each.
+
 ## Conventions
 
-- `versionName` in `app/build.gradle.kts` is the version; `versionCode` is
-  the upload counter (CLAUDE.md "Versioning").
+- `VERSION` (repo root) is the version for both apps;
+  `scripts/sync-version.sh` copies it into Android's `versionName`
+  (`app/build.gradle.kts`) and iOS's `MARKETING_VERSION`
+  (`iosApp/project.yml`). Entries before 2026-10-13 predate `VERSION` and
+  name `versionName` directly.
+- The upload counters are per platform: `versionCode` on Android,
+  `CURRENT_PROJECT_VERSION` ("build N") on iOS (CLAUDE.md "Versioning").
 - Group internal notes under **Added / Changed / Fixed / Internal**; skip
   empty groups.
 - Date a version when it ships (absolute dates, YYYY-MM-DD), and say where:
-  GitHub release (sideload APK), Play internal, Play production.
+  GitHub release (sideload APK), Play internal, Play production, TestFlight
+  internal, App Store.
+- An iOS entry also names the shared commit it was cut from, the same sha
+  recorded in docs/PARITY.md "Last iOS build".
 - Carry "Known issues" forward until resolved.
 
 ---
+
+# iOS (App Store)
+
+## 0.4.0 — build 3, TestFlight 2026-10-15
+
+Cut from fce707e with Evan's go-ahead (he ran the upload himself);
+delivery 6d43f101-dc33-4889-a4c3-b1ed59ae6aec. The build for the first App
+Store submission. Over build 2 it adds everything in Android's 0.4.0 that
+lives in shared/: collapsible Customize modules and the regrouped page,
+full-width tiles moving a whole row at a time (and not bouncing back), the
+faint outline on in-content buttons, and the iOS keyboard fix (n52: tap
+outside, after Add, after picking a place). Gates: verify.sh,
+`:shared:allTests`; Maestro 02-alerts and 08-places on the iOS 27 simulator.
+
+## 0.3.1 — build 2, TestFlight 2026-10-13
+
+The first iOS build (just-my-weather-nyt.10), cut from 4003b7f with Evan's
+go-ahead; delivery 1222a8ff-e1ab-4736-a6a6-5c5fd0dc08dc. Internal testers
+only. Build 1 was never uploaded (the rehearsal's number). Includes the
+arrange-bar fix (nyt.13), the App Store product id
+`remove_ads_just_my_weather`, and the real AdMob ids. Gates: verify.sh,
+`:shared:allTests`, Maestro 9/9 on the iOS 27 simulator.
+
+---
+
+# Android (Google Play)
+
+## 0.4.0 — versionCode 11, Play internal 2026-10-14 (supersedes 10)
+
+Same version, a respin for internal testers with collapsible modules and
+the regrouped Customize page (4750cc7, just-my-weather-9pz). Cut from
+22c5892 with Evan's go-ahead; CI green on PR #1 at that commit (unit +
+ktlint + build, Maestro). 0.4.0 has not reached production, so the version
+name stays; only the counter ticks.
+
+### Store-facing (≤500 chars)
+
+> Conditions, Sun and the Forecast can now be collapsible: switch it on in
+> Customize and the tile rests as a small cell with its name. Tap it to open,
+> tap the arrow to fold it back. Customize lists your modules first, with the
+> view's other options underneath; Density now sits under Look, with its
+> preview. "Show times in" is a choice between your phone's location and the
+> weather's.
+
+### Internal
+
+- Added: `ModuleSetting.collapsible` + `ModuleKey.canCollapse` (persisted,
+  codec-clamped, cleared by `showingOnly` for widgets); `ModuleValue
+  .collapsed` and the session set `HomeUiState.expanded`; the folded tile
+  and its ▴ control in `ui/home/CollapsedModule.kt` (the forecast draws
+  the control in its header). A folded tile has no handle, size actions or
+  detail; "Expand"/"Collapse" are screen-reader actions.
+- Changed: Customize is two groups, Modules then Options; Density inside
+  the Look fold; `TimesInPicker` is a chip row (`TimesIn.label`: Phone
+  location / Weather location) in a "Show times in" fold. Test tags:
+  `section_density` and `times-in-toggle` are gone; `group_modules`,
+  `group_options`, `section_times`, `times_in_<key>`, `collapsible_<key>`,
+  `collapse_<key>` are new.
+- Pre-tests: verify.sh 508; shared module compiles for the iOS simulator;
+  ModuleGridTest 23/23 (2 new) on API 35; Maestro 01-customize and
+  05-safety-alerts on API 35; screenshots of each state.
+
+## 0.4.0 — versionCode 10, Play internal 2026-10-14 (supersedes 9)
+
+Same version, a respin for internal testers with the whole-row move. Cut
+from 3f8df5f with Evan's go-ahead; CI green on PR #1 at that commit
+(unit + ktlint + build, Maestro). The optional API 36 device pass was
+skipped: an unclaimed Pixel_7_API_35 emulator was running (not this
+session's) and only one device may run at a time.
+
+### Store-facing (≤500 chars)
+
+> Customize is easier to read: every setting folds to one line until you tap
+> it, and Density shows a preview of how the glance will look. Buttons now
+> have a light outline. Your place name is boxed on the glance: tap it to
+> switch places. Long forecasts show a scrollbar. Moving a full-width tile in
+> arrange mode now carries it past the whole row it lands on. Ads are
+> personalized only if you agree in Google's consent form.
+
+### Internal
+
+- Added: `view/wholeRowTarget`, a full-width tile dragged (or moved with the
+  screen reader's Move up/down) crosses a whole lattice band (3a6bd4c).
+- Fixed: the drag no longer bounces back over the band it just crossed;
+  settle step pure in `ui/home/MovePlan.kt` (3d57a56, roborev 5942).
+- Pre-tests: verify.sh 503; instrumented 28/28 and Maestro 10/10 on API 35;
+  Maestro 9/9 on the iOS 27 simulator (3a6bd4c); emulator drag checks down,
+  up and off-centre (3d57a56).
+
+## 0.4.0 — versionCode 9, Play internal 2026-10-13
+
+Cut from 64877b5 on `ios-port` with Evan's go-ahead (CI green on PR #1, which
+is not merged). Internal testers only; promoting to production is Evan's.
+
+### Store-facing (≤500 chars)
+
+> Customize is easier to read: every setting folds to one line until you tap
+> it, and Density shows a preview of how the glance will look. Buttons now
+> have a light outline, so they look like buttons. Your place name is boxed
+> on the glance: tap it to switch places, which are also in App Settings.
+> Long forecasts show a scrollbar. Ads are personalized only if you agree in
+> Google's consent form.
+
+### Internal
+
+- Added: collapsible Customize (`ui/customize/CollapsibleSection.kt`),
+  forecast/sun options inside their module's fold, live
+  `ui/home/DensityPreview.kt` (a191165, just-my-weather-v55); boxed place
+  name + App Settings → Location (abe25d0); quiet scrollbar (d943e64).
+- Changed: the consent SDK decides ad personalization; requests no longer
+  force npa=1 (da74242, plan decision 4; privacy policy live on
+  raylytics-site, Data safety already declared it, vg0); `subtleBorder`
+  outline on in-content buttons (e017a3f); the UI's strings move to one
+  shared catalog (3a7419b). Phase 1 KMP restructure (`shared/`) with no
+  intended behaviour change.
+- Fixed: the arrange bar replaces the action bar while arranging (afc8061,
+  nyt.13).
+- Pre-tests: verify.sh 494 tests; instrumented 28/28 on API 35 and API 36;
+  Maestro 10/10 on API 35 and API 36; signed release AAB builds locally
+  with the real AdMob ids; preflight-play OK. Play before the cut:
+  production = versionCode 8 (0.3.1), internal = 8.
 
 ## 0.3.1 — versionCode 8, Play internal 2026-10-07
 

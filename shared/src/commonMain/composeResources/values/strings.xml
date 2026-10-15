@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The shared string catalog: every word the app shows, for Android and iOS alike
+  (plan decision 9). Grouped by screen; common_ is shared between screens.
+  Placeholders are %1$s, %2$s… in the order the code passes them.
+-->
+<resources>
+    <!-- common -->
+    <string name="common_add">Add</string>
+    <string name="common_alerts">Alerts</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_customize">Customize</string>
+    <string name="common_done">Done</string>
+    <string name="common_forecast">Forecast</string>
+    <string name="common_places">Places</string>
+    <string name="common_quiet_hours">Quiet hours</string>
+    <string name="common_region">Region</string>
+    <string name="common_region_units">Region &amp; units</string>
+    <string name="common_remove">Remove</string>
+    <string name="common_report_bug">Report a bug</string>
+    <string name="common_save">Save</string>
+    <string name="common_sunrise">Sunrise</string>
+    <string name="common_sunset">Sunset</string>
+    <!-- home -->
+    <string name="home_change_place">Change place</string>
+    <string name="home_collapse">Collapse</string>
+    <string name="home_collapsed">Collapsed</string>
+    <string name="home_details">Details</string>
+    <string name="home_expand">Expand</string>
+    <string name="home_done_arranging">Done arranging</string>
+    <string name="home_drag_move_drag_corner">Drag to move · Drag a corner to resize</string>
+    <string name="home_move_down">Move down</string>
+    <string name="home_move_up">Move up</string>
+    <string name="home_narrower">Narrower</string>
+    <string name="home_refresh">Refresh</string>
+    <string name="home_refreshing">Refreshing…</string>
+    <string name="home_shorter">Shorter</string>
+    <string name="home_taller">Taller</string>
+    <string name="home_try_again">Try again</string>
+    <string name="home_wider">Wider</string>
+    <!-- forecast -->
+    <string name="forecast_dew">Dew %1$s</string>
+    <string name="forecast_no_forecast_available">No forecast available.</string>
+    <string name="forecast_rh">RH %1$s%</string>
+    <!-- customize -->
+    <string name="customize_collapse">Collapse</string>
+    <string name="customize_collapsed">Collapsed</string>
+    <string name="customize_collapsible">Collapsible</string>
+    <string name="customize_collapsible_rests_as_cell">Rests as a single cell with its name; tap it on the glance to open it</string>
+    <string name="customize_couldn_find_what">Couldn't find what you're looking for?</string>
+    <string name="customize_customize_view">Customize view</string>
+    <string name="customize_daily_shows_1_day">Daily shows 1 day</string>
+    <string name="customize_daily_shows_days">Daily shows %1$s days</string>
+    <string name="customize_density">Density</string>
+    <string name="customize_each_day_shows">Each day shows</string>
+    <string name="customize_expand">Expand</string>
+    <string name="customize_expanded">Expanded</string>
+    <string name="customize_height">Height</string>
+    <string name="customize_hidden">Hidden</string>
+    <string name="customize_hourly_shows_hours">Hourly shows %1$s hours</string>
+    <string name="customize_look">Look</string>
+    <string name="customize_modules">Modules</string>
+    <string name="customize_name">Name</string>
+    <string name="customize_opens">Opens on</string>
+    <string name="customize_options">Options</string>
+    <string name="customize_order">Order</string>
+    <string name="customize_preview">Preview</string>
+    <string name="customize_safety_alerts">Safety alerts</string>
+    <string name="customize_show_fields_care_about">Show the fields you care about, in the order you read them. Size is prominence: the widest, tallest tile is the big one. You can also long-press any tile on the glance to drag and resize it in place.</string>
+    <string name="customize_show_times_in">Show times in</string>
+    <string name="customize_times_read_in_that_clock">The forecast hours, sun times and observed time read in that clock: the phone's where it is, or the weather's where it is.</string>
+    <string name="customize_submit_idea_developer">Submit your idea to the developer.</string>
+    <string name="customize_sun_shows_1_day">Sun shows 1 day</string>
+    <string name="customize_sun_shows_days">Sun shows %1$s days</string>
+    <string name="customize_sun_times">Sun times</string>
+    <string name="customize_tap_tile_details">Tap a tile for details</string>
+    <string name="customize_whole_observation_behind_reading">The whole observation behind a reading, every field of a forecast hour</string>
+    <string name="customize_tile_layout">Tile layout</string>
+    <string name="customize_tiles_show">Tiles show</string>
+    <string name="customize_tornado_severe_storm_hurricane">Tornado, severe storm, hurricane, dangerous heat and air quality warnings. Only shown while one is active.</string>
+    <string name="customize_width">Width</string>
+    <!-- alerts -->
+    <string name="alerts_add_alert">Add an alert</string>
+    <string name="alerts_alert_created">Alert created</string>
+    <string name="alerts_background_best_effort">On iPhone, iOS decides when the app may check in the background, so an alert can arrive late. Opening the app checks at once.</string>
+    <string name="alerts_background_refresh_off">Background App Refresh is off for Just My Weather, so alerts are only checked while the app is open. Turn it on in Settings → General → Background App Refresh.</string>
+    <string name="alerts_check_every">Check every</string>
+    <string name="alerts_deliver_silently_00_00">Deliver silently %1$s:00–%2$s:00</string>
+    <string name="alerts_ends">Ends</string>
+    <string name="alerts_all_alerts">For all alerts</string>
+    <string name="alerts_no_alerts_yet_only">No alerts yet. You'll only hear from this app about the conditions you add here — nothing else.</string>
+    <string name="alerts_notify">Notify</string>
+    <string name="alerts_notify_me_safety_alerts">Notify me of safety alerts</string>
+    <string name="alerts_official_weather_warnings_come">Official weather warnings come from the US National Weather Service, which doesn't cover this place. Your own alerts above work everywhere.</string>
+    <string name="alerts_silent_00_00">Silent %1$s:00–%2$s:00</string>
+    <string name="alerts_start_end_can">Start and end can't be the same hour — that would silence nothing.</string>
+    <string name="alerts_starts">Starts</string>
+    <string name="alerts_these_apply_every_alert">These apply to every alert above, not just the newest one.</string>
+    <string name="alerts_tornado_severe_storm_hurricane">Tornado, severe storm, hurricane, dangerous heat, air quality. These ignore quiet hours.</string>
+    <string name="alerts_value">Value</string>
+    <!-- places -->
+    <string name="places_coordinates">Coordinates</string>
+    <string name="places_enter_coordinates">Enter coordinates</string>
+    <string name="places_follows_device_way">Follows the device, the way the app starts out</string>
+    <string name="places_united_states_forecast">In the United States the forecast comes from NWS; anywhere else, from MET Norway, with no station reading or official alerts.</string>
+    <string name="places_latitude">Latitude</string>
+    <string name="places_loading_places">Loading places…</string>
+    <string name="places_longitude">Longitude</string>
+    <string name="places_name_e_g_cabin">Name (e.g. Cabin)</string>
+    <string name="places_no_match_clear_search">No match. Clear the search to enter coordinates instead.</string>
+    <string name="places_save_place">Save place</string>
+    <string name="places_saved">Saved</string>
+    <string name="places_search_towns_cities">Search towns and cities</string>
+    <string name="places_showing">Showing</string>
+    <string name="places_use_my_location">Use my location</string>
+    <!-- settings -->
+    <string name="settings_one_time_purchase_no">A one-time purchase, no subscription. Removes the banner at the foot of the glance.</string>
+    <string name="settings_tile_alert_or">A tile, an alert or an option you wish it had. Only the app version and phone model go with it.</string>
+    <string name="settings_about">About</string>
+    <string name="settings_ads">Ads</string>
+    <string name="settings_ads_removed">Ads removed</string>
+    <string name="settings_advanced">Advanced</string>
+    <string name="settings_already_bought_restore_purchase">Already bought it? Restore purchase</string>
+    <string name="settings_app_settings">App settings</string>
+    <string name="settings_change_what_agreed_about">Change what you agreed to about ads.</string>
+    <string name="settings_checking_google_play">Checking with Google Play…</string>
+    <string name="settings_checking_google_play_ios">Checking with the App Store…</string>
+    <string name="settings_hands_each_new_reading">Hands each new reading to Gadgetbridge, which passes it to a paired watch. Does nothing if Gadgetbridge isn't installed.</string>
+    <string name="settings_help">Help</string>
+    <string name="settings_if_has_earned_place">If it has earned a place on your phone, a rating on Google Play helps others find it.</string>
+    <string name="settings_if_has_earned_place_ios">If it has earned a place on your phone, a rating on the App Store helps others find it.</string>
+    <string name="settings_location">Location</string>
+    <string name="settings_no_accounts_what_leaves">No accounts. What leaves your phone, the ad included, and why.</string>
+    <string name="settings_no_ads_now">No ads for now</string>
+    <string name="settings_no_purchase_found_google">No purchase found for this Google account.</string>
+    <string name="settings_no_purchase_found_google_ios">No purchase found for this Apple Account.</string>
+    <string name="settings_opening_google_play">Opening Google Play…</string>
+    <string name="settings_opening_google_play_ios">Opening the App Store…</string>
+    <string name="settings_privacy_choices">Privacy choices</string>
+    <string name="settings_privacy_policy">Privacy policy</string>
+    <string name="settings_rate_just_my_weather">Rate Just My Weather</string>
+    <string name="settings_remove_ads">Remove ads · %1$s</string>
+    <string name="settings_remove_ads_2">Remove ads</string>
+    <string name="settings_send_gadgetbridge">Send to Gadgetbridge</string>
+    <string name="settings_something_wrong_email_developer">Something wrong? Email the developer, with your app version and device attached.</string>
+    <string name="settings_store_unavailable">Google Play isn't available right now. Try again later.</string>
+    <string name="settings_store_unavailable_ios">The App Store isn't available right now. Try again later.</string>
+    <string name="settings_store_unreachable">Couldn't reach Google Play. Check your connection and try again.</string>
+    <string name="settings_store_unreachable_ios">Couldn't reach the App Store. Check your connection and try again.</string>
+    <string name="settings_submit_idea_developer">Submit your idea to the developer</string>
+    <string name="settings_thank_banner_gone">Thank you. The banner is gone on every phone signed in to this Google account.</string>
+    <string name="settings_thank_banner_gone_ios">Thank you. The banner is gone on every device signed in to this Apple Account.</string>
+    <string name="settings_banner_appears_once_app">The banner appears once the app has reached Google.</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_waiting_google_play_confirm">Waiting for Google Play to confirm the price…</string>
+    <string name="settings_waiting_google_play_confirm_ios">Waiting for the App Store to confirm the price…</string>
+    <string name="settings_weather_data_from_us">Weather data from the US National Weather Service (public domain) in the United States, and from MET Norway (CC BY 4.0) everywhere else and for days eight and nine. Places from the US Census Gazetteer (public domain) and GeoNames (CC BY 4.0).</string>
+    <string name="settings_where_law_asks_first">Where the law asks first, the banner waits for your choice in the consent form.</string>
+    <string name="settings_purchase_pending_banner">Your purchase is pending. The banner goes once Google Play confirms the payment.</string>
+    <string name="settings_purchase_pending_banner_ios">Your purchase is pending. The banner goes once the App Store confirms the payment.</string>
+    <!-- region -->
+    <string name="region_auto">Auto</string>
+    <string name="region_auto_named">Auto (%1$s)</string>
+    <string name="region_automatic">Automatic</string>
+    <string name="region_automatic_named">Automatic — %1$s</string>
+    <string name="region_dates_times_set_by">Dates and times: %1$s (%2$s), %3$s — set by the region.</string>
+    <string name="region_day_first">day first</string>
+    <string name="region_find_country">Find a country</string>
+    <string name="region_month_first">month first</string>
+    <string name="region_precipitation">Precipitation</string>
+    <string name="region_pressure">Pressure</string>
+    <string name="region_sets_units_how_dates">Sets the units, how dates and times read, and which ads may be shown. The forecast for a place is the same whatever the region.</string>
+    <string name="region_temperature">Temperature</string>
+    <string name="region_units">Units</string>
+    <string name="region_wind">Wind</string>
+    <!-- support -->
+    <string name="support_attached_app_info">Attached app info</string>
+    <string name="support_attached_diagnostics">Attached diagnostics</string>
+    <string name="support_collecting">Collecting…</string>
+    <string name="support_couldn_find_what">Couldn't find what you're looking for? Tell the developer what you'd like Just My Weather to do. Only your app version and phone model are attached.</string>
+    <string name="support_describe_what_went_wrong">Describe what went wrong. Your app version, phone model, settings and recent app log are attached automatically — all of it is shown below, so you can see exactly what is sent.</string>
+    <string name="support_email_bug_report">Email bug report</string>
+    <string name="support_email_idea">Email idea</string>
+    <string name="support_i_tapped_refresh">I tapped Refresh and…</string>
+    <string name="support_would_great_if">It would be great if…</string>
+    <string name="support_no_email_app_found">No email app found. Please write to %1$s directly.</string>
+    <string name="support_opens_email_app">Opens your email app with this addressed to %1$s.</string>
+    <string name="support_submit_idea">Submit an idea</string>
+    <string name="support_what_happened">What happened?</string>
+    <string name="support_idea">Your idea</string>
+    <!-- app -->
+    <string name="app_my_location">my location</string>
+    <string name="app_saved">%1$s saved</string>
+    <string name="app_showing">Showing %1$s</string>
+</resources>

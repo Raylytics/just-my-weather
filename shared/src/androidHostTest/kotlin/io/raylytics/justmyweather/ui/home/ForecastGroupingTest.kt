@@ -1,0 +1,258 @@
+package io.raylytics.justmyweather.ui.home
+
+import io.raylytics.justmyweather.data.nws.DailyPeriod
+import io.raylytics.justmyweather.data.nws.ForecastPoint
+import io.raylytics.justmyweather.view.Conventions
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import kotlin.time.Instant
+
+class ForecastGroupingTest {
+    private fun day(name: String, temp: Double) =
+        DailyPeriod(name = name, isDaytime = true, temperatureF = temp, shortForecast = "Sunny")
+
+    private fun night(name: String, temp: Double) =
+        DailyPeriod(name = name, isDaytime = false, temperatureF = temp, shortForecast = "Clear")
+
+    @Test
+    fun `pairs each daytime period with the following night`() {
+        val days = combineDays(listOf(day("Today", 81.0), night("Tonight", 72.0), day("Saturday", 85.0)))
+        assertEquals(2, days.size)
+        assertEquals("Today", days[0].name)
+        assertEquals(81.0, days[0].highF)
+        assertEquals(72.0, days[0].lowF)
+        // A trailing day with no night yet still shows, low unknown.
+        assertEquals("Saturday", days[1].name)
+        assertEquals(85.0, days[1].highF)
+        assertNull(days[1].lowF)
+    }
+
+    @Test
+    fun `a combined day keeps both halves, and its detail carries both paragraphs`() {
+        val today =
+            day("Today", 81.0).copy(detailedForecast = "Sunny, with a high near 81.", precipProbabilityPercent = 10.0)
+        val tonight =
+            night("Tonight", 72.0).copy(
+                detailedForecast = "Clear, with a low around 72.",
+                precipProbabilityPercent = 30.0,
+            )
+        val days = combineDays(listOf(today, tonight))
+        assertEquals(today, days[0].day)
+        assertEquals(tonight, days[0].night)
+        val detail = days[0].detail(Conventions.US)
+        assertEquals("Today", detail.title)
+        assertEquals(listOf("81°", "72°", "30%", "—", "Sunny"), detail.rows.map { it.value })
+        assertEquals("Sunny, with a high near 81.\n\nTonight: Clear, with a low around 72.", detail.body)
+        // A night-only day has no day half and no wind row.
+        val evening = combineDays(listOf(tonight))[0]
+        assertNull(evening.day)
+        assertEquals(
+            listOf("High", "Low", "Chance of precipitation", "Conditions"),
+            evening.detail(Conventions.US).rows.map { it.label },
+        )
+    }
+
+    @Test
+    fun `a leading night borrows today's high from the warmest remaining hour`() {
+        val zone = TimeZone.of("America/New_York")
+
+        fun hour(iso: String, temp: Double?) = ForecastPoint(Instant.parse(iso), temp, null)
+        // 7 pm, 9 pm, 11 pm today; 1 am tomorrow is warmer but not today's.
+        val hours =
+            listOf(
+                hour("2026-09-06T23:00:00Z", 83.0),
+                hour("2026-09-07T01:00:00Z", 79.0),
+                hour("2026-09-07T03:00:00Z", null),
+                hour("2026-09-07T05:00:00Z", 90.0),
+            )
+        val days = combineDays(listOf(night("Tonight", 64.0), day("Labor Day", 89.0)), hours, zone)
+        assertEquals(83.0, days[0].highF)
+        assertEquals(true, days[0].highFromHours)
+        assertEquals("High (rest of today)", days[0].detail(Conventions.US).rows.first().label)
+        // A leading DAY is NWS's own and is left alone; so is a later night.
+        assertEquals(89.0, days[1].highF)
+        assertEquals(false, days[1].highFromHours)
+        // No hours: honest absence, as before.
+        assertNull(combineDays(listOf(night("Tonight", 64.0)))[0].highF)
+        assertNull(combineDays(listOf(night("Tonight", 64.0)), emptyList(), zone)[0].highF)
+    }
+
+    @Test
+    fun `a leading night is the rest of today, not a day against the budget`() {
+        // NWS's fourteen periods fetched in the evening: Tonight, then six
+        // full days, then a trailing afternoon — eight rows.
+        val periods =
+            listOf(night("Tonight", 60.0)) +
+                (1..6).flatMap { listOf(day("Day $it", 70.0 + it), night("Night $it", 50.0 + it)) } +
+                listOf(day("Day 7", 77.0))
+        val all = combineDays(periods)
+        assertEquals(8, all.size)
+        // At the default, every period survives — nothing NWS sent is lost.
+        val week = visibleDays(all, 7)
+        assertEquals(8, week.size)
+        assertEquals(periods, week.periods)
+        // "3 days" reaches three real days past tonight, and both styles end
+        // on the same period.
+        val three = visibleDays(all, 3)
+        assertEquals(listOf("Tonight", "Day 1", "Day 2", "Day 3"), three.map { it.name })
+        assertEquals("Night 3", three.periods.last().name)
+        // Fetched in the morning there is no leading night, and n is n.
+        val morning = combineDays(periods.drop(1))
+        assertEquals(listOf("Day 1", "Day 2", "Day 3"), visibleDays(morning, 3).map { it.name })
+        assertEquals(7, visibleDays(morning, 7).size)
+    }
+
+    private fun dated(p: DailyPeriod, iso: String) = p.copy(startTime = Instant.parse(iso))
+
+    private fun ext(date: String, high: Double) =
+        io.raylytics.justmyweather.data.metno.ExtendedDay(
+            LocalDate.parse(date), high, high - 20, 10.0, "Clear", 5.0, "S",
+        )
+
+    @Test
+    fun `past NWS's reach the extended days fill in, after NWS's last date and never over it`() {
+        val zone = TimeZone.of("America/New_York")
+        // Two NWS days, the second ending on Sep 30 (a night starting 10pm ET).
+        val nws =
+            combineDays(
+                listOf(
+                    dated(day("Monday", 80.0), "2026-09-28T10:00:00Z"),
+                    dated(night("Monday Night", 60.0), "2026-09-28T22:00:00Z"),
+                    dated(day("Tuesday", 81.0), "2026-09-29T10:00:00Z"),
+                    dated(night("Tuesday Night", 61.0), "2026-09-30T02:00:00Z"),
+                ),
+            )
+        // MET starts at today like NWS does; Sep 28 and 29 must not repeat.
+        val extended =
+            listOf(ext("2026-09-28", 1.0), ext("2026-09-29", 2.0), ext("2026-09-30", 90.0), ext("2026-10-01", 91.0))
+        val four = forecastDays(nws, extended, dailyDays = 4, zone = zone, Conventions.US)
+        assertEquals(listOf("Monday", "Tuesday", "Wed 9/30", "Thu 10/1"), four.map { it.name })
+        assertEquals(90.0, four[2].highF)
+        assertEquals(extended[2], four[2].extended)
+        assertEquals("Extended forecast · MET Norway", four[2].detail(Conventions.US).subtitle)
+        // The tile's chance and wind come from the extended day too.
+        assertEquals(10.0, four[2].precipChance)
+        assertEquals("S", four[2].windDirection)
+        // Within NWS's reach nothing is borrowed.
+        assertEquals(listOf("Monday", "Tuesday"), forecastDays(nws, extended, 2, zone, Conventions.US).map { it.name })
+        // No extended data, or NWS periods with no dates to align on: NWS only.
+        assertEquals(2, forecastDays(nws, null, 4, zone, Conventions.US).size)
+        val undated = combineDays(listOf(day("Monday", 80.0), night("Monday Night", 60.0)))
+        assertEquals(1, forecastDays(undated, extended, 4, zone, Conventions.US).size)
+    }
+
+    @Test
+    fun `a leading night keeps its own name with no high`() {
+        // Opening the app in the evening: NWS's first period is "Tonight".
+        val days = combineDays(listOf(night("Tonight", 68.0), day("Friday", 82.0), night("Friday Night", 70.0)))
+        assertEquals(2, days.size)
+        assertEquals("Tonight", days[0].name)
+        assertNull(days[0].highF)
+        assertEquals(68.0, days[0].lowF)
+        assertEquals("Friday", days[1].name)
+        assertEquals(70.0, days[1].lowF)
+    }
+
+    @Test
+    fun `splits hours at the local midnight boundary`() {
+        val zone = TimeZone.of("America/New_York")
+
+        fun hourAt(iso: String) = ForecastPoint(startTime = Instant.parse(iso), temperatureF = 70.0, windMph = null)
+        // 02:00Z/03:00Z land on Jul 31 (10/11 pm ET); 04:00Z/05:00Z on Aug 1.
+        val groups =
+            groupHoursByDay(
+                listOf(
+                    hourAt("2026-08-01T02:00:00Z"),
+                    hourAt("2026-08-01T03:00:00Z"),
+                    hourAt("2026-08-01T04:00:00Z"),
+                    hourAt("2026-08-01T05:00:00Z"),
+                ),
+                zone,
+            )
+        assertEquals(2, groups.size)
+        assertEquals(LocalDate(2026, 7, 31), groups[0].date)
+        assertEquals(2, groups[0].hours.size)
+        assertEquals(LocalDate(2026, 8, 1), groups[1].date)
+        assertEquals(2, groups[1].hours.size)
+    }
+
+    @Test
+    fun `empty inputs group to nothing`() {
+        assertEquals(emptyList<DayForecast>(), combineDays(emptyList()))
+        assertEquals(emptyList<HourDayGroup>(), groupHoursByDay(emptyList(), TimeZone.of("UTC")))
+    }
+
+    @Test
+    fun `outside NWS territory every day is MET's, from its first, and none is marked as different`() {
+        val zone = TimeZone.of("Europe/London")
+        val met = listOf(ext("2026-10-07", 60.0), ext("2026-10-08", 62.0), ext("2026-10-09", 58.0))
+        val days = forecastDays(emptyList(), met, dailyDays = 2, zone = zone, Conventions.US)
+        assertEquals(
+            listOf(LocalDate.parse("2026-10-07"), LocalDate.parse("2026-10-08")),
+            days.map { it.extended!!.date },
+        )
+        assertTrue(days.all { it.outsideNws && !it.markedExtended })
+        // The sheet names the source for what it is: the whole forecast.
+        val sheet = days.first().detail(Conventions.US)
+        assertEquals("Forecast · MET Norway", sheet.subtitle)
+        assertTrue(sheet.body!!.contains("outside the National Weather Service's coverage"))
+    }
+
+    @Test
+    fun `in NWS territory an extended day is still marked and explained as past NWS's reach`() {
+        val zone = TimeZone.of("America/New_York")
+        val nws = combineDays(listOf(dated(day("Monday", 70.0), "2026-09-28T10:00:00-04:00")))
+        val days = forecastDays(nws, listOf(ext("2026-09-29", 72.0)), dailyDays = 2, zone = zone, Conventions.US)
+        val extended = days.last()
+        assertTrue(extended.markedExtended)
+        assertEquals("Extended forecast · MET Norway", extended.detail(Conventions.US).subtitle)
+    }
+
+    @Test
+    fun `the Daily view waits on MET's days when the periods come back empty, and only then`() {
+        val zone = TimeZone.of("Europe/London")
+        val met = listOf(ext("2026-10-07", 60.0))
+        assertNull(dailyView(null, null, met, 7, zone, Conventions.US), "periods still coming")
+        assertNull(dailyView(emptyList(), null, null, 7, zone, Conventions.US), "abroad, MET's days a fetch behind")
+        assertEquals(1, dailyView(emptyList(), null, met, 7, zone, Conventions.US)!!.size)
+        // A failed MET fetch lands as an empty list: final, so the frame can
+        // say there is no forecast instead of waiting forever.
+        assertEquals(emptyList<DayForecast>(), dailyView(emptyList(), null, emptyList(), 7, zone, Conventions.US))
+        // In NWS territory nothing waits on the second source.
+        val periods = listOf(dated(day("Monday", 70.0), "2026-09-28T10:00:00-04:00"))
+        assertEquals(1, dailyView(periods, null, null, 7, TimeZone.of("America/New_York"), Conventions.US)!!.size)
+    }
+
+    @Test
+    fun `abroad after the morning, the rest of today's hours become a Today tile`() {
+        val zone = TimeZone.of("Europe/London")
+        // 4 pm and 6 pm on Oct 6 left; MET's whole days start Oct 7.
+        val hours =
+            listOf(
+                ForecastPoint(Instant.parse("2026-10-06T15:00:00Z"), 64.0, 9.0, 20.0, "Cloudy", "SW"),
+                ForecastPoint(Instant.parse("2026-10-06T17:00:00Z"), 58.0, 12.0, 40.0, "Rain", "W"),
+            )
+        val met = listOf(ext("2026-10-07", 60.0), ext("2026-10-08", 62.0))
+        val days = dailyView(emptyList(), hours, met, 2, zone, Conventions.US)!!
+        // Named by its date, and not counted: 3 days asked, 3 whole days shown after it.
+        assertEquals(listOf("Tue 10/6", "Wed 10/7", "Thu 10/8"), days.map { it.name })
+        val today = days.first()
+        assertEquals(64.0, today.highF)
+        assertEquals(58.0, today.lowF)
+        assertEquals(40.0, today.precipChance)
+        assertEquals("Cloudy", today.shortForecast)
+        assertTrue(today.highFromHours)
+        assertEquals("High (rest of the day)", today.detail(Conventions.US).rows.first().label)
+        // One day asked: the leftover hours plus tomorrow, never the leftovers alone.
+        assertEquals(2, dailyView(emptyList(), hours, met, 1, zone, Conventions.US)!!.size)
+        // When MET's fold already holds today (a morning), nothing is added.
+        val morning = listOf(ext("2026-10-06", 61.0)) + met
+        assertEquals("Tue 10/6", dailyView(emptyList(), hours, morning, 3, zone, Conventions.US)!!.first().name)
+        // And at home NWS names today itself.
+        assertEquals(null, restOfToday(null, met, zone))
+    }
+}

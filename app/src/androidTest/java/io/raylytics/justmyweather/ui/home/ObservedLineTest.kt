@@ -13,7 +13,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import java.time.Instant
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * WHEN the observed line reads the clock, which is the half of this feature
@@ -68,9 +69,9 @@ class ObservedLineTest {
 
         // Ten minutes pass with no station timestamp to age — so the ticker
         // never ran and the clock sample from first composition is all we have.
-        fakeNow = t0.plusSeconds(600)
+        fakeNow = t0 + (600).seconds
         // Then a refresh lands a reading the station took a minute ago.
-        snapshot = snapshotAt(observedAt = t0.plusSeconds(540))
+        snapshot = snapshotAt(observedAt = t0 + (540).seconds)
         compose.mainClock.advanceTimeByFrame()
         compose.mainClock.advanceTimeByFrame()
 
@@ -85,12 +86,12 @@ class ObservedLineTest {
     fun theAgeAdvancesWithoutAnyInteraction() {
         compose.mainClock.autoAdvance = false
         var fakeNow = t0
-        compose.setContent { ObservedLine(snapshotAt(observedAt = t0.minusSeconds(60))) { fakeNow } }
+        compose.setContent { ObservedLine(snapshotAt(observedAt = t0 - (60).seconds)) { fakeNow } }
         compose.mainClock.advanceTimeByFrame()
         compose.onNodeWithText("1 min ago", substring = true).assertExists()
 
         // One tick later the label has moved on its own.
-        fakeNow = t0.plusSeconds(60)
+        fakeNow = t0 + (60).seconds
         compose.mainClock.advanceTimeBy(AGE_TICK.inWholeMilliseconds + 1)
         compose.mainClock.advanceTimeByFrame()
         compose.onNodeWithText("2 min ago", substring = true).assertExists()
@@ -114,7 +115,7 @@ class ObservedLineTest {
             reads++
             fakeNow
         }
-        compose.setContent { ObservedLine(snapshotAt(observedAt = t0.minusSeconds(60)), clock = clock) }
+        compose.setContent { ObservedLine(snapshotAt(observedAt = t0 - (60).seconds), clock = clock) }
         compose.mainClock.advanceTimeByFrame()
         compose.onNodeWithText("1 min ago", substring = true).assertExists()
 
@@ -126,7 +127,7 @@ class ObservedLineTest {
         // for what a device does NOT do while asleep: an ungated ticker has a
         // delay pending, so it would wake, sample, and keep sampling for an app
         // that is not even on screen.
-        fakeNow = t0.plusSeconds(3600)
+        fakeNow = t0 + (3600).seconds
         repeat(4) { compose.mainClock.advanceTimeBy(AGE_TICK.inWholeMilliseconds + 1) }
         compose.mainClock.advanceTimeByFrame()
         assertEquals("ticker kept reading the clock while stopped", readsWhenStopped, reads)

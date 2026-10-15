@@ -46,3 +46,8 @@ indent_size = 2
 
 [Makefile]
 indent_style = tab
+
+# Generated code (Compose resources' accessors under build/generated) is not
+# ours to style; ktlint's Gradle plugin can't exclude it from KMP source sets.
+[**/build/generated/**.kt]
+ktlint_standard = disabled

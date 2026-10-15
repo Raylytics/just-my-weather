@@ -1,0 +1,680 @@
+package io.raylytics.justmyweather.ui.home
+
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.toUpperCase
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import io.raylytics.justmyweather.data.SunDay
+import io.raylytics.justmyweather.data.WeatherSnapshot
+import io.raylytics.justmyweather.data.nws.ActiveAlert
+import io.raylytics.justmyweather.resources.Res
+import io.raylytics.justmyweather.resources.common_alerts
+import io.raylytics.justmyweather.resources.common_customize
+import io.raylytics.justmyweather.resources.home_change_place
+import io.raylytics.justmyweather.resources.home_done_arranging
+import io.raylytics.justmyweather.resources.home_drag_move_drag_corner
+import io.raylytics.justmyweather.resources.home_refresh
+import io.raylytics.justmyweather.resources.home_refreshing
+import io.raylytics.justmyweather.resources.home_try_again
+import io.raylytics.justmyweather.ui.theme.LocalConventions
+import io.raylytics.justmyweather.ui.theme.subtleBorder
+import io.raylytics.justmyweather.ui.theme.textButtonColors
+import io.raylytics.justmyweather.view.AlertBannerPosition
+import io.raylytics.justmyweather.view.Conventions
+import io.raylytics.justmyweather.view.Detail
+import io.raylytics.justmyweather.view.Details
+import io.raylytics.justmyweather.view.ForecastData
+import io.raylytics.justmyweather.view.ForecastMode
+import io.raylytics.justmyweather.view.ModuleKey
+import io.raylytics.justmyweather.view.ModuleSize
+import io.raylytics.justmyweather.view.ReadingHeading
+import io.raylytics.justmyweather.view.RenderedView
+import io.raylytics.justmyweather.view.TimesIn
+import io.raylytics.justmyweather.view.ViewConfig
+import io.raylytics.justmyweather.view.render
+import kotlinx.coroutines.delay
+import kotlinx.datetime.TimeZone
+import org.jetbrains.compose.resources.stringResource
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+
+/** How often the observation age re-reads the clock. See [ObservedLine].
+ * Internal so the instrumented test steps the clock by exactly one tick
+ * instead of hardcoding a number that could drift from this one. */
+val AGE_TICK = 30.seconds
+
+/** How often the sun row re-reads the clock, and how often MainActivity asks
+ * the ViewModel to re-work the events. One constant because the two halves are
+ * one behaviour: which event is next, and which day it falls on. A minute is
+ * finer than the values move; the point is being on the right side of a
+ * boundary within a minute of crossing it. */
+internal val SUN_TICK = 1.minutes
+
+/**
+ * The home view. Out of the box it's a calm single glance; once the user edits
+ * their config it's whatever they made it — same screen, driven by data. The
+ * visible fields sit as bordered modules on a grid, each as prominent as the
+ * user made it big. Centred in whitespace so the glance is readable in
+ * well under a second.
+ *
+ * Arrange mode is session UI, not app state: long-pressing a module starts it,
+ * Done or system back ends it, and everything it changes lands in the persisted
+ * ViewConfig through [onResizeModule]/[onMoveModule] — so there is nothing to save
+ * on exit and nothing lost if the process dies mid-arrange.
+ */
+@Composable
+fun HomeScreen(
+    state: HomeUiState,
+    onRefresh: () -> Unit,
+    onSetMode: (ForecastMode) -> Unit,
+    onAppSettings: () -> Unit,
+    onCustomize: () -> Unit,
+    onAlerts: () -> Unit,
+    onResizeModule: (ModuleKey, ModuleSize) -> Unit,
+    onMoveModule: (ModuleKey, Int) -> Unit,
+    /** Open a folded collapsible module, or fold it back. */
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
+    onPlaces: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var arranging by rememberSaveable { mutableStateOf(false) }
+    // Back leaves arrange mode before it leaves the screen — the launcher's
+    // contract, and the gesture a wiggling grid teaches you to expect.
+    BackHandler(enabled = arranging) { arranging = false }
+    // The detail a tap opened, if any. Session UI like `arranging`, not
+    // saved: a sheet is a look at more, and a process death should bring the
+    // glance back, not a sheet over it. Its content is a value built at tap
+    // time (view/Details), so the sheet does not chase the data underneath.
+    var detail by remember { mutableStateOf<Detail?>(null) }
+    detail?.let { DetailSheet(detail = it, onDismiss = { detail = null }) }
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        // The controls are pinned, not scrolled. A tall day — an alert banner,
+        // the sun table and an hourly strip all at once — used to push them
+        // below the fold, and since the glance column carries no scrollbar or
+        // clipped edge there was nothing to suggest they were still down
+        // there: they simply looked absent. Giving the content weight(1f) and
+        // the bar the remainder keeps it on screen at any height, with no
+        // overlap and no padding arithmetic to get wrong.
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        // A tap on empty ground leaves arrange mode, as it
+                        // does on a launcher. Anything that handles its own
+                        // tap — a tile, the place name, a chip, Done — has
+                        // consumed it before it reaches here, so this only
+                        // ever sees the taps nothing else wanted. Keyed on
+                        // `arranging` so the detector does not exist the rest
+                        // of the time.
+                        .pointerInput(arranging) {
+                            if (arranging) detectTapGestures { arranging = false }
+                        },
+                contentAlignment = Alignment.Center,
+            ) {
+                when (state) {
+                    is HomeUiState.Loading ->
+                        Text(
+                            text = "…",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                    is HomeUiState.Error ->
+                        ErrorView(message = state.message, onRefresh = onRefresh)
+
+                    is HomeUiState.Ready ->
+                        GlanceView(
+                            state = state,
+                            onSetMode = onSetMode,
+                            arranging = arranging,
+                            onStartArranging = { arranging = true },
+                            onDoneArranging = { arranging = false },
+                            onResizeModule = onResizeModule,
+                            onMoveModule = onMoveModule,
+                            onSetExpanded = onSetExpanded,
+                            onPlaces = onPlaces,
+                            // The option: off means no handler at all, so
+                            // nothing below draws a tap affordance for a
+                            // tap that does nothing.
+                            onOpenDetail = if (state.config.tapForDetails) ({ detail = it }) else null,
+                        )
+                }
+            }
+            // Only with a reading on screen: the error view carries its own
+            // "Try again", and a bare "…" has nothing to refresh yet.
+            //
+            // While arranging, the arrange bar takes the action bar's place.
+            // It used to sit under the grid, inside the weighted box, and
+            // when the grid filled that box (an iPhone 16, a short Android
+            // phone, a large font) it was measured with no height left and
+            // vanished, taking the hint and Done with it (just-my-weather-
+            // nyt.13). The foot always has room, and Refresh, Settings,
+            // Customize and Alerts have nothing to do mid-edit.
+            if (state is HomeUiState.Ready && arranging) {
+                ArrangeBar(onDone = { arranging = false })
+            } else if (state is HomeUiState.Ready) {
+                ActionBar(
+                    refreshing = state.refreshing,
+                    refreshError = state.refreshError,
+                    onRefresh = onRefresh,
+                    onAppSettings = onAppSettings,
+                    onCustomize = onCustomize,
+                    onAlerts = onAlerts,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GlanceView(
+    state: HomeUiState.Ready,
+    onSetMode: (ForecastMode) -> Unit,
+    arranging: Boolean,
+    onStartArranging: () -> Unit,
+    onDoneArranging: () -> Unit,
+    onResizeModule: (ModuleKey, ModuleSize) -> Unit,
+    onMoveModule: (ModuleKey, Int) -> Unit,
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
+    onPlaces: () -> Unit,
+    onOpenDetail: ((Detail) -> Unit)?,
+) {
+    val snapshot = state.snapshot
+    val config = state.config
+    // Density drives the sizes/spacing; the chosen level lives in the config.
+    val spec = config.density.spec()
+    // Which clock every time on this screen reads in. The place's zone still
+    // decides the sun rows' calendar days; this only decides how the instants
+    // are shown.
+    val displayZone =
+        when (config.timesIn) {
+            TimesIn.DEVICE -> TimeZone.currentSystemDefault()
+            TimesIn.PLACE -> state.zone
+        }
+    // The reading's own timestamp is the exception: see TimesIn.observedZone.
+    val observedZone = config.timesIn.observedZone(snapshot, place = state.zone)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(spec.sectionSpacing),
+        // Scroll fallback: on short viewports (landscape, split-screen) a tall
+        // framing — the stacked daily list especially — must degrade to
+        // scrolling, never to clipped, unreachable chips and buttons.
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+    ) {
+        // Safety alerts lead when the user wants them on top. Absent entirely
+        // on the ordinary day — an empty list renders nothing, so the calm
+        // default stays calm and the banner's presence is itself the signal.
+        if (config.alertBannerPosition == AlertBannerPosition.TOP) {
+            SafetyAlertBanner(alerts = state.safetyAlerts)
+        }
+
+        // The place name is the way into choosing a place. Tapping the thing
+        // you want to change beats a fourth button in the action bar, which is
+        // already the busiest part of a screen built around calm — and it puts
+        // the control where someone looks when they notice the wrong city.
+        // Bare text did not read as tappable, so it wears the tiles' border
+        // (same colour, same corner) and a chooser caret: the one boxed thing
+        // above the grid, and the box says "this opens something".
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(TILE_CORNER))
+                    .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(TILE_CORNER))
+                    .clickable(onClickLabel = stringResource(Res.string.home_change_place), onClick = onPlaces)
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .testTag("locationLabel"),
+        ) {
+            Text(
+                text = snapshot.locationLabel.toUpperCase(Locale.current),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // The caret keeps its room when a long name has to give way.
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            // Its own Text, so the name stays exactly the name for tests and
+            // for TalkBack (the click label already says what a tap does).
+            Text(
+                text = "▾",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        }
+
+        // The glance: every module the user has on, the forecast among them,
+        // as tiles on one grid. The screen answers "right now" AND "ahead"
+        // with one set of tiles and one set of gestures.
+        NowContent(
+            snapshot = snapshot,
+            config = config,
+            sunDays = state.sunDays,
+            zone = displayZone,
+            observedZone = observedZone,
+            forecast =
+                ForecastData(
+                    mode = state.forecastMode,
+                    hours = state.hourly,
+                    periods = state.daily,
+                    error = state.forecastError,
+                    placeZone = state.zone,
+                    extended = state.extendedDaily,
+                ),
+            arranging = arranging,
+            onStartArranging = onStartArranging,
+            onStopArranging = onDoneArranging,
+            onResizeModule = onResizeModule,
+            onMoveModule = onMoveModule,
+            onSetForecastMode = onSetMode,
+            onOpenDetail = onOpenDetail,
+            expanded = state.expanded,
+            onSetExpanded = onSetExpanded,
+        )
+
+        if (config.alertBannerPosition == AlertBannerPosition.BOTTOM) {
+            SafetyAlertBanner(alerts = state.safetyAlerts)
+        }
+    }
+}
+
+/**
+ * The one piece of editor chrome, at the foot in the action bar's place while
+ * arranging. The wiggle says "editing"; this says what editing IS and how it
+ * stops. The hint earns its line because half of the grammar is not obvious:
+ * drag-to-move is the launcher's and needs no telling, but the corner handle
+ * is a small dot, and a gesture nobody would guess is a feature nobody has.
+ * Back and a tap on empty ground end it too.
+ */
+@Composable
+private fun ArrangeBar(onDone: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // The action bar's own top padding, so the grid above barely moves
+        // when one bar replaces the other.
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.home_drag_move_drag_corner),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.testTag("arrangeHint"),
+        )
+        TextButton(onClick = onDone, border = subtleBorder(), modifier = Modifier.testTag("doneArranging")) {
+            Text(stringResource(Res.string.home_done_arranging))
+        }
+    }
+}
+
+/**
+ * Active safety alerts — tornado, severe storm, hurricane, dangerous heat,
+ * poor air quality — worst first.
+ *
+ * Renders NOTHING when there is nothing to say, which is the point: on almost
+ * every day this composable contributes no pixels, so when it does appear the
+ * appearance itself carries the message. Which alerts qualify is decided in
+ * SafetyAlerts, not here.
+ *
+ * The most severe alert is expanded; the rest are one line each. A screen full
+ * of headlines during a storm is the opposite of useful.
+ */
+@Composable
+private fun SafetyAlertBanner(alerts: List<ActiveAlert>) {
+    if (alerts.isEmpty()) return
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth().testTag("safetyAlertBanner"),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            alerts.forEachIndexed { index, alert ->
+                Text(
+                    text = alert.event,
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                // Only the worst one gets its headline: during severe weather
+                // several alerts overlap, and stacking every headline buries
+                // the one that matters under the ones that don't.
+                if (index == 0 && alert.headline.isNotBlank()) {
+                    Text(
+                        text = alert.headline,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NowContent(
+    snapshot: WeatherSnapshot,
+    config: ViewConfig,
+    /** Not part of the snapshot: computed on the device, so the sun module
+     * works with no signal. */
+    sunDays: List<SunDay>,
+    /** The clock the screen reads in: the phone's or the place's, per the
+     * user's setting. The sun rows were computed for the place's days; this
+     * is only how their instants are shown. */
+    zone: TimeZone,
+    /** The clock the station reading's timestamp reads in — the reading's
+     * own in place mode, never the screen's current place. */
+    observedZone: TimeZone,
+    /** The forecast module's data: a separate fetch with its own failure and
+     * a session-chosen framing, so it rides beside the snapshot. */
+    forecast: ForecastData,
+    arranging: Boolean,
+    onStartArranging: () -> Unit,
+    onStopArranging: () -> Unit,
+    onResizeModule: (ModuleKey, ModuleSize) -> Unit,
+    onMoveModule: (ModuleKey, Int) -> Unit,
+    onSetForecastMode: (ForecastMode) -> Unit,
+    /** Null when the user has switched tap-for-details off. */
+    onOpenDetail: ((Detail) -> Unit)?,
+    /** The collapsible modules opened this session, and the tap that opens
+     * or folds one. */
+    expanded: Set<ModuleKey>,
+    onSetExpanded: (ModuleKey, Boolean) -> Unit,
+) {
+    val conventions = LocalConventions.current
+    val rendered: RenderedView = config.render(snapshot, sunDays, zone, forecast, conventions, expanded)
+    val spec = config.density.spec()
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(spec.sectionSpacing),
+    ) {
+        if (rendered.modules.isEmpty()) {
+            // Every field hidden is a legal config; an em-dash reads as "you
+            // chose nothing", where a blank screen reads as a failure.
+            Text(
+                text = "—",
+                style = spec.heroStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        } else {
+            ModuleGrid(
+                modules = rendered.modules,
+                arranging = arranging,
+                spec = spec,
+                onStartArranging = onStartArranging,
+                onStopArranging = onStopArranging,
+                onResize = onResizeModule,
+                onMove = onMoveModule,
+                onSetForecastMode = onSetForecastMode,
+                // A module's detail needs the observation its value came
+                // from, which lives here and not on the tile.
+                onOpenModule = onOpenDetail?.let {
+                        open ->
+                    { module -> Details.ofModule(module, snapshot, observedZone, conventions)?.let(open) }
+                },
+                onOpenDetail = onOpenDetail,
+                onSetExpanded = onSetExpanded,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // Provenance, attached to the reading it describes. The hero is a real
+        // thermometer at a nearby station; the forecast strip below is model
+        // output for a 2.5km grid cell, and the two legitimately disagree —
+        // 75° here against 71° for the same hour is two products, not a bug.
+        // Unlabelled and side by side, that reads as the app contradicting
+        // itself, so each region now says which it is.
+        //
+        // Shown at EVERY density, including Spacious. That end used to hide
+        // the time to be "just the number", but a number whose provenance is
+        // undiscoverable is exactly what made this confusing, and one quiet
+        // line is the smallest thing that fixes it.
+        ObservedLine(snapshot, zone = observedZone)
+    }
+}
+
+/**
+ * "Observed 12:40 PM · 12 min ago" — when the station took the reading, and
+ * how long ago that was.
+ *
+ * The age carries what the timestamp cannot. A station that stopped reporting
+ * three hours ago and one that published a minute ago look identical when all
+ * you have is a clock time, and the timestamp deliberately doesn't move on a
+ * re-fetch (see [observedLabel]) — so pressing Refresh changed nothing on
+ * screen and gave no sign the fetch had happened. The age moves. Both halves
+ * stay: replacing the timestamp would lose the fact the label exists to state,
+ * and a separate "checked at" line would re-add chrome and read as two
+ * contradictory times.
+ *
+ * It ticks, because an age computed once at render goes stale while you look
+ * at it — the one failure a line like this cannot afford. Every [AGE_TICK]:
+ * the smallest unit shown is a minute, so the label is never more than half a
+ * unit behind, and a screen left open costs two wakeups a minute rather than
+ * four. Only this line recomposes on a tick, not the whole glance.
+ *
+ * Two details in the loop below are the difference between a ticking age and a
+ * lying one, and neither shows up in a screen you sit and watch:
+ *
+ *  - **It samples before it waits.** Sampling after the delay leaves `now`
+ *    frozen at first composition for a whole tick — and the effect restarts
+ *    whenever `observedAt` changes, including null → non-null when a refresh
+ *    finally brings a station timestamp. `now` would then be minutes older
+ *    than the reading, the gap would run backwards past
+ *    [ObservationAge.FUTURE_TOLERANCE], and the age would vanish for 30
+ *    seconds at the exact moment it was there to confirm the refresh.
+ *  - **It runs only while RESUMED,** so it re-samples on every resume.
+ *    `delay` parks on the monotonic clock, which does not advance across
+ *    deep sleep: a phone left on this screen overnight would wake showing
+ *    "12 min ago" for a reading twelve hours old, and only correct itself
+ *    once the pending delay expired. Stopping while stopped also means a
+ *    backgrounded glance costs nothing.
+ */
+@Composable
+fun ObservedLine(
+    snapshot: WeatherSnapshot,
+    /** The clock the time reads in. Defaults to the reading's own zone: a
+     * station reading is taken where the weather is, and during a place
+     * switch this reading is still the previous place's while the new one is
+     * in flight — formatting it at the new place's offset would put a time
+     * on it that never happened. The screen passes the user's choice. */
+    zone: TimeZone = snapshot.zone ?: TimeZone.currentSystemDefault(),
+    /** The wall clock, injectable so a test can decide when "now" is — the
+     * defects this line has had were all in *when* it read the clock, which is
+     * untestable while the read is hard-wired. Last, so a test's trailing
+     * lambda lands here. */
+    clock: () -> Instant = Clock.System::now,
+) {
+    val observedAt = snapshot.observedAt
+    var now by remember { mutableStateOf(clock()) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(observedAt, lifecycle) {
+        // Nothing to age when the station omitted its timestamp — don't tick.
+        // Nor for a forecast hour: it has a time it is FOR, not an age.
+        if (observedAt == null || snapshot.fromForecast) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                now = clock()
+                delay(AGE_TICK)
+            }
+        }
+    }
+    val heading = ReadingHeading.of(snapshot.fromForecast, observedLabel(snapshot, zone, LocalConventions.current))
+    // A forecast hour names its source where an observation shows its age.
+    val trailer =
+        if (snapshot.fromForecast) {
+            ReadingHeading.FORECAST_SOURCE
+        } else {
+            observedAt?.let { ObservationAge.label(it, now) }
+        }
+    Text(
+        text = listOfNotNull(heading, trailer).joinToString(" · "),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/**
+ * The controls, pinned below the glance.
+ *
+ * The failed-refresh message rides here rather than in the scroll. It belongs
+ * beside the button it is about — that pairing is why it stopped being a
+ * full-screen error in the first place — and leaving it above the fold while
+ * the button stayed pinned would have split the two apart again.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ActionBar(
+    refreshing: Boolean,
+    refreshError: String?,
+    onRefresh: () -> Unit,
+    onAppSettings: () -> Unit,
+    onCustomize: () -> Unit,
+    onAlerts: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
+        refreshError?.let { message ->
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        // Four labels at TextButton's default 12dp padding are just wider than
+        // a Pixel 7, so the buttons are tighter than the default — 8dp, which
+        // pays for the 4dp gaps their outlines need (two borders touching read
+        // as one thick line). The FlowRow is the fallback for narrower phones,
+        // where a wrapped button beats one clipped off the edge.
+        val padding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+        val border = subtleBorder()
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            // The button label reflects the refreshing flag, so a re-fetch is an
+            // observable state change (and the flag stops being dead state).
+            TextButton(
+                onClick = onRefresh,
+                enabled = !refreshing,
+                colors = textButtonColors(),
+                border = subtleBorder(enabled = !refreshing),
+                contentPadding = padding,
+            ) {
+                Text(stringResource(if (refreshing) Res.string.home_refreshing else Res.string.home_refresh))
+            }
+            TextButton(onClick = onAppSettings, border = border, contentPadding = padding) { Text("App Settings") }
+            TextButton(onClick = onCustomize, border = border, contentPadding = padding) {
+                Text(stringResource(Res.string.common_customize))
+            }
+            TextButton(onClick = onAlerts, border = border, contentPadding = padding) {
+                Text(stringResource(Res.string.common_alerts))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorView(
+    message: String,
+    onRefresh: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        TextButton(onClick = onRefresh, border = subtleBorder()) { Text(stringResource(Res.string.home_try_again)) }
+    }
+}
+
+// Every time and date on these screens formats through LocalConventions
+// (view/Conventions): one pattern per kind of value, chosen by the region,
+// so a 24-hour region reads "16:05" in the sun table and the observed line
+// alike, and two screens can't drift apart.
+
+/**
+ * The time the STATION took the reading — never the time we fetched it.
+ *
+ * This is the answer to "why doesn't the Observed time change when I hit
+ * Refresh?", which is a reasonable thing to ask and not a bug. Refresh really
+ * does re-fetch: nothing caches the observation (only the grid/station lookup
+ * is cached, and OkHttp is built with no HTTP cache). The value simply hasn't
+ * moved yet, for two independent reasons, both measured against the live API
+ * on 2026-08-03:
+ *
+ *  - Stations publish on their own cadence. KLOU/KSDF post every 5 minutes;
+ *    many others are hourly.
+ *  - NWS serves this endpoint with `cache-control: max-age=183, s-maxage=300`,
+ *    so even a station that just reported can be up to ~5 minutes behind.
+ *
+ * At 12:52 PM local the newest record available was 12:40 PM — a 12-minute lag
+ * on their side, with the temperature unchanged across the previous six
+ * observations.
+ *
+ * Substituting the clock here would make a three-hour-old reading claim to be
+ * current the moment someone tapped Refresh, which is the one thing this label
+ * exists to prevent. The staleness is made legible the other way, by [ObservedLine]
+ * printing the age beside this — "Observed 12:40 PM · 12 min ago" — so the
+ * timestamp keeps saying what it means and the age answers "is this current?".
+ */
+private fun observedLabel(snapshot: WeatherSnapshot, zone: TimeZone, conventions: Conventions): String? =
+    snapshot.observedAt?.let { conventions.clock(it, zone) }

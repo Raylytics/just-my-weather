@@ -1,0 +1,37 @@
+# iOS team + signing properties — copy to team.properties and fill in.
+# team.properties is gitignored.
+#
+# Mirrors the pattern of play.properties / app/admob.properties: secrets and
+# environment-specific values live outside git, scripts read them by key
+# (scripts/ios/common.sh, load_team_properties). Env vars override the file:
+# IOS_TEAM_ID, IOS_ASC_KEY_ID, IOS_ASC_ISSUER_ID, IOS_ASC_KEY_PATH.
+
+# 10-char Apple Developer team ID. Find at:
+#   https://developer.apple.com/account → Membership
+# This is NOT secret — it's printed on every signed binary — but it is
+# per-developer: scripts/ios/setup-team.sh copies it into the gitignored
+# iosApp/Config/Team.xcconfig, so someone building from source signs with
+# their own team, not ours.
+teamID=REPLACE_WITH_TEAM_ID
+
+# App Store Connect API key — used by altool for non-interactive
+# TestFlight uploads (no Apple ID password, no 2FA prompts), and by
+# create-profile.sh / register-device.sh for the ASC API.
+# Generate at: App Store Connect → Users and Access → Integrations → Keys → "+"
+# Required role: at least "App Manager" for TestFlight uploads.
+#
+# When you generate the key, you download a .p8 file ONCE — keep it
+# safe; Apple won't let you re-download it. Never commit it (the
+# .gitignore blocks **/AuthKey_*.p8).
+ascKeyId=REPLACE_WITH_KEY_ID
+ascIssuerId=REPLACE_WITH_ISSUER_UUID
+
+# Path to the AuthKey_<KEY_ID>.p8 file. create-profile.sh and
+# register-device.sh need it. altool also searches these
+# conventional paths automatically, so for upload alone it can be left
+# blank if the .p8 lives in one of them:
+#   ./private_keys/
+#   ~/private_keys/
+#   ~/.private_keys/
+#   ~/.appstoreconnect/private_keys/
+ascKeyPath=

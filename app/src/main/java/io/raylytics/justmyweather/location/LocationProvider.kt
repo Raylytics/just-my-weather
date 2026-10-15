@@ -20,14 +20,14 @@ import io.raylytics.justmyweather.data.WeatherLocation
  */
 class LocationProvider(
     private val context: Context,
-) {
-    fun hasPermission(): Boolean =
+) : LocationSource {
+    override fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
 
     /** Last known coarse fix as a label-less [WeatherLocation], or null if
      * permission is absent or no fix is cached yet. */
-    fun lastKnownLocation(): WeatherLocation? {
+    override fun lastKnownLocation(): WeatherLocation? {
         if (!hasPermission()) return null
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
             ?: return null

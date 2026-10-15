@@ -19,11 +19,4 @@ class AdPolicyTest {
         assertTrue(AdPolicy.isSample(AdPolicy.SAMPLE_APP_ID))
         assertFalse(AdPolicy.isSample("ca-app-pub-8760580453574524/1234567890"))
     }
-
-    @Test
-    fun `the non-personalized switch is the SDK's npa=1`() {
-        // The privacy policy promises non-personalized ads; this is the pair
-        // AdRequests puts on every request.
-        assertEquals("npa" to "1", AdPolicy.NPA_KEY to AdPolicy.NPA_VALUE)
-    }
 }
