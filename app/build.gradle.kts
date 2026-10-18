@@ -59,7 +59,7 @@ android {
         // versionName is the release (CLAUDE.md "Versioning"). 0.2.0 is the first
         // Play build: everything since the v0.1.x sideloads.
         versionCode = 12
-        versionName = "0.4.1"
+        versionName = "0.4.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
