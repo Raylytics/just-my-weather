@@ -185,3 +185,4 @@
 {"id":"int-2601065a","kind":"field_change","created_at":"2026-10-18T16:34:18.182088Z","actor":"jimbottle","issue_id":"just-my-weather-7lz","extra":{"field":"status","new_value":"closed","old_value":"open","reason":"Built and committed 1f60593; demoed on Pixel_7_API_35 as a real 0.4.0 to 0.4.1 update. Ships with the 0.4.1 cut."}}
 {"id":"int-03f69b11","kind":"field_change","created_at":"2026-10-18T17:26:37.227316Z","actor":"jimbottle","issue_id":"just-my-weather-5fm","extra":{"field":"status","new_value":"deferred","old_value":"open"}}
 {"id":"int-37d5bd28","kind":"field_change","created_at":"2026-10-18T17:26:37.841303Z","actor":"jimbottle","issue_id":"just-my-weather-03f","extra":{"field":"status","new_value":"deferred","old_value":"open"}}
+{"id":"int-57aec535","kind":"field_change","created_at":"2026-10-18T17:29:02.594488Z","actor":"jimbottle","issue_id":"just-my-weather-yed","extra":{"field":"priority","new_value":"2","old_value":"3"}}
