@@ -196,4 +196,13 @@
     <string name="app_my_location">my location</string>
     <string name="app_saved">%1$s saved</string>
     <string name="app_showing">Showing %1$s</string>
+    <!-- whats new: the once-per-update sheet; notes per release in whatsnew/ReleaseNotes.kt -->
+    <string name="whats_new_title">What's new</string>
+    <string name="whats_new_version">Version %1$s</string>
+    <string name="whats_new_dismiss">Got it</string>
+    <string name="whats_new_open_customize">Open Customize</string>
+    <string name="whats_new_0_4_1_modules_title">New modules: humidity, dew point and visibility</string>
+    <string name="whats_new_0_4_1_modules_body">Each can now have its own tile on your glance. They start switched off, so your glance looks just as you left it: turn them on in Customize. Tap a tile for the full reading, or set an alert on one.</string>
+    <string name="whats_new_0_4_1_units_title">Visibility in miles or kilometres</string>
+    <string name="whats_new_0_4_1_units_body">It follows your region. To change it, open App Settings, then Region &amp; units.</string>
 </resources>

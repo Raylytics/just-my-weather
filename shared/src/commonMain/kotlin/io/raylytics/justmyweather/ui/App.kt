@@ -42,7 +42,10 @@ import io.raylytics.justmyweather.ui.settings.RegionScreen
 import io.raylytics.justmyweather.ui.settings.RegionViewModel
 import io.raylytics.justmyweather.ui.support.SupportScreen
 import io.raylytics.justmyweather.ui.theme.LocalConventions
+import io.raylytics.justmyweather.ui.whatsnew.WhatsNewSheet
 import io.raylytics.justmyweather.view.ThemeConfig
+import io.raylytics.justmyweather.whatsnew.HighlightAction
+import io.raylytics.justmyweather.whatsnew.ReleaseNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
@@ -104,6 +107,10 @@ fun App(
     backgroundAlerts: BackgroundAlerts = BackgroundAlerts.RELIABLE,
     /** The app state a bug report attaches, read fresh from the stores. */
     loadBugReportState: suspend () -> List<Pair<String, String>>,
+    /** Release notes to show once over the glance, or none (whatsnew/). */
+    whatsNew: List<ReleaseNote> = emptyList(),
+    /** The notes were dismissed, however: record them as seen. */
+    onWhatsNewSeen: () -> Unit = {},
 ) {
     var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
     // The idea form opens from Customize and from App Settings, and returns
@@ -164,6 +171,17 @@ fun App(
                     adBanner()
                 }
             }
+            // Over the glance only: an update lands here, and a sheet over
+            // Customize or a form would hide what the user opened.
+            WhatsNewSheet(
+                notes = whatsNew,
+                onAction = { action ->
+                    when (action) {
+                        HighlightAction.CUSTOMIZE -> screen = Screen.CUSTOMIZE
+                    }
+                },
+                onDismiss = onWhatsNewSeen,
+            )
         }
 
         Screen.CUSTOMIZE -> {

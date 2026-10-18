@@ -174,6 +174,28 @@ default rather than crash) + a `*Repository` over the shared DataStore, wired in
 installs carry settings files from earlier versions, and
 `PreferencesCompatibilityTest` holds them to it.
 
+## Add release notes to the What's new sheet
+
+An updating user sees a sheet over the glance, once, listing what changed
+since the version they last saw (`ui/whatsnew/WhatsNewSheet.kt`). A fresh
+install never sees it. A release with no notes updates silently.
+
+1. **Strings** in `composeResources/values/strings.xml`:
+   `whats_new_<version>_<topic>_title` and `_body`, e.g.
+   `whats_new_0_5_0_radar_title`. Two or three highlights at most, about
+   what a user would notice or want to try. Fixes and internals go in
+   `docs/RELEASES.md` instead.
+2. **One entry at the top of `whatsnew/ReleaseNotes.kt`**, with its
+   `AppVersion` and highlights. A highlight may carry a `HighlightAction`;
+   the sheet's one button is the first action among the notes. To add a
+   destination, add a `HighlightAction` entry and handle it in `App.kt`
+   (the `when` is exhaustive).
+
+Notes for a version later than `VERSION` never show early, so they can be
+written ahead. `WhatsNewTest` checks the catalog. How an update is told
+from a fresh install, including the upgrade from 0.4.0, which recorded
+nothing, is in `whatsnew/WhatsNew.kt`.
+
 ## Add or change words on a screen
 
 Every string a screen draws lives in

@@ -9,6 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.raylytics.justmyweather.AppGraph
@@ -28,9 +32,11 @@ import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.ui.theme.ThemeViewModel
 import io.raylytics.justmyweather.ui.theme.themeResolvesToDark
 import io.raylytics.justmyweather.view.Conventions
+import io.raylytics.justmyweather.whatsnew.ReleaseNote
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Every screen's ViewModel. Each host builds them its own way — Android
@@ -82,6 +88,11 @@ fun AppRoot(
     val privacyOptions by privacyOptionsRequired.collectAsStateWithLifecycle()
     val dark = themeResolvesToDark(themeConfig)
     LaunchedEffect(dark) { onDarkChanged(dark) }
+    // What's new: decided once per launch, before this launch's own writes
+    // can make a fresh install look like an update (WhatsNewRepository).
+    var whatsNew by remember { mutableStateOf<List<ReleaseNote>>(emptyList()) }
+    LaunchedEffect(version) { whatsNew = graph.whatsNewRepository.pending(version) }
+    val scope = rememberCoroutineScope()
     JustMyWeatherTheme(themeConfig) {
         // The background paints the full edge-to-edge window (so the areas
         // behind the system bars match the app), then the padding keeps every
@@ -116,6 +127,11 @@ fun AppRoot(
                     adBanner = adBanner,
                     support = support,
                     backgroundAlerts = alertsReliability,
+                    whatsNew = whatsNew,
+                    onWhatsNewSeen = {
+                        whatsNew = emptyList()
+                        scope.launch { graph.whatsNewRepository.markSeen(version) }
+                    },
                 )
             }
         }

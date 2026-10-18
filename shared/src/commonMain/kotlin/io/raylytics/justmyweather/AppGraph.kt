@@ -17,6 +17,7 @@ import io.raylytics.justmyweather.data.ThemeConfigRepository
 import io.raylytics.justmyweather.data.ViewConfigRepository
 import io.raylytics.justmyweather.data.WeatherLocation
 import io.raylytics.justmyweather.data.WeatherRepository
+import io.raylytics.justmyweather.data.WhatsNewRepository
 import io.raylytics.justmyweather.data.metno.MetNoClient
 import io.raylytics.justmyweather.data.nws.HttpTransport
 import io.raylytics.justmyweather.data.nws.NwsClient
@@ -131,4 +132,7 @@ open class AppGraph(
     // and is the only thing that talks to the store.
     val adsEntitlementRepository = AdsEntitlementRepository(dataStore)
     val removeAdsManager = RemoveAdsManager(billingGateway, adsEntitlementRepository, scope)
+
+    /** Which release's "What's new" sheet has been seen (whatsnew/). */
+    val whatsNewRepository = WhatsNewRepository(dataStore)
 }
