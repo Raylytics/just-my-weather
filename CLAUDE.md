@@ -638,6 +638,11 @@ platform difference:
   `WidgetData` the Glance composition draws from via the per-widget state
   (`WidgetState` — never read stores in `provideGlance`, a live session won't
   re-run it). See `docs/architecture.md`.
+- **`whatsnew/`** + **`ui/whatsnew/`** — the once-per-update "What's new"
+  sheet over the glance. `WhatsNew` decides (pure: update vs fresh install,
+  which releases), `ReleaseNotes` is the per-version catalog (strings in
+  `strings.xml`), `WhatsNewRepository` stores the seen version. Decide each
+  release's notes before the cut; docs/extending.md has the steps.
 - **`support/`** — the two mails to the developer, ported from open-frame:
   `SupportMail.kt` builds them (pure, tested), `SupportIntents.kt` (app) reads the
   device and own logcat and hands off to the email app. A bug report carries
