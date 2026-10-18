@@ -83,8 +83,9 @@ Two things are deliberately **not** seams:
 
 Storage needs no seam: androidx DataStore's preferences-core is itself
 multiplatform, so the repositories are common code with the same keys and
-the same file format. `PreferencesCompatibilityTest` holds Android's stored
-settings to byte-for-byte compatibility.
+the same file format. `PreferencesCompatibilityTest` holds the settings
+shipped builds wrote to byte-for-byte compatibility. That is a release gate:
+see CLAUDE.md "User settings must survive every update".
 
 ## Strings
 

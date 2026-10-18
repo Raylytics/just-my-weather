@@ -35,7 +35,22 @@ import java.io.File
  *
  * If this fails, an upgrade would lose or rewrite someone's settings. Don't
  * re-capture the fixtures to make it pass: they are the old app's output, and
- * the point is that the new code agrees with it.
+ * the point is that the new code agrees with it. This test is a release gate
+ * (CLAUDE.md "User settings must survive every update").
+ *
+ * ADDING FIXTURES FROM A NEWER PRODUCTION BUILD. Fixtures are added beside
+ * the old ones, never in place of them, so every shipped schema stays
+ * covered. On the API 35 emulator (CLAUDE.md "Devices"):
+ *  1. Build the DEBUG APK of the production commit in a throwaway worktree
+ *     (`git worktree add --detach <dir> <sha>`); a release build is not
+ *     debuggable, so `run-as` cannot read its files.
+ *  2. Install it and run one Maestro flow, without letting a later flow clear
+ *     its state, e.g. `maestro --device <serial> test .maestro/01-customize.yaml`.
+ *  3. Pull the file:
+ *     `adb -s <serial> exec-out run-as io.raylytics.justmyweather cat
+ *      files/datastore/settings.preferences_pb > resources/prefs/<ver>-01-customize.preferences_pb`
+ *  4. Add the name to both @ValueSource lists below, and say in the commit
+ *     which build and flow wrote it.
  */
 class PreferencesCompatibilityTest {
     private fun bytes(name: String): ByteArray =

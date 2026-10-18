@@ -7,6 +7,11 @@ Per-version log of what shipped where. Two audiences:
   User language: what they will notice, no issue ids.
 - **Internal notes** capture the changeset for bisecting later. Issue ids
   (`just-my-weather-xxx`) and roborev review numbers are fine here.
+- **Settings survive the update** (every cut): `PreferencesCompatibilityTest`
+  green, a fixture from the previous production build if this release
+  changes persisted state, and the upgrade check on the emulator before a
+  production promote (CLAUDE.md "User settings must survive every update").
+  Say in the entry that it was done.
 - **In-app "What's new"** (since 0.4.1) is the sheet an updating user sees
   once over the glance: `whatsnew/ReleaseNotes.kt` plus its strings. Decide
   per version whether it gets one; most patch releases should not. Write it

@@ -112,6 +112,57 @@ installs the symlink on a clone that has no `core.hooksPath`.
 - Not in the hook: Maestro flows (CI's `ui` job) and anything needing a
   device.
 
+## User settings must survive every update (gate)
+
+**A user's settings are the product.** Their glance layout, theme, alert
+rules, saved places, units and widgets are hours of their tuning, and an
+update that loses or rewrites them is a disaster for an app like this, not
+a bug. So no version ships unless the settings an earlier version wrote
+still read, unchanged, in the new one. This is a release gate, not a
+nicety: an agent may not weaken it to make a build pass.
+
+What enforces it today:
+
+- **`PreferencesCompatibilityTest`** (`shared/src/androidHostTest/.../data/`)
+  reads real settings files captured from shipped builds
+  (`shared/src/androidHostTest/resources/prefs/*.preferences_pb`). Each must
+  re-serialize to the same bytes, and every stored value must decode and
+  re-encode unchanged through its codec. The one change allowed is a
+  catalog module appended on read, hidden.
+- It runs in the pre-commit hook, `scripts/verify.sh`, CI, and so in every
+  `release-internal.sh` cut. iOS uses the same DataStore file format and
+  the same codecs, so the same test covers it.
+- Each codec's own tests (`*CodecTest`) cover a blob from before each field
+  existed decoding to the default.
+
+The rules:
+
+1. **Never rename or repurpose a stored key or a stable `key` token**
+   (enum keys, unit keys, module keys). Add new ones instead.
+2. **Every codec field is defaulted**, so an older, partial or corrupt blob
+   decodes to a working value. It never throws, and never resets
+   neighbouring settings.
+3. **Never re-capture a fixture to make the test pass.** The fixtures are
+   what shipped builds wrote. A failure means users would lose something.
+4. **A release that adds or changes persisted state adds a fixture from
+   the previous production build** before it ships, so the gate covers
+   what users actually have on their phones (how: the fixture section of
+   `PreferencesCompatibilityTest`'s KDoc).
+5. **A new store or codec joins the test's codec map** in the same commit.
+6. **Before a production promote, run the upgrade check:** install the
+   current production build on the API 35 emulator, use it, install the
+   candidate over it with `adb install -r`, and confirm the settings are
+   intact. This is how the What's new sheet was checked for 0.4.1; the
+   bd memory `whats-new-sheet` has the steps.
+
+Android Auto Backup is on (`allowBackup`), so a phone restored from backup
+also hands an older settings file to a newer app. That is the same
+problem, and the same gate covers it.
+
+Known gaps (just-my-weather-rtu): the fixtures date from 0.3.1, so the
+fields 0.4.0 and 0.4.1 added are covered only by codec tests; Android
+widget configs have no fixture; the upgrade check is manual.
+
 ## Release confirmation gate (agents)
 
 Uploading ANY build to Google Play — internal track included — requires
