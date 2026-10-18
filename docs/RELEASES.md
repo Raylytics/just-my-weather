@@ -70,6 +70,47 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
+## 0.4.1 — versionCode 12, Play internal 2026-10-18
+
+Cut from 13d2095 on `release/0.4.1` (PR #3) with Evan's go-ahead; CI green
+on PR #3 at 78233da (unit + ktlint + build, Maestro), and the only commit
+after it is a beads export. First release with an in-app What's new sheet.
+Prompted by a user asking where humidity and dew point were: the store
+listing named them, and visibility, but the glance had none of the three.
+
+### Store-facing (≤500 chars)
+
+> Humidity, dew point and visibility are now modules of their own: switch
+> them on in Customize and each gets a tile on your glance, a line in its
+> detail sheet, and can carry an alert. Visibility reads in miles or
+> kilometres, set by your region or under Region & units; outside the US it
+> shows a dash, as MET Norway does not report it. After this update a short
+> What's new sheet says so, once.
+
+### In-app What's new
+
+"New modules: humidity, dew point and visibility" (button: Open Customize)
+and "Visibility in miles or kilometres" (`whatsnew/ReleaseNotes.kt`).
+
+### Internal
+
+- Added: `WeatherField` HUMIDITY, DEW_POINT, VISIBILITY (one cell, hidden
+  by default, alertable; the first two forecastable). NWS observation
+  parses `dewpoint` and `visibility`; MET maps dew point. A distance unit
+  dimension (`DistanceUnit`, mi in US/UK, km elsewhere) with its Region row.
+  just-my-weather-bs0.
+- Added: the What's new sheet (`whatsnew/`, `ui/whatsnew/`,
+  `WhatsNewRepository`, key `whats_new_seen`). An update from 0.4.0 is told
+  from a fresh install by settings the old app left. just-my-weather-7lz.
+- Changed: `isForecastable` reads off `forecastValue` (`ForecastPoint.PROBE`);
+  the observation sheet's ad hoc Humidity row is now the catalog's.
+- Internal: `PreferencesCompatibilityTest` sets aside modules appended on
+  read and checks they arrive hidden.
+- Pre-tests: verify.sh green (530 tests); shared module compiles for the
+  iOS simulator; on Pixel_7_API_35, the three tiles, detail sheet and
+  Region row, and the What's new sheet across a real 0.4.0 to 0.4.1 update
+  (shown once, Open Customize works, nothing on relaunch or fresh install).
+
 ## 0.4.0 — versionCode 11, Play internal 2026-10-14 (supersedes 10)
 
 Same version, a respin for internal testers with collapsible modules and
