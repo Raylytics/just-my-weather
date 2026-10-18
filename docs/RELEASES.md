@@ -75,6 +75,10 @@ arrange-bar fix (nyt.13), the App Store product id
 Cut from 13d2095 on `release/0.4.1` (PR #3) with Evan's go-ahead; CI green
 on PR #3 at 78233da (unit + ktlint + build, Maestro), and the only commit
 after it is a beads export. First release with an in-app What's new sheet.
+
+Promoted internal -> production 2026-10-18 (full rollout) with Evan's
+go-ahead after he tested it on Android; the same notes as below went to
+Play. In Play review from that date.
 Prompted by a user asking where humidity and dew point were: the store
 listing named them, and visibility, but the glance had none of the three.
 
