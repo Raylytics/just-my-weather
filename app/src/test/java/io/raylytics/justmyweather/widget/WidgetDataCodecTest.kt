@@ -27,6 +27,8 @@ class WidgetDataCodecTest {
             windDirectionDegrees = 230.0,
             feelsLikeF = null,
             timeZone = "America/New_York",
+            dewpointF = 55.4,
+            visibilityMi = 9.5,
         )
 
     private val hour =

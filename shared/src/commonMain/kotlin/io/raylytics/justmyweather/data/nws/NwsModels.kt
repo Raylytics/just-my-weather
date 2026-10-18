@@ -49,6 +49,9 @@ data class CurrentObservation(
     /** What it feels like, per the station: its heat index when it sends
      * one, else its wind chill, else null — never computed here. */
     val feelsLikeF: Double? = null,
+    val dewpointF: Double? = null,
+    /** How far one can see, in statute miles; null when not reported. */
+    val visibilityMi: Double? = null,
 )
 
 /**
@@ -70,7 +73,25 @@ data class ForecastPoint(
     /** Relative humidity 0–100, or null when omitted. */
     val relativeHumidityPercent: Double? = null,
     val dewpointF: Double? = null,
-)
+) {
+    companion object {
+        /** An hour with every field present, so a caller can ask which
+         * fields the forecast carries at all (`WeatherField.isForecastable`)
+         * without keeping a second list that could drift from
+         * `forecastValue`. */
+        val PROBE =
+            ForecastPoint(
+                startTime = Instant.fromEpochMilliseconds(0),
+                temperatureF = 0.0,
+                windMph = 0.0,
+                precipProbabilityPercent = 0.0,
+                shortForecast = "",
+                windDirection = "N",
+                relativeHumidityPercent = 0.0,
+                dewpointF = 0.0,
+            )
+    }
+}
 
 /** One half-day of the gridpoint daily forecast: NWS splits days into a
  * daytime period (the high) and a night period (the low), each pre-named

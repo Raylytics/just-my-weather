@@ -1,6 +1,7 @@
 package io.raylytics.justmyweather.region
 
 import io.raylytics.justmyweather.view.Conventions
+import io.raylytics.justmyweather.view.DistanceUnit
 import io.raylytics.justmyweather.view.PrecipitationUnit
 import io.raylytics.justmyweather.view.PressureUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
@@ -56,6 +57,7 @@ data class RegionSettings(
     val wind: WindUnit? = null,
     val pressure: PressureUnit? = null,
     val precipitation: PrecipitationUnit? = null,
+    val distance: DistanceUnit? = null,
 ) {
     companion object {
         val AUTOMATIC = RegionSettings()
@@ -114,6 +116,7 @@ object RegionResolver {
                     wind = settings.wind ?: base.units.wind,
                     pressure = settings.pressure ?: base.units.pressure,
                     precipitation = settings.precipitation ?: base.units.precipitation,
+                    distance = settings.distance ?: base.units.distance,
                 ),
         )
     }

@@ -2,6 +2,7 @@ package io.raylytics.justmyweather.region
 
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.DateOrder
+import io.raylytics.justmyweather.view.DistanceUnit
 import io.raylytics.justmyweather.view.PrecipitationUnit
 import io.raylytics.justmyweather.view.PressureUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
@@ -205,6 +206,8 @@ object Regions {
                         else -> PressureUnit.HECTOPASCALS
                     },
                 precipitation = if (code in INCHES) PrecipitationUnit.INCHES else PrecipitationUnit.MILLIMETRES,
+                // Visibility reads in the unit the road signs use, with wind.
+                distance = if (code in MILES_PER_HOUR) DistanceUnit.MILES else DistanceUnit.KILOMETRES,
             )
         // The platform says how the country writes dates and times
         // (CountryLocale.kt); reading the order out of its patterns is ours.

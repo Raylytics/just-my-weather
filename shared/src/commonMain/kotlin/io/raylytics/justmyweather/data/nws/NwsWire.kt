@@ -87,6 +87,10 @@ data class NwsObservationResponse(
         // present rather than computing one here.
         val heatIndex: NwsValue? = null,
         val windChill: NwsValue? = null,
+        /** degC, like the temperature. */
+        val dewpoint: NwsValue? = null,
+        /** `wmoUnit:m`; the glance reads it in miles or kilometres. */
+        val visibility: NwsValue? = null,
     )
 }
 

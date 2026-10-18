@@ -22,10 +22,9 @@ data class WeatherSnapshot(
     /** When the reading was taken; null when the station omitted it. */
     val observedAt: Instant?,
     /**
-     * Carried for the Gadgetbridge export rather than the default glance —
-     * WeatherSpec has fields for both, and sending 0 for an unknown humidity
-     * would render as a confident "0%" on the watch. Defaulted so every other
-     * construction site is unaffected.
+     * First carried for the Gadgetbridge export (WeatherSpec has a field for
+     * it, and sending 0 for an unknown humidity would render as a confident
+     * "0%" on the watch); a glance module since 0.4.1. Null when not reported.
      */
     val relativeHumidityPercent: Double? = null,
     /** Wind bearing in degrees clockwise from true north, 0–360. */
@@ -33,6 +32,10 @@ data class WeatherSnapshot(
     /** The station's apparent temperature — heat index or wind chill,
      * whichever it sent — or null when it feels like the temperature. */
     val feelsLikeF: Double? = null,
+    val dewpointF: Double? = null,
+    /** How far one can see, in statute miles. Null when not reported —
+     * always, outside NWS territory: MET Norway's forecast has none. */
+    val visibilityMi: Double? = null,
     /**
      * IANA id of the place this reading is FOR, from the NWS point lookup —
      * not the device's zone. Kept as a string so the data layer cannot fail on

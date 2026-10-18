@@ -26,6 +26,8 @@ class DetailsTest {
             relativeHumidityPercent = 58.0,
             windDirectionDegrees = 225.0,
             timeZone = "America/New_York",
+            dewpointF = 70.3,
+            visibilityMi = 10.0,
         )
 
     private fun module(field: WeatherField) =
@@ -45,13 +47,18 @@ class DetailsTest {
                 .subtitle,
         )
         assertEquals(
-            listOf("Wind", "Temperature", "Feels like", "Conditions", "Precip (last hr)", "Pressure", "Humidity"),
+            listOf(
+                "Wind", "Temperature", "Feels like", "Conditions", "Precip (last hr)", "Pressure",
+                "Humidity", "Dew point", "Visibility",
+            ),
             detail.rows.map { it.label },
         )
-        // Wind gets the direction the tile has no room for; humidity, which
-        // no tile shows at all, is here too.
+        // Wind gets the direction the tile has no room for; every other
+        // catalog field reads as its tile would.
         assertEquals("12 mph SW", detail.rows.first().value)
-        assertEquals("58%", detail.rows.last().value)
+        assertEquals("58%", detail.rows.first { it.label == "Humidity" }.value)
+        assertEquals("70°", detail.rows.first { it.label == "Dew point" }.value)
+        assertEquals("10 mi", detail.rows.first { it.label == "Visibility" }.value)
         assertEquals("93°", detail.rows.first { it.label == "Temperature" }.value)
     }
 

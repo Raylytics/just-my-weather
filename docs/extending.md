@@ -21,34 +21,55 @@ user-visible, check it on both platforms and give it a row in
 
 ## Add a data point
 
-Say you want **humidity** on the glance and as something to alert on. A station
-reading needs nothing in the module catalog — `ModuleKey.Reading` wraps every
-`WeatherField` automatically.
+Say you want **cloud cover** on the glance and as something to alert on. A
+station reading needs nothing in the module catalog — `ModuleKey.Reading`
+wraps every `WeatherField` automatically. (Humidity, dew point and visibility
+went in exactly this way in 0.4.1; `git log -S VISIBILITY` shows every file.)
 
 1. **`view/WeatherField.kt`** — add the catalog entry and handle the exhaustive
    `when`s the compiler flags:
    ```kotlin
-   HUMIDITY("humidity", "Humidity"),   // key is the stable persistence id — never rename it
+   CLOUD_COVER("cloud_cover", "Cloud cover"),   // key is the stable persistence id — never rename it
    ```
    Add branches to `numericValue`, `formatValue` (e.g. `"${value.roundToInt()}%"`),
    `format` if it needs special wording, `forecastValue` (return `null` unless
-   the forecast carries it — also flip `isForecastable` if it does),
+   the hourly forecast carries it — `isForecastable` reads off that),
    `defaultSize` (the footprint the module ships at on the glance lattice — a
    single cell for a short number, 2×1 for longer text) and `minSize` (the
    smallest the user may drag it to — one cell for anything that is a number
    and a unit, wider for prose). `isNumeric` is true for everything except
    `CONDITIONS`, so it's alertable automatically. The detail sheet a tap opens
    lists every `WeatherField` from the snapshot (`view/Details.ofObservation`),
-   so the new point appears there with no further wiring.
-2. **`data/WeatherSnapshot.kt`** — add `val humidityPct: Double?`.
+   so the new point appears there with no further wiring. Leave it out of
+   `ViewConfig.DEFAULT`'s visible set: the glance ships calm, and an upgrade
+   appends it hidden to everyone's saved view.
+2. **`data/WeatherSnapshot.kt`** — add `val cloudCoverPercent: Double? = null`,
+   then carry it through the two caches that store a snapshot:
+   `data/SnapshotCodec.kt` and `widget/WidgetDataCodec.kt` (app). Both default
+   every field, so a cache written before the field reads as absent.
 3. **`data/nws/`** — add the field to `NwsWire.ObservationProps`, project it in
    `NwsModels.CurrentObservation`, and read it in `NwsClient.getObservation`.
-4. **`data/WeatherRepository.kt`** — map it onto the `WeatherSnapshot` in `load`.
+   Then `data/metno/MetNoClient.getNow` for the rest of the world — or set it
+   null there, with a comment, if MET does not report it (visibility).
+4. **`data/WeatherRepository.kt`** — map it onto the `WeatherSnapshot` in `load`,
+   in both branches.
+5. **`alerts/AlertSubject.kt`** — the `Field` subject's four `when`s say how a
+   threshold converts, what follows the number and which unit label the form
+   shows. A percentage converts to itself.
 
 The customize screen and the glance grid iterate `ModuleKey.catalog` (which
 includes every `WeatherField` through `ModuleKey.Reading`), and the alert
 builder iterates `WeatherField` directly, so the new point shows up in each with
 no further wiring.
+
+**If it needs a unit no dimension covers** (visibility needed distance), add
+the dimension once, in the places a unit is chosen or stored: the enum and a
+field on `UnitPrefs` in `view/Conventions.kt` with a formatter; the per-country
+default in `region/Regions.conventionsFor`; the user's override in
+`RegionSettings` + `RegionCodec` (`region/`) and its row on
+`ui/settings/RegionScreen`; and `StoredConventions` in `widget/WidgetDataCodec`
+(app), defaulted so older widget data still reads. `AlertUnitsTest` then checks
+every subject round-trips in every prepared region's units.
 
 ## Add a module that is not a station reading
 
@@ -152,6 +173,28 @@ default rather than crash) + a `*Repository` over the shared DataStore, wired in
 `AlertSettings` are the templates. Never rename a stored key: Android
 installs carry settings files from earlier versions, and
 `PreferencesCompatibilityTest` holds them to it.
+
+## Add release notes to the What's new sheet
+
+An updating user sees a sheet over the glance, once, listing what changed
+since the version they last saw (`ui/whatsnew/WhatsNewSheet.kt`). A fresh
+install never sees it. A release with no notes updates silently.
+
+1. **Strings** in `composeResources/values/strings.xml`:
+   `whats_new_<version>_<topic>_title` and `_body`, e.g.
+   `whats_new_0_5_0_radar_title`. Two or three highlights at most, about
+   what a user would notice or want to try. Fixes and internals go in
+   `docs/RELEASES.md` instead.
+2. **One entry at the top of `whatsnew/ReleaseNotes.kt`**, with its
+   `AppVersion` and highlights. A highlight may carry a `HighlightAction`;
+   the sheet's one button is the first action among the notes. To add a
+   destination, add a `HighlightAction` entry and handle it in `App.kt`
+   (the `when` is exhaustive).
+
+Notes for a version later than `VERSION` never show early, so they can be
+written ahead. `WhatsNewTest` checks the catalog. How an update is told
+from a fresh install, including the upgrade from 0.4.0, which recorded
+nothing, is in `whatsnew/WhatsNew.kt`.
 
 ## Add or change words on a screen
 

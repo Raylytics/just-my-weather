@@ -40,6 +40,8 @@ class NwsClientTest {
                       "seaLevelPressure":{"value":101325.0,"unitCode":"wmoUnit:Pa"},
                       "relativeHumidity":{"value":73.6,"unitCode":"wmoUnit:percent"},
                       "windDirection":{"value":340.0,"unitCode":"wmoUnit:degree_(angle)"},
+                      "dewpoint":{"value":15.0,"unitCode":"wmoUnit:degC"},
+                      "visibility":{"value":16093.44,"unitCode":"wmoUnit:m"},
                       "textDescription":"Partly Cloudy"
                     }}
                     """.trimIndent(),
@@ -48,6 +50,8 @@ class NwsClientTest {
             )
         val obs = client.getObservation("KNYC")
         assertEquals(68.0, obs.temperatureF!!, 1e-6)
+        assertEquals(59.0, obs.dewpointF!!, 1e-6)
+        assertEquals(10.0, obs.visibilityMi!!, 1e-6)
         assertEquals(6.21371, obs.windMph!!, 1e-4)
         assertEquals(29.92, obs.pressureInHg!!, 0.01)
         assertEquals("Partly Cloudy", obs.conditions)
@@ -101,6 +105,7 @@ class NwsClientTest {
                       "temperature":{"value":20.0,"unitCode":"wmoUnit:degC"},
                       "relativeHumidity":{"value":0.736,"unitCode":"wmoUnit:one"},
                       "windDirection":{"value":5.93,"unitCode":"wmoUnit:rad"},
+                      "visibility":{"value":10.0,"unitCode":"wmoUnit:furlong"},
                       "textDescription":"Partly Cloudy"
                     }}
                     """.trimIndent(),
@@ -110,6 +115,7 @@ class NwsClientTest {
         val obs = client.getObservation("KNYC")
         assertNull(obs.relativeHumidityPercent)
         assertNull(obs.windDirectionDegrees)
+        assertNull(obs.visibilityMi)
         // The rest of the observation still parses — one odd unit must not
         // cost the reading.
         assertEquals(68.0, obs.temperatureF!!, 1e-6)

@@ -24,6 +24,13 @@ class ConventionsTest {
         assertEquals("102.0 kPa", canada.pressure(30.12))
         assertEquals("0.25 in", us.precipitation(0.25))
         assertEquals("6.4 mm", uk.precipitation(0.25))
+        assertEquals("10 mi", us.visibility(10.0))
+        assertEquals("10 mi", uk.visibility(10.0), "the UK keeps road-sign miles")
+        assertEquals("16 km", canada.visibility(10.0))
+        // Fog is where the fraction matters: a quarter mile is not "0 mi".
+        assertEquals("0.3 mi", us.visibility(0.25))
+        assertEquals("0.4 km", canada.visibility(0.25))
+        assertEquals("2.5 mi", us.visibility(2.5))
     }
 
     @Test
@@ -50,5 +57,6 @@ class ConventionsTest {
     fun `conversions round-trip`() {
         assertEquals(35.6, TemperatureUnit.CELSIUS.toFahrenheit(2.0), 1e-9)
         assertEquals(10.0, WindUnit.KMH.toMph(WindUnit.KMH.fromMph(10.0)), 1e-9)
+        assertEquals(10.0, DistanceUnit.KILOMETRES.toMiles(DistanceUnit.KILOMETRES.fromMiles(10.0)), 1e-9)
     }
 }

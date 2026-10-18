@@ -186,6 +186,8 @@ class MetNoClientTest {
         assertEquals(8.95, now.windMph!!, 0.01) // 4 m/s
         assertEquals(270.0, now.windDirectionDegrees)
         assertEquals(80.0, now.relativeHumidityPercent)
+        assertEquals(50.0, now.dewpointF!!, 0.01) // 10 °C
+        assertNull(now.visibilityMi, "MET's forecast has no visibility")
         assertEquals(29.92, now.pressureInHg!!, 0.01) // 1013.25 hPa
         assertEquals(0.3 / 25.4, now.precipitationIn!!, 0.0001)
         // Apparent equals air: "null when it feels like the temperature",

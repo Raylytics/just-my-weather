@@ -7,6 +7,7 @@ import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.DateOrder
+import io.raylytics.justmyweather.view.DistanceUnit
 import io.raylytics.justmyweather.view.PrecipitationUnit
 import io.raylytics.justmyweather.view.PressureUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
@@ -46,6 +47,8 @@ object WidgetDataCodec {
         val feelsLikeF: Double? = null,
         val timeZone: String? = null,
         val fromForecast: Boolean = false,
+        val dewpointF: Double? = null,
+        val visibilityMi: Double? = null,
     )
 
     @Serializable
@@ -115,6 +118,8 @@ object WidgetDataCodec {
         val precipitation: String,
         val dayFirst: Boolean,
         val clock24: Boolean,
+        /** Absent in data written before 0.4.1; restored() then falls back. */
+        val distance: String? = null,
     )
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -143,6 +148,7 @@ object WidgetDataCodec {
                             precipitation = c.units.precipitation.key,
                             dayFirst = c.dateOrder == DateOrder.DAY_FIRST,
                             clock24 = c.clock24,
+                            distance = c.units.distance.key,
                         )
                     },
             ),
@@ -177,6 +183,7 @@ object WidgetDataCodec {
                     pressure = PressureUnit.entries.firstOrNull { it.key == pressure } ?: us.pressure,
                     precipitation =
                         PrecipitationUnit.entries.firstOrNull { it.key == precipitation } ?: us.precipitation,
+                    distance = DistanceUnit.entries.firstOrNull { it.key == distance } ?: us.distance,
                 ),
             dateOrder = if (dayFirst) DateOrder.DAY_FIRST else DateOrder.MONTH_FIRST,
             clock24 = clock24,
@@ -203,6 +210,8 @@ object WidgetDataCodec {
             feelsLikeF = feelsLikeF,
             timeZone = timeZone,
             fromForecast = fromForecast,
+            dewpointF = dewpointF,
+            visibilityMi = visibilityMi,
         )
 
     private fun StoredSnapshot.restored() =
@@ -219,6 +228,8 @@ object WidgetDataCodec {
             feelsLikeF = feelsLikeF,
             timeZone = timeZone,
             fromForecast = fromForecast,
+            dewpointF = dewpointF,
+            visibilityMi = visibilityMi,
         )
 
     private fun ForecastPoint.stored() =

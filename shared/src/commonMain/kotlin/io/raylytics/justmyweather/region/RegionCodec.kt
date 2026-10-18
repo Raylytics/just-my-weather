@@ -1,5 +1,6 @@
 package io.raylytics.justmyweather.region
 
+import io.raylytics.justmyweather.view.DistanceUnit
 import io.raylytics.justmyweather.view.PrecipitationUnit
 import io.raylytics.justmyweather.view.PressureUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
@@ -24,6 +25,7 @@ object RegionCodec {
         val wind: String? = null,
         val pressure: String? = null,
         val precipitation: String? = null,
+        val distance: String? = null,
     )
 
     @Serializable
@@ -46,6 +48,7 @@ object RegionCodec {
                 wind = settings.wind?.key,
                 pressure = settings.pressure?.key,
                 precipitation = settings.precipitation?.key,
+                distance = settings.distance?.key,
             ),
         )
 
@@ -60,6 +63,7 @@ object RegionCodec {
             wind = WindUnit.entries.firstOrNull { it.key == s.wind },
             pressure = PressureUnit.entries.firstOrNull { it.key == s.pressure },
             precipitation = PrecipitationUnit.entries.firstOrNull { it.key == s.precipitation },
+            distance = DistanceUnit.entries.firstOrNull { it.key == s.distance },
         )
     }
 

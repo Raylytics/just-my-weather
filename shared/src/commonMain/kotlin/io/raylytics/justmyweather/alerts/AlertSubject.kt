@@ -118,17 +118,20 @@ sealed class AlertSubject(
         override fun fromCanonical(value: Double, conventions: Conventions): Double {
             val units = conventions.units
             return when (field) {
-                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE -> units.temperature.fromFahrenheit(value)
+                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE, WeatherField.DEW_POINT ->
+                    units.temperature.fromFahrenheit(value)
                 WeatherField.WIND -> units.wind.fromMph(value)
                 WeatherField.PRECIPITATION -> units.precipitation.fromInches(value)
                 WeatherField.PRESSURE -> units.pressure.fromInHg(value)
-                WeatherField.CONDITIONS -> value
+                WeatherField.VISIBILITY -> units.distance.fromMiles(value)
+                WeatherField.CONDITIONS, WeatherField.HUMIDITY -> value
             }
         }
 
         override fun suffix(conventions: Conventions): String =
             when (field) {
-                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE -> "°"
+                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE, WeatherField.DEW_POINT -> "°"
+                WeatherField.HUMIDITY -> "%"
                 WeatherField.CONDITIONS -> ""
                 else -> " " + unitLabel(conventions)
             }
@@ -143,10 +146,12 @@ sealed class AlertSubject(
         override fun unitLabel(conventions: Conventions): String {
             val units = conventions.units
             return when (field) {
-                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE -> units.temperature.label
+                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE, WeatherField.DEW_POINT -> units.temperature.label
                 WeatherField.WIND -> units.wind.label
                 WeatherField.PRECIPITATION -> units.precipitation.label
                 WeatherField.PRESSURE -> units.pressure.label
+                WeatherField.VISIBILITY -> units.distance.label
+                WeatherField.HUMIDITY -> "%"
                 WeatherField.CONDITIONS -> ""
             }
         }
@@ -154,11 +159,13 @@ sealed class AlertSubject(
         override fun toCanonical(entered: Double, conventions: Conventions): Double {
             val units = conventions.units
             return when (field) {
-                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE -> units.temperature.toFahrenheit(entered)
+                WeatherField.TEMPERATURE, WeatherField.FEELS_LIKE, WeatherField.DEW_POINT ->
+                    units.temperature.toFahrenheit(entered)
                 WeatherField.WIND -> units.wind.toMph(entered)
                 WeatherField.PRECIPITATION -> units.precipitation.toInches(entered)
                 WeatherField.PRESSURE -> units.pressure.toInHg(entered)
-                WeatherField.CONDITIONS -> entered
+                WeatherField.VISIBILITY -> units.distance.toMiles(entered)
+                WeatherField.CONDITIONS, WeatherField.HUMIDITY -> entered
             }
         }
     }

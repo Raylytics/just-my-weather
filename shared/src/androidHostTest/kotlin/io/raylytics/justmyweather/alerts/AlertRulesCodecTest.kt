@@ -65,7 +65,7 @@ class AlertRulesCodecTest {
     fun `a rule with an unknown field or comparison key is dropped, not crashed`() {
         val raw =
             """
-            [{"id":"a","field":"humidity","comparison":"below","threshold":50.0,"enabled":true},
+            [{"id":"a","field":"uv_index","comparison":"below","threshold":50.0,"enabled":true},
              {"id":"b","field":"wind","comparison":"sideways","threshold":20.0,"enabled":true},
              {"id":"c","field":"temperature","comparison":"below","threshold":32.0,"enabled":true}]
             """.trimIndent()
