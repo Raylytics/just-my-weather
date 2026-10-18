@@ -61,7 +61,18 @@ class PreferencesCompatibilityTest {
             val prefs = read(bytes(name))
             val codecs: Map<String, (String) -> String> =
                 mapOf(
-                    "view_config" to { ViewConfigCodec.encode(ViewConfigCodec.decode(it)) },
+                    "view_config" to { stored ->
+                        // A module added to the catalog since the old app wrote
+                        // this is appended on read, hidden, at its default size
+                        // (ViewConfigCodec): that is the one change an upgrade
+                        // may make. Everything the old app wrote must still
+                        // write back as it was, so the additions are set aside.
+                        val written = Regex("\"key\":\"([a-z_]+)\"").findAll(stored).map { it.groupValues[1] }.toSet()
+                        val decoded = ViewConfigCodec.decode(stored)
+                        val (kept, added) = decoded.items.partition { it.module.key in written }
+                        assertTrue(added.none { it.visible }, "a module added since must arrive hidden: $added")
+                        ViewConfigCodec.encode(decoded.copy(items = kept))
+                    },
                     "theme_config" to { ThemeConfigCodec.encode(ThemeConfigCodec.decode(it)) },
                     "alert_rules" to { AlertRulesCodec.encode(AlertRulesCodec.decode(it)) },
                     "alert_settings" to { AlertSettingsCodec.encode(AlertSettingsCodec.decode(it)) },

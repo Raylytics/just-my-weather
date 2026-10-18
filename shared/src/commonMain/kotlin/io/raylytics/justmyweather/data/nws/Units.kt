@@ -82,6 +82,19 @@ object Units {
     }
 
     /**
+     * Convert NWS visibility to statute miles. Observations report metres
+     * (`wmoUnit:m`); `:km` and `:mi` are accepted in case a station differs.
+     * Each code is matched whole so `:mm` and `:m_s-1` can't pass as metres.
+     */
+    fun toMiles(value: Double?, unitCode: String): Double? {
+        if (value == null) return null
+        if (KM_UNIT.containsMatchIn(unitCode)) return value / MI_TO_KM
+        if (M_UNIT.containsMatchIn(unitCode)) return value / (MI_TO_KM * 1000)
+        if (MI_UNIT.containsMatchIn(unitCode)) return value
+        return null
+    }
+
+    /**
      * Convert to the units Gadgetbridge's WeatherSpec expects: Kelvin for every
      * temperature, km/h for wind speed. Verified against WeatherSpec.java,
      * where both are stated in field comments — the JSON carries bare numbers
@@ -133,5 +146,8 @@ object Units {
 
     private val IN_UNIT = Regex("(?:^|:)in(?:_|$)")
     private val PA_UNIT = Regex("(?:^|:)Pa(?:_|$)")
+    private val M_UNIT = Regex("(?:^|:)m$")
+    private val KM_UNIT = Regex("(?:^|:)km$")
+    private val MI_UNIT = Regex("(?:^|:)mi$")
     private val NUMBER = Regex("\\d+(?:\\.\\d+)?")
 }

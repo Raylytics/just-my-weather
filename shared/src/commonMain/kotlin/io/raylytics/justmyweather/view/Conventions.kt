@@ -63,12 +63,24 @@ enum class PrecipitationUnit(val key: String, val label: String, private val per
     fun toInches(value: Double): Double = value / perInch
 }
 
-/** The four dimensions the app shows, each in one unit. */
+/** How far you can see: the only distance the app shows (visibility). */
+enum class DistanceUnit(val key: String, val label: String, private val perMile: Double) {
+    MILES("mi", "mi", 1.0),
+    KILOMETRES("km", "km", 1.609344),
+    ;
+
+    fun fromMiles(miles: Double): Double = miles * perMile
+
+    fun toMiles(value: Double): Double = value / perMile
+}
+
+/** The five dimensions the app shows, each in one unit. */
 data class UnitPrefs(
     val temperature: TemperatureUnit,
     val wind: WindUnit,
     val pressure: PressureUnit,
     val precipitation: PrecipitationUnit,
+    val distance: DistanceUnit,
 ) {
     companion object {
         /** The United States, and what the app showed before it had regions. */
@@ -77,6 +89,7 @@ data class UnitPrefs(
             WindUnit.MPH,
             PressureUnit.INCHES_OF_MERCURY,
             PrecipitationUnit.INCHES,
+            DistanceUnit.MILES,
         )
 
         /** Most of the world. */
@@ -85,11 +98,12 @@ data class UnitPrefs(
             WindUnit.KMH,
             PressureUnit.HECTOPASCALS,
             PrecipitationUnit.MILLIMETRES,
+            DistanceUnit.KILOMETRES,
         )
 
         /** The United Kingdom's mix: Celsius and millimetres, but road-sign
-         * miles per hour for wind — what the Met Office itself shows. */
-        val UK = METRIC.copy(wind = WindUnit.MPH)
+         * miles for wind and distance — what the Met Office itself shows. */
+        val UK = METRIC.copy(wind = WindUnit.MPH, distance = DistanceUnit.MILES)
     }
 }
 
@@ -139,6 +153,13 @@ data class Conventions(
     fun precipitation(inches: Double): String =
         "${fixed(units.precipitation.fromInches(inches), units.precipitation.decimals)} ${units.precipitation.label}"
 
+    /** "10 mi" / "16 km" — and "0.5 mi" in fog, where the fraction is the
+     * whole story. Whole numbers once there is a few of them to count. */
+    fun visibility(miles: Double): String {
+        val shown = units.distance.fromMiles(miles)
+        return "${fixed(shown, if (shown < VISIBILITY_WHOLE_FROM) 1 else 0)} ${units.distance.label}"
+    }
+
     // ── Times and dates ──────────────────────────────────────────────────
 
     /** "4:05 PM" / "16:05". */
@@ -170,6 +191,8 @@ data class Conventions(
     companion object {
         /** What the app showed before it had regions: the United States. */
         val US = Conventions(UnitPrefs.US, DateOrder.MONTH_FIRST, clock24 = false)
+
+        private const val VISIBILITY_WHOLE_FROM = 3.0
 
         /** Names (Oct, Tuesday, PM) come out in English because the UI is
          * (TimeFormat.kt): a month name in another language inside an English

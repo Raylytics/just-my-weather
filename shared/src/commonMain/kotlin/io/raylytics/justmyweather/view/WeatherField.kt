@@ -29,6 +29,13 @@ enum class WeatherField(
     WIND("wind", "Wind"),
     PRECIPITATION("precipitation", "Precip (last hr)"),
     PRESSURE("pressure", "Pressure"),
+
+    // The three the store listing promised before the glance had them
+    // (0.4.1, after a user went looking). Humidity and dew point are what a
+    // muggy day is made of; visibility is what fog and smoke take away.
+    HUMIDITY("humidity", "Humidity"),
+    DEW_POINT("dew_point", "Dew point"),
+    VISIBILITY("visibility", "Visibility"),
     ;
 
     /** Whether this field is a number you can set an alert threshold on.
@@ -48,7 +55,7 @@ enum class WeatherField(
             when (this) {
                 TEMPERATURE -> ModuleSize(4, 2)
                 CONDITIONS, PRESSURE -> ModuleSize(2, 1)
-                FEELS_LIKE, WIND, PRECIPITATION -> ModuleSize.CELL
+                FEELS_LIKE, WIND, PRECIPITATION, HUMIDITY, DEW_POINT, VISIBILITY -> ModuleSize.CELL
             }
 
     /**
@@ -61,13 +68,15 @@ enum class WeatherField(
         get() =
             when (this) {
                 CONDITIONS -> ModuleSize(2, 1)
-                TEMPERATURE, FEELS_LIKE, WIND, PRECIPITATION, PRESSURE -> ModuleSize.CELL
+                TEMPERATURE, FEELS_LIKE, WIND, PRECIPITATION, PRESSURE, HUMIDITY, DEW_POINT, VISIBILITY ->
+                    ModuleSize.CELL
             }
 
     /** Whether the hourly forecast carries this field, so a forecast-window
-     * alert ("overnight low") can be built on it. The NWS hourly forecast only
-     * gives temperature and wind. */
-    val isForecastable: Boolean get() = this == TEMPERATURE || this == WIND
+     * alert ("overnight low", "dew point above 70° today") can be built on
+     * it. The hourly forecast gives temperature, wind, humidity and dew
+     * point; visibility and the rest are observed only. */
+    val isForecastable: Boolean get() = forecastValue(ForecastPoint.PROBE) != null
 
     /**
      * This field's value for one forecast hour (in its display unit), or null
@@ -79,7 +88,9 @@ enum class WeatherField(
         when (this) {
             TEMPERATURE -> point.temperatureF
             WIND -> point.windMph
-            FEELS_LIKE, CONDITIONS, PRECIPITATION, PRESSURE -> null
+            HUMIDITY -> point.relativeHumidityPercent
+            DEW_POINT -> point.dewpointF
+            FEELS_LIKE, CONDITIONS, PRECIPITATION, PRESSURE, VISIBILITY -> null
         }
 
     /**
@@ -98,6 +109,9 @@ enum class WeatherField(
             WIND -> snapshot.windMph
             PRECIPITATION -> snapshot.precipitationIn
             PRESSURE -> snapshot.pressureInHg
+            HUMIDITY -> snapshot.relativeHumidityPercent
+            DEW_POINT -> snapshot.dewpointF
+            VISIBILITY -> snapshot.visibilityMi
         }
 
     /** Format a numeric value of this field — in the app's canonical
@@ -105,11 +119,13 @@ enum class WeatherField(
      * reads in ("72°" / "22°", "10 mph" / "16 km/h"). */
     fun formatValue(value: Double, conventions: Conventions): String =
         when (this) {
-            TEMPERATURE, FEELS_LIKE -> conventions.temperature(value)
+            TEMPERATURE, FEELS_LIKE, DEW_POINT -> conventions.temperature(value)
             CONDITIONS -> value.roundToInt().toString()
             WIND -> conventions.windSpeed(value)
             PRECIPITATION -> conventions.precipitation(value)
             PRESSURE -> conventions.pressure(value)
+            HUMIDITY -> "${value.roundToInt()}%"
+            VISIBILITY -> conventions.visibility(value)
         }
 
     /**

@@ -84,6 +84,8 @@ class NwsClient(
             feelsLikeF =
                 Units.toFahrenheit(props.heatIndex?.value, props.heatIndex?.unitCode ?: "")
                     ?: Units.toFahrenheit(props.windChill?.value, props.windChill?.unitCode ?: ""),
+            dewpointF = Units.toFahrenheit(props.dewpoint?.value, props.dewpoint?.unitCode ?: ""),
+            visibilityMi = Units.toMiles(props.visibility?.value, props.visibility?.unitCode ?: ""),
         )
     }
 

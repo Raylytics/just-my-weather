@@ -178,6 +178,9 @@ class MetNoClient(
             relativeHumidityPercent = details.relativeHumidityPercent,
             windDirectionDegrees = details.windFromDegrees,
             feelsLikeF = feelsLikeC?.let(Units::celsiusToFahrenheit),
+            dewpointF = details.dewPointC?.let(Units::celsiusToFahrenheit),
+            // MET's forecast has no visibility; the tile reads "—" abroad.
+            visibilityMi = null,
         )
     }
 

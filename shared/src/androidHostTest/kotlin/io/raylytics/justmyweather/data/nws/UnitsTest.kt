@@ -76,6 +76,17 @@ class UnitsTest {
     }
 
     @Test
+    fun `toMiles reads metres, rejects the lookalike codes`() {
+        assertEquals(10.0, Units.toMiles(16093.44, "wmoUnit:m")!!, tol)
+        assertEquals(1.0, Units.toMiles(1.609344, "wmoUnit:km")!!, tol)
+        assertEquals(3.0, Units.toMiles(3.0, "wmoUnit:mi")!!, tol)
+        // Millimetres and metres per second both start with "m".
+        assertNull(Units.toMiles(10.0, "wmoUnit:mm"))
+        assertNull(Units.toMiles(10.0, "wmoUnit:m_s-1"))
+        assertNull(Units.toMiles(null, "wmoUnit:m"))
+    }
+
+    @Test
     fun `toMph across unit systems`() {
         assertEquals(6.21371, Units.toMph(10.0, "wmoUnit:km_h-1")!!, tol)
         assertEquals(22.3694, Units.toMph(10.0, "wmoUnit:m_s-1")!!, tol)

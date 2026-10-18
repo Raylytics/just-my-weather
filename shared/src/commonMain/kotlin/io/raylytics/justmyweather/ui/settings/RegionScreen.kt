@@ -46,11 +46,13 @@ import io.raylytics.justmyweather.resources.region_pressure
 import io.raylytics.justmyweather.resources.region_sets_units_how_dates
 import io.raylytics.justmyweather.resources.region_temperature
 import io.raylytics.justmyweather.resources.region_units
+import io.raylytics.justmyweather.resources.region_visibility
 import io.raylytics.justmyweather.resources.region_wind
 import io.raylytics.justmyweather.ui.customize.ChipRow
 import io.raylytics.justmyweather.ui.dismissKeyboardOnTap
 import io.raylytics.justmyweather.view.Conventions
 import io.raylytics.justmyweather.view.DateOrder
+import io.raylytics.justmyweather.view.DistanceUnit
 import io.raylytics.justmyweather.view.PrecipitationUnit
 import io.raylytics.justmyweather.view.PressureUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
@@ -174,6 +176,10 @@ private fun UnitsSection(
         val precipitation = settings.precipitation
         UnitRow(precipitationLabel, PrecipitationUnit.entries, precipitation, base?.precipitation, { it.label }) { u ->
             onUpdate { it.copy(precipitation = u) }
+        }
+        val visibility = stringResource(Res.string.region_visibility)
+        UnitRow(visibility, DistanceUnit.entries, settings.distance, base?.distance, { it.label }) { u ->
+            onUpdate { it.copy(distance = u) }
         }
         val sample = LocalDate(2026, 10, 6).format(conventions.shortDate)
         val clock = LocalTime(16, 5).format(conventions.clock)

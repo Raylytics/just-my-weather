@@ -1,11 +1,13 @@
 package io.raylytics.justmyweather.region
 
 import io.raylytics.justmyweather.data.WeatherLocation
+import io.raylytics.justmyweather.view.DistanceUnit
 import io.raylytics.justmyweather.view.TemperatureUnit
 import io.raylytics.justmyweather.view.UnitPrefs
 import io.raylytics.justmyweather.view.WindUnit
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class RegionResolverTest {
@@ -45,6 +47,11 @@ class RegionResolverTest {
         assertEquals(TemperatureUnit.FAHRENHEIT, units.temperature)
         assertEquals(WindUnit.MPH, units.wind)
         assertEquals(UnitPrefs.UK.pressure, units.pressure)
+        assertEquals(DistanceUnit.MILES, units.distance)
+        assertEquals(
+            DistanceUnit.KILOMETRES,
+            RegionResolver.conventions(gb, settings.copy(distance = DistanceUnit.KILOMETRES)).units.distance,
+        )
     }
 
     /** Counts what was asked, so the gathering order is visible. */
@@ -120,8 +127,10 @@ class RegionResolverTest {
 
     @Test
     fun `settings and clues survive storage, and junk reads as automatic`() {
-        val settings = RegionSettings(manualRegion = "AU", wind = WindUnit.KNOTS)
+        val settings = RegionSettings(manualRegion = "AU", wind = WindUnit.KNOTS, distance = DistanceUnit.MILES)
         assertEquals(settings, RegionCodec.decodeSettings(RegionCodec.encodeSettings(settings)))
+        // Settings saved before the distance unit existed read as automatic for it.
+        assertNull(RegionCodec.decodeSettings("""{"region":"AU","wind":"kn"}""").distance)
         assertEquals(RegionSettings.AUTOMATIC, RegionCodec.decodeSettings("{ not json"))
         assertEquals(RegionSettings.AUTOMATIC, RegionCodec.decodeSettings("""{"region":"ZZ","wind":"warp"}"""))
         val clues = RegionClues(phoneNetwork = "GB")

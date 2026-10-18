@@ -20,7 +20,7 @@ Switching region switches, all at once:
 
 | What | How | Where in code |
 |---|---|---|
-| Units: temperature, wind, pressure, precipitation | Per-country table (°F in the US and a handful of others; mph in the US and UK; kPa in Canada; m/s in the Nordics; metric elsewhere) | `region/Regions.kt` `conventionsFor` |
+| Units: temperature, wind, pressure, precipitation, visibility | Per-country table (°F in the US and a handful of others; mph and miles in the US and UK; kPa in Canada; m/s in the Nordics; metric elsewhere) | `region/Regions.kt` `conventionsFor` |
 | Date order (10/6 or 6/10) and clock (4:05 PM or 16:05) | Written into each prepared region's entry, so it reads the same on every phone; for any other country, the platform's CLDR locale data | `region/Regions.kt` `PREPARED`, `conventionsFor` |
 | Where a first run opens with no location and no saved place | The region's default place | `region/Regions.kt` `PREPARED` |
 

@@ -175,6 +175,7 @@
     <string name="region_sets_units_how_dates">Sets the units, how dates and times read, and which ads may be shown. The forecast for a place is the same whatever the region.</string>
     <string name="region_temperature">Temperature</string>
     <string name="region_units">Units</string>
+    <string name="region_visibility">Visibility</string>
     <string name="region_wind">Wind</string>
     <!-- support -->
     <string name="support_attached_app_info">Attached app info</string>

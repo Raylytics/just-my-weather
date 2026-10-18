@@ -82,7 +82,6 @@ object Details {
                             }
                         add(DetailRow(field.defaultLabel, value))
                     }
-                    add(DetailRow("Humidity", snapshot.relativeHumidityPercent.percent()))
                 },
         )
     }

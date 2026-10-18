@@ -119,6 +119,8 @@ class WeatherRepository(
                         relativeHumidityPercent = obs.relativeHumidityPercent,
                         windDirectionDegrees = obs.windDirectionDegrees,
                         feelsLikeF = obs.feelsLikeF,
+                        dewpointF = obs.dewpointF,
+                        visibilityMi = obs.visibilityMi,
                         timeZone = point.timeZone,
                     )
                 }
@@ -144,6 +146,8 @@ class WeatherRepository(
                         relativeHumidityPercent = now.relativeHumidityPercent,
                         windDirectionDegrees = now.windDirectionDegrees,
                         feelsLikeF = now.feelsLikeF,
+                        dewpointF = now.dewpointF,
+                        visibilityMi = now.visibilityMi,
                         // MET does not say. A gazetteer place carries its
                         // own; a GPS fix takes its nearest town's, and failing
                         // that the device's zone applies — where the fix is.

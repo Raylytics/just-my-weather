@@ -26,6 +26,8 @@ class SnapshotCodecTest {
                     observedAt = Instant.parse("2026-08-06T14:40:00Z"),
                     relativeHumidityPercent = 61.0,
                     windDirectionDegrees = 220.0,
+                    dewpointF = 64.2,
+                    visibilityMi = 10.0,
                 ),
             latitude = 38.2527,
             longitude = -85.7585,
@@ -43,6 +45,10 @@ class SnapshotCodecTest {
         assertEquals(101.5, SnapshotCodec.decode(SnapshotCodec.encode(hot))!!.snapshot.feelsLikeF)
         val older = SnapshotCodec.encode(hot).replace(",\"feelsLikeF\":101.5", "")
         assertNull(SnapshotCodec.decode(older)!!.snapshot.feelsLikeF)
+        // Likewise the 0.4.1 fields: an entry from 0.4.0 reads with neither.
+        val before041 = SnapshotCodec.encode(hot).replace(",\"dewpointF\":64.2,\"visibilityMi\":10.0", "")
+        assertNull(SnapshotCodec.decode(before041)!!.snapshot.dewpointF)
+        assertNull(SnapshotCodec.decode(before041)!!.snapshot.visibilityMi)
     }
 
     @Test

@@ -59,6 +59,7 @@ iPhone 16 simulator, iOS 27, 8/9 passed. Last Android run: Pixel 7, API 35,
 | Support mail: bug report and idea | shared `SupportMail`; `SupportIntents` reads `Build` and the app's own logcat, hands off via `ACTION_SENDTO` | shared `SupportMail`; `SupportService.swift` reads the app's own `OSLogStore`, hands off to Mail (`mailto:` fallback) | parity, platform-shaped | just-my-weather-nyt.12 (copy built outside composition, both platforms) | `09-support` |
 | Rate the app | opens the Play listing (`StoreListing`) | opens the App Store's write-review page (`JMWAppStoreID` 6822450301) | parity, platform-shaped | — | — |
 | UI strings | shared catalog `shared/src/commonMain/composeResources/values/strings.xml` | same catalog; the App Settings lines that name the store have an `_ios` variant (App Store, Apple Account) | parity | just-my-weather-nyt.12 | all |
+| Readings: humidity, dew point, visibility (0.4.1) | shared `WeatherField` modules, hidden by default; alertable, and in the hourly forecast for the first two; visibility reads in the region's distance unit (Region → Units) | same code; MET Norway reports no visibility, so that tile reads "—" abroad on both | parity | just-my-weather-bs0 | `01-customize` (module switches are catalog-driven) |
 | Home screen widgets | Glance widgets (`widget/`, `ui/widget/`) | none | **deferred** (part 3) | — | — |
 | Gadgetbridge hand-off | `data/gadgetbridge/`, behind App Settings → Advanced | none; the Advanced section is not shown | **dropped** (part 4) | — | `03-gadgetbridge` (tagged `android-only`) |
 
