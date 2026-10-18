@@ -16,7 +16,7 @@ class ViewConfigCodecTest {
             ViewConfig.DEFAULT
                 .toggle(reading(WeatherField.WIND))
                 .relabel(reading(WeatherField.TEMPERATURE), "Temp")
-                .moveUp(2)
+                .stepUp(reading(WeatherField.WIND))
         val restored = ViewConfigCodec.decode(ViewConfigCodec.encode(original))
         assertEquals(original, restored)
     }

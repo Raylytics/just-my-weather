@@ -180,9 +180,40 @@ data class ViewConfig(
 
     fun setTapForDetails(enabled: Boolean): ViewConfig = copy(tapForDetails = enabled)
 
-    fun moveUp(index: Int): ViewConfig = swap(index, index - 1)
+    /**
+     * One press of the customize screen's ↑: [module] moves one place earlier
+     * on the glance. See [step].
+     */
+    fun stepUp(module: ModuleKey): ViewConfig = step(module, -1)
 
-    fun moveDown(index: Int): ViewConfig = swap(index, index + 1)
+    /** One press of ↓: [module] moves one place later on the glance. */
+    fun stepDown(module: ModuleKey): ViewConfig = step(module, +1)
+
+    /**
+     * Move [module] one place along the glance, the same way the arrange drag
+     * does. A shown module steps past the next *shown* module: stepping past
+     * a hidden one changed nothing on the glance, so the arrows looked dead.
+     * A full-width module crosses the whole row it meets (wholeRowTarget),
+     * because stepping into a row only splits it. A folded module counts at
+     * the one cell it rests at. A hidden module has no tile to move; it
+     * steps one place in the list, which is where it appears once shown.
+     * Returns this unchanged at either end, which is how the screen knows to
+     * disable an arrow.
+     */
+    private fun step(
+        module: ModuleKey,
+        direction: Int,
+    ): ViewConfig {
+        val index = items.indexOfFirst { it.module == module }
+        if (index == -1) return this
+        if (!items[index].visible) return swap(index, index + direction)
+        val shown = visible
+        val from = shown.indexOfFirst { it.module == module }
+        val to = from + direction
+        if (to !in shown.indices) return this
+        val target = wholeRowTarget(shown, from, to) { if (it.collapsible) ModuleSize.CELL else it.size }
+        return moveVisible(module, target)
+    }
 
     private fun swap(a: Int, b: Int): ViewConfig {
         if (a !in items.indices || b !in items.indices) return this

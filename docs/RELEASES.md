@@ -45,6 +45,13 @@ faint outline on in-content buttons, and the iOS keyboard fix (n52: tap
 outside, after Add, after picking a place). Gates: verify.sh,
 `:shared:allTests`; Maestro 02-alerts and 08-places on the iOS 27 simulator.
 
+Submitted for App Store review 2026-10-15 14:38 by Evan, with the Remove
+ads in-app purchase (submission b4b3ba3e-460e-452e-8dd9-f42ff8cb9a6a).
+Release: automatic on approval. Before submitting, the published App
+Privacy label was missing Device ID's "used for tracking: Yes" (Apple
+flags it because the build carries NSUserTrackingUsageDescription); fixed
+and republished.
+
 ## 0.3.1 — build 2, TestFlight 2026-10-13
 
 The first iOS build (just-my-weather-nyt.10), cut from 4003b7f with Evan's
@@ -65,6 +72,10 @@ the regrouped Customize page (4750cc7, just-my-weather-9pz). Cut from
 22c5892 with Evan's go-ahead; CI green on PR #1 at that commit (unit +
 ktlint + build, Maestro). 0.4.0 has not reached production, so the version
 name stays; only the counter ticks.
+
+Submitted for production review 2026-10-15 by Evan, from the Play Console.
+The review restarted the same day when the new full description (no "FREE,
+WITH ONE SMALL BANNER" section, 5244273) was saved alongside it.
 
 ### Store-facing (≤500 chars)
 

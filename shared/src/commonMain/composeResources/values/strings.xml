@@ -64,6 +64,9 @@
     <string name="customize_opens">Opens on</string>
     <string name="customize_options">Options</string>
     <string name="customize_order">Order</string>
+    <string name="customize_order_hint">↑ and ↓ move this tile one place earlier or later on your glance. Tiles fill each row left to right, then the next row down.</string>
+    <string name="customize_order_hint_full_width">This tile fills a whole row, so ↑ and ↓ move it above or below the entire neighboring row of tiles.</string>
+    <string name="customize_order_hint_hidden">Hidden for now. ↑ and ↓ set where it will sit on your glance when you show it.</string>
     <string name="customize_preview">Preview</string>
     <string name="customize_safety_alerts">Safety alerts</string>
     <string name="customize_show_fields_care_about">Show the fields you care about, in the order you read them. Size is prominence: the widest, tallest tile is the big one. You can also long-press any tile on the glance to drag and resize it in place.</string>
