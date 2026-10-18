@@ -170,7 +170,9 @@ scripts/android/promote-play.sh [--rollout 0.2]
 
 CI's `ui` job (Maestro on API 35) must be green on the commit being cut; the
 orchestrator does not run the flows itself. The very first upload is manual
-(Play's API refuses an app with no prior console upload).
+(Play's API refuses an app with no prior console upload). The service-account
+JSON, `app/keystore.properties` and `iosApp/team.properties` are derived
+copies; 1Password is the source of truth for their values (see "Secrets").
 
 ## iOS app
 
@@ -678,6 +680,27 @@ A shared feature is **done** when:
 A feature that cannot exist on one platform is recorded as Deferred or
 Dropped in `docs/PARITY.md`, not left out. "Fixed in shared" is not "shipped
 on iOS": check `scripts/release-drift.sh`.
+
+## Secrets
+
+**Every credential an agent uses lives in 1Password.** API keys, tokens, DSNs, OAuth client secrets, webhook URLs, signing keys: if Claude Code, a cron job, an MCP server, or CI needs it, 1Password is the source of truth, and anything else (a local `.env`, SSM, GitHub Secrets, a server-side env file) is a derived copy seeded from it. This applies to the credentials this repo already uses, not only to new ones.
+
+- **Reference, don't copy.** Tracked files carry env var *names* and `op://<vault>/<item>/<field>` references, never values. Load at run time with `op run --env-file=op.env -- <cmd>` (an `op.env` of `op://` lines, gitignored) or `op read "op://..."` piped straight into the consumer. This repo's release scripts read `key=value` properties files instead (`app/keystore.properties`, `iosApp/team.properties`, repo-root `play.properties`, each with a tracked `.example`); those files are the derived copies here, and env vars override them.
+- **Name items `<repo>-<service>`** (for example `mc-epn`), one item per service, fields named after the env vars. Use the 1Password account that owns the work (personal `my.1password.com`, VisionWrights, or Newtack) and pass `--account` when more than one is signed in.
+- **A literal `.env` is debt, not a pattern.** It must be gitignored and `chmod 600`, and the inventory below marks it as pending migration. Move the values into 1Password the next time you touch them. Key *files* (`app/release.keystore`, `AuthKey_*.p8`, `play-service-account.json`) belong in 1Password as document attachments of the item that uses them; `docs/PLAY_STORE.md`'s "back up in the password manager" means that item.
+- **Never print a secret.** Prove a key works by calling the API (`scripts/android/preflight-play.sh` does exactly that for Play). Don't `cat` env files, echo variables, or paste values into transcripts, commit messages, or this file.
+- **Found a literal secret in a tracked file or in history?** Stop and tell the owner. It needs rotating and purging, and that is their call.
+- **Adding a credential:** create the 1Password item, add the `op://` line to `op.env.example` (or this repo's equivalent template), add a row below, and confirm the local copy is ignored.
+
+### Credentials this repo uses
+
+| Env var | Used by / purpose | Where it lives today | 1Password item |
+|---|---|---|---|
+| `storePassword`, `keyPassword` (with `keyAlias`, `storeFile`) | Release signing in `app/build.gradle.kts`; `scripts/android/bundle-release.sh` refuses to build without them | gitignored `app/keystore.properties`, literal values; `app/release.keystore` beside it (migrate) | `jmw-android-signing` (to create) |
+| `IOS_ASC_KEY_ID`, `IOS_ASC_ISSUER_ID`, `IOS_ASC_KEY_PATH` (`ascKeyId` / `ascIssuerId` / `ascKeyPath`) | `scripts/ios/*`: TestFlight upload, profile creation (ASC API) | gitignored `iosApp/team.properties`, literal values; `.p8` in `~/.appstoreconnect/private_keys/` outside the repo (migrate) | `jmw-asc` (to create; if it is open-frame's key, share `open-frame-asc`) |
+| `PLAY_SERVICE_ACCOUNT` (`serviceAccountJsonPath`) | `scripts/android/upload-play.sh`, `promote-play.sh`, `preflight-play.sh`, `play-countries.sh` | path in gitignored repo-root `play.properties`; JSON key at repo-root `play-service-account.json`, gitignored (migrate) | `jmw-play` (to create; if it is open-frame's service account, share `open-frame-play`) |
+
+Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, the AdMob ids in gitignored `app/admob.properties` (`appId`, `bannerUnitId`), `local.properties` (SDK path). NWS and MET Norway need no key.
 
 <!-- BEGIN WYK CONVENTIONS v:1 -->
 ## wyk — planning & handoff over bd
