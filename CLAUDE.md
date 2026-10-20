@@ -24,6 +24,8 @@ bd close <id>         # Complete work
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
+**`.beads/` is gitignored in this repo (decision 2026-10-20).** The export, hooks and config under `.beads/` are never committed; tracker state lives only in the local Dolt DB on this machine. Do not `git add -f` anything under `.beads/`, and never write a `chore(bd): sync export` commit.
+
 ## Session Completion
 
 When ending a work session:
@@ -101,7 +103,7 @@ commands from its session-close protocol; don't unset it. (Adopted
 instrumented-test compile on any staged `.kt/.kts/.xml/.pro/.properties`;
 docs-only commits skip it). **bd sets `core.hooksPath` to `.beads/hooks`**, so
 git never reads `.git/hooks/` — the old symlink there ran nothing. The gate is
-therefore *called* from the tracked `.beads/hooks/pre-commit`, in a
+therefore *called* from `.beads/hooks/pre-commit` (present locally but untracked since 2026-10-20, when `.beads/` was gitignored; a fresh clone gets the gate from `scripts/hooks/install.sh`), in a
 `PROJECT GATE` block above bd's own markers (bd regenerates only what sits
 between its markers). `scripts/hooks/install.sh` verifies that wiring, or
 installs the symlink on a clone that has no `core.hooksPath`.
