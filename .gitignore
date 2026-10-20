@@ -46,3 +46,6 @@ iosApp/Config/AdMob.xcconfig
 iosApp/Config/Team.xcconfig
 iosApp/team.properties
 **/AuthKey_*.p8
+
+# beads tracker state is local-only (decision 2026-10-20): never commit the export
+.beads/
