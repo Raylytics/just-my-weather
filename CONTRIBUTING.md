@@ -25,10 +25,27 @@ Kotlin/resource change:
 ./gradlew :app:ktlintCheck          # style gate
 ./gradlew :app:ktlintFormat         # auto-fix most style issues
 ./gradlew :app:assembleDebug        # build the debug APK
-scripts/hooks/install.sh            # install the pre-commit hook (test + ktlint)
+scripts/hooks/install.sh            # install the project gate (test + ktlint)
+pre-commit install --hook-type pre-commit --hook-type commit-msg   # once per clone
 ```
 
-Bypass the hook with `--no-verify` only in emergencies.
+The second line installs the standard hooks (`.pre-commit-config.yaml`:
+ktlint, gitleaks, whitespace, and the commit-message checks); CI's
+`pre-commit` job runs the same set. `--no-verify` is never used: if a gate is
+wrong, fix the gate.
+
+## Branches, commits and pull requests
+
+Branch from `main` as `type/short-kebab`. Commits follow
+[Conventional Commits 1.0](https://www.conventionalcommits.org/en/v1.0.0/):
+`type(scope): subject`, subject at most 72 characters, imperative, then a body
+that says why. Types: `feat`, `fix`, `perf`, `refactor`, `style`, `docs`,
+`test`, `build`, `ci`, `chore`, `revert`. No AI bylines; the commit-msg hook
+refuses them. Every change lands through a pull request, squash-merged with
+CI green; the PR title becomes the squash subject, so it must be a
+Conventional Commit subject too. This repo follows the Raylytics Version
+Control Standard (`STANDARD.md` in the `raylytics` repo); the `Version
+control` section of [CLAUDE.md](CLAUDE.md) is the short form.
 
 ## Conventions
 
