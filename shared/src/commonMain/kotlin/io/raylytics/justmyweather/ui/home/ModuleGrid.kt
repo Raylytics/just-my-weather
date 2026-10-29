@@ -14,9 +14,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -915,29 +921,60 @@ private fun ModuleTile(
             )
             return@TileShell
         }
-        // In the corner, pushed out into the tile's own padding so it sits
-        // beside the content rather than over it.
-        onCollapse?.let {
-            CollapseControl(
-                module = module.module,
-                onCollapse = it,
-                modifier = Modifier.align(Alignment.TopEnd).offset(x = TILE_PADDING / 2, y = -TILE_PADDING / 2),
-            )
-        }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (showLabel) {
+            // The label line: the name centred, and for an open collapsible
+            // tile the way back at its end. The control lives on this line
+            // rather than floating in the tile's corner because the value
+            // below is fitted to the tile's full width, and a corner is
+            // exactly where a wide value's first line ends up. Here the label
+            // keeps the control's width clear on both sides (both, so it
+            // stays centred), and the value starts below the line, so
+            // neither can run under the caret. A tile with no label of its
+            // own (full width, or the sun speaking for itself) still gets
+            // the line when it has a control to carry.
+            if (showLabel || onCollapse != null) {
                 // Fitted like the value, on one line: "Temperature" does not
                 // fit a single cell at the label size, and "Temperat…" is
                 // worse than the same word a shade smaller.
                 val labelStyle = MaterialTheme.typography.labelSmall
-                FittedText(
-                    text = module.label,
-                    style = labelStyle,
-                    ceiling = labelStyle.fontSize,
-                    floor = LABEL_FLOOR,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
+                // The control is taller than the label's line, for the thumb's
+                // sake. It overhangs that line a little above and below
+                // (centred) rather than pushing the value down by the
+                // difference: above is the tile's padding, and below is air
+                // the value's own line height leaves before its glyphs.
+                val lineHeight = with(LocalDensity.current) { labelStyle.lineHeight.toDp() }
+                Box(modifier = Modifier.fillMaxWidth().heightIn(min = lineHeight)) {
+                    if (showLabel) {
+                        FittedText(
+                            text = module.label,
+                            style = labelStyle,
+                            ceiling = labelStyle.fontSize,
+                            floor = LABEL_FLOOR,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .padding(horizontal = if (onCollapse != null) COLLAPSE_CONTROL_SIZE else 0.dp),
+                        )
+                    }
+                    onCollapse?.let {
+                        CollapseControl(
+                            module = module.module,
+                            onCollapse = it,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.CenterEnd)
+                                    // Half into the tile's padding, as the old
+                                    // corner placement was: it is a control,
+                                    // not content, and reads better off the
+                                    // content's edge.
+                                    .offset(x = TILE_PADDING / 2)
+                                    .height(lineHeight)
+                                    .wrapContentHeight(unbounded = true),
+                        )
+                    }
+                }
             }
             when (val content = module.content) {
                 is ModuleContent.Reading ->
