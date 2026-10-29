@@ -1,130 +1,151 @@
+# just-my-weather CI, on the Raylytics VC Standard template (templates/ci/android.yml,
+# STANDARD.md §8, §12) merged with the previous workflow: the pre-commit, test and
+# build jobs the Tier 1 ruleset requires by name, plus the repo's own Maestro UI
+# job. Actions are pinned to full commit SHAs (version in the trailing comment),
+# resolved with `gh api` on 2026-10-27; bump deliberately.
 name: CI
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
 
-# Least privilege: CI only ever needs to read the code. Declared explicitly so
-# the token can't inherit a wider repo default — this workflow runs third-party
-# actions, and a read-only token limits what a compromised one could do.
+# Least privilege: CI only ever needs to read the code.
 permissions:
   contents: read
 
-# Don't let stale runs pile up on the same branch/PR.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  gate:
-    name: Test · ktlint · build
+  pre-commit:
+    # ktlint (through the Gradle plugin, so the hook and this job agree on the
+    # ktlint version), gitleaks, whitespace and large-file checks: the same
+    # hooks `pre-commit install` runs on a contributor's machine.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@da187c8e6ffbd3802e00f2477aa5a822b25f2dda # v4.4.4
-
+          java-version-file: .tool-versions
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       # `packages` is explicit because the action's default list still names
       # "tools", a package Google removed from the SDK repository; sdkmanager
-      # then exits 1 and the job dies before Gradle runs (every run on main
-      # from 2026-09-23 on). The platform and build-tools are installed by the
-      # step below, so platform-tools is all this step needs.
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+      # then exits 1 and the job dies before Gradle runs. The platform and
+      # build-tools are installed by the step below.
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: pre-commit
+        run: uvx pre-commit run --all-files --show-diff-on-failure
 
-      - name: Install required SDK packages
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
-
-      # The same gate the pre-commit hook runs locally.
-      #
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version-file: .tool-versions
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       # assembleDebugAndroidTest COMPILES the instrumented tests without a
-      # device. Without it nothing type-checks that source set — ktlintCheck
-      # reads the text but never compiles it — so renaming a composable or
-      # changing a constructor would break those tests silently, and they would
-      # already be broken by the time anyone ran them.
-      - name: Test, ktlint, and assemble
+      # device: without it nothing type-checks that source set, so renaming a
+      # composable would break those tests silently.
+      - name: Unit tests and instrumented-test compile
         run: >-
-          ./gradlew :app:testDebugUnitTest :shared:testAndroidHostTest :app:ktlintCheck :shared:ktlintCheck :app:assembleDebug
+          ./gradlew :app:testDebugUnitTest :shared:testAndroidHostTest
           :app:assembleDebugAndroidTest --no-daemon --stacktrace
-
       - name: Upload unit-test report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit-test-report
           path: app/build/reports/tests/
           if-no-files-found: ignore
 
-  # Separate job so the fast gate above still reports in ~3 minutes: booting an
-  # emulator costs several more. UI regressions used to ship silently because
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version-file: .tool-versions
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR title is a Conventional Commit subject
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|perf|refactor|style|docs|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .{1,60}$'
+          if printf '%s\n' "$TITLE" | grep -Eq "$pattern"; then
+            echo "ok: $TITLE"
+          else
+            echo "::error::PR title must match $pattern (it becomes the squash commit subject)"
+            exit 1
+          fi
+
+  # Separate job so the fast gates above still report in a few minutes: booting
+  # an emulator costs several more. UI regressions used to ship silently because
   # the Maestro flows only ever ran by hand.
   ui:
     name: Maestro UI flows
     runs-on: ubuntu-latest
     # Emulator boot plus up to two full suite passes. Without this the job
     # inherits the 360-minute default, and a wedged device would hold a runner
-    # for hours — concurrency only reclaims it if a new push lands on this ref.
+    # for hours.
     timeout-minutes: 45
-    # No continue-on-error anywhere. It sets the conclusion to success, which
-    # both renders a failed flow green — the exact silence this job exists to
-    # end — and suppresses the on-failure artifact upload that diagnoses it.
-    # `ui` is simply not a required check, so a red flow is visible without
-    # blocking merges. Live-API flakiness is absorbed at its source by the
-    # retry in the script below, not by hiding the outcome.
+    # No continue-on-error anywhere: it would render a failed flow green and
+    # suppress the on-failure artifact upload that diagnoses it. `ui` is simply
+    # not a required check, so a red flow is visible without blocking merges.
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@da187c8e6ffbd3802e00f2477aa5a822b25f2dda # v4.4.4
-
-      # Same explicit SDK install as `gate`: don't trust whatever the runner
-      # image happens to preinstall, which rotates.
-      # `packages` is explicit because the action's default list still names
-      # "tools", a package Google removed from the SDK repository; sdkmanager
-      # then exits 1 and the job dies before Gradle runs (every run on main
-      # from 2026-09-23 on). The platform and build-tools are installed by the
-      # step below, so platform-tools is all this step needs.
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+          java-version-file: .tool-versions
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
-
-      - name: Install required SDK packages
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Build the debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
       # The CLI *version* is pinned and asserted below. The installer script
-      # itself is still fetched fresh and executed — that remote-code surface is
-      # unchanged and is a known tradeoff, not something this pin closes.
+      # itself is still fetched fresh and executed; that remote-code surface is
+      # a known tradeoff, not something this pin closes.
       - name: Install Maestro
         env:
           MAESTRO_VERSION: 2.5.0
         run: |
           curl -Ls https://get.maestro.mobile.dev | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-          # Assert, don't echo: if the installer ignores the variable or falls
-          # back to latest, the pin was never in effect and we want a red step.
           v="$("$HOME/.maestro/bin/maestro" --version | tr -d '\r' | tail -1)"
-          # Exact, not substring: 2.5.0 must not be satisfied by 12.5.0 or
-          # 2.5.0-SNAPSHOT, or the gate stops meaning anything.
           [ "$v" = "$MAESTRO_VERSION" ] \
             || { echo "::error::expected maestro $MAESTRO_VERSION, got '$v'"; exit 1; }
           echo "maestro $v (pinned)"
@@ -137,8 +158,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # API 35: Android 15 enforces edge-to-edge for targetSdk 35, and an
-      # API 34 image would not have caught the inset bug that shipped once.
+      # API 35: Android 15 enforces edge-to-edge for targetSdk 35.
       - name: Run Maestro flows
         id: maestro
         uses: reactivecircus/android-emulator-runner@c9c93e6ba9c4194322e114c40970d5983d9a07cc # v2.38.0
@@ -148,30 +168,20 @@ jobs:
           arch: x86_64
           profile: pixel_6
           ram-size: 4096M
-          # 3, not 4: these runners have 4 vCPUs, and handing every one to qemu
-          # starves maestro/adb during the phase where they drive the UI —
-          # relocating the starvation rather than fixing it. (The launcher ANR
-          # that motivated this is handled deterministically in the script.)
+          # 3, not 4: the runners have 4 vCPUs, and handing every one to qemu
+          # starves maestro/adb while they drive the UI.
           cores: 3
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          # ONE line: this action runs `script:` one line per `sh -c`, so
-          # shell state does not survive between lines. The logic lives in a
-          # checked-in script, which is also runnable locally.
+          # ONE line: this action runs `script:` one line per `sh -c`. The logic
+          # lives in a checked-in script, which is also runnable locally.
           script: bash .github/scripts/ui-flows.sh
 
-      # The instrumented tests run inside that same script and BEFORE Maestro,
-      # so a width regression aborts the run under `set -e` — Maestro never
-      # executes, ~/.maestro/tests is empty, and the maestro-debug upload below
-      # is swallowed by if-no-files-found. Without this step the only diagnosis
-      # for a red run is a report path on a destroyed runner, and the same
-      # failure costs the Maestro signal too.
-      #
-      # always(), not failure(): the step above it can succeed while these
-      # fail, and a report that exists is worth keeping either way.
+      # The instrumented tests run inside that script and BEFORE Maestro; a
+      # report that exists is worth keeping either way (always(), not failure()).
       - name: Upload instrumented-test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: androidtest-report
           path: |
@@ -181,15 +191,11 @@ jobs:
 
       - name: Upload Maestro output on failure or retry
         # Keep the artifact when the step failed AND when a retry rescued a
-        # failed first pass — otherwise the retry, which makes that the common
-        # failure shape, would quietly erase the evidence of recurring
-        # flakiness. Keyed on the marker the script actually writes, so a clean
-        # pass uploads nothing (Maestro populates ~/.maestro/tests on success
-        # too, so an unconditional upload is noise, not a no-op).
+        # failed first pass, so recurring flakiness keeps its evidence.
         if: >-
           always() && (steps.maestro.outcome == 'failure'
           || hashFiles('maestro-retried') != '')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: maestro-debug
           path: ~/.maestro/tests/

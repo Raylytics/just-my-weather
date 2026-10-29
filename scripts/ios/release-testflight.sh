@@ -170,7 +170,7 @@ cat >&2 <<EOF
     (~5-15 min), it's available to TestFlight testers.
 
     Now:
-      git commit iosApp/project.yml -m "release: iOS build $NEW_BUILD to TestFlight"
+      git commit iosApp/project.yml -m "chore(release): iOS build $NEW_BUILD to TestFlight"
     and add the cut to docs/RELEASES.md, e.g. under the $VERSION_NAME heading:
       iOS build $NEW_BUILD, TestFlight $(date +%Y-%m-%d)
     and record it as the last iOS build in docs/PARITY.md:
