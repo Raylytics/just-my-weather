@@ -59,3 +59,9 @@ repos:
     types:
     - kotlin
     pass_filenames: false
+  - id: no-google-ads
+    name: no Google ad dependencies (google-ads-exit)
+    entry: scripts/check-no-google-ads.sh
+    language: script
+    pass_filenames: false
+    always_run: true

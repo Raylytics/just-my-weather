@@ -62,6 +62,11 @@ jobs:
         with:
           packages: platform-tools
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      # google-ads-exit guardrail: no Google ad dependency, import, id or
+      # adapter may come back (scripts/check-no-google-ads.sh, also a
+      # pre-commit hook). Fails the job on the first hit.
+      - name: No Google ad dependencies
+        run: scripts/check-no-google-ads.sh
       # assembleDebugAndroidTest COMPILES the instrumented tests without a
       # device: without it nothing type-checks that source set, so renaming a
       # composable would break those tests silently.
