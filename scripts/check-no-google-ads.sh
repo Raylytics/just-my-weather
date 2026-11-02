@@ -32,6 +32,7 @@ DENY=(
   'com\.google\.android\.gms\.ads'
   'import GoogleMobileAds'
   'import UserMessagingPlatform'
+  '<(GoogleMobileAds|UserMessagingPlatform)/'
   'DELAY_APP_MEASUREMENT_INIT'
   'GADApplicationIdentifier'
   'ca-app-pub-'
@@ -74,12 +75,14 @@ self_test() {
   printf 'implementation("com.google.android.gms:play-services-ads:25.5.0")\n' > "$tmp/denied.kts"
   printf 'pod "AppLovinMediationGoogleAdapter"\n' > "$tmp/adapter.rb"
   printf 'import com.google.android.gms.ads.identifier.X; import com.google.android.gms.ads.AdView\n' > "$tmp/mixed.kt"
+  printf '#import <GoogleMobileAds/GoogleMobileAds.h>\n' > "$tmp/bridge.m"
   local ok=1
   scan "$tmp/allowed.kts" >/dev/null || { echo "self-test FAILED: the ads-identifier module must pass" >&2; ok=0; }
   scan "$tmp/allowed-pkg.txt" >/dev/null || { echo "self-test FAILED: the ads.identifier package must pass" >&2; ok=0; }
   if scan "$tmp/denied.kts" >/dev/null; then echo "self-test FAILED: play-services-ads must be caught" >&2; ok=0; fi
   if scan "$tmp/adapter.rb" >/dev/null; then echo "self-test FAILED: the Google adapter must be caught" >&2; ok=0; fi
   if scan "$tmp/mixed.kt" >/dev/null; then echo "self-test FAILED: a denied token beside the allowed package must be caught" >&2; ok=0; fi
+  if scan "$tmp/bridge.m" >/dev/null; then echo "self-test FAILED: the Objective-C header import must be caught" >&2; ok=0; fi
   rm -rf "$tmp"
   [ "$ok" = 1 ]
 }
