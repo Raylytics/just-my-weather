@@ -100,6 +100,6 @@ trap - EXIT
 cat >&2 <<MSG
 
 ==> Internal release pipeline complete: versionCode $NEW_VC is on the internal track.
-    Now: git commit app/build.gradle.kts -m "release: versionCode $NEW_VC to internal"
+    Now: git commit app/build.gradle.kts -m "chore(release): versionCode $NEW_VC to internal"
          and add the cut to docs/RELEASES.md.
 MSG

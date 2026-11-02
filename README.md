@@ -1,6 +1,8 @@
 # Just My Weather
 
 [![CI](https://github.com/jimbottle/just-my-weather/actions/workflows/ci.yml/badge.svg)](https://github.com/jimbottle/just-my-weather/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/jimbottle/just-my-weather)](https://github.com/jimbottle/just-my-weather/releases/latest)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **[Get it on Google Play](https://play.google.com/store/apps/details?id=io.raylytics.justmyweather)** — live since 2026-10-05 (0.2.0). Free, with one banner ad; a one-time purchase removes it. US weather (NWS).
 
@@ -65,8 +67,12 @@ Requires **JDK 17+** and the **Android SDK**. Point Gradle at your SDK:
 echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties   # adjust path
 ./gradlew :app:assembleDebug          # build
 ./gradlew :app:testDebugUnitTest      # run unit tests
-scripts/hooks/install.sh              # optional: install the pre-commit gate
+scripts/hooks/install.sh              # the project gate (test + ktlint)
+pre-commit install --hook-type pre-commit --hook-type commit-msg   # the standard hooks
 ```
+
+Tool versions are pinned in `.tool-versions` (JDK), the Gradle wrapper, and
+`gradle/libs.versions.toml`; `.github/workflows/ci.yml` reads the same values.
 
 Testing builds ship through Google Play's internal testing track (see
 [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md)); the GitHub releases were the
@@ -86,6 +92,17 @@ surgery. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the build/test gate and
 workflow, **[docs/architecture.md](docs/architecture.md)** for the map, and
 **[docs/extending.md](docs/extending.md)** for step-by-step recipes for the
 common extension points.
+
+## Releasing
+
+`scripts/release.sh X.Y.Z` on a clean, green `main` bumps `VERSION` (synced
+into Android's `versionName` and iOS's `MARKETING_VERSION`), bumps
+`versionCode`, prepends the release to [CHANGELOG.md](CHANGELOG.md) from the
+commits with git-cliff, and pushes a signed tag; the `release` workflow creates
+the GitHub Release. Store uploads run after the tag with
+`scripts/android/release-internal.sh` and `scripts/ios/release-testflight.sh`
+([docs/PLAY_STORE.md](docs/PLAY_STORE.md), [docs/APP_STORE.md](docs/APP_STORE.md));
+the per-cut log stays in [docs/RELEASES.md](docs/RELEASES.md).
 
 ## Data & privacy
 

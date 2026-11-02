@@ -74,9 +74,14 @@ scripts/android/release-internal.sh # cut + upload a Play internal build (needs 
 
 iOS commands are under "iOS app" below.
 
-The pre-commit hook runs `:app:testDebugUnitTest :shared:testAndroidHostTest
-:app:ktlintCheck :shared:ktlintCheck` on any Kotlin/resource change (see "The pre-commit gate" below for how it is wired
-under bd's `core.hooksPath`). Bypass with `--no-verify` only in emergencies.
+Two hook layers run on commit: the project gate (`scripts/hooks/pre-commit`:
+`:app:testDebugUnitTest :shared:testAndroidHostTest :app:ktlintCheck
+:shared:ktlintCheck` on any Kotlin/resource change; see "The pre-commit gate"
+below for how it is wired under bd's `core.hooksPath`) and the standard's
+pre-commit hooks (`.pre-commit-config.yaml`: ktlint, gitleaks, whitespace,
+Conventional Commit subject, no AI bylines; installed with `pre-commit install
+--hook-type pre-commit --hook-type commit-msg`). Never `--no-verify` (see
+"Version control").
 
 ## Commit cadence
 
@@ -101,16 +106,19 @@ commands from its session-close protocol; don't unset it. (Adopted
 
 `scripts/hooks/pre-commit` is the tracked gate (unit tests + ktlint +
 instrumented-test compile on any staged `.kt/.kts/.xml/.pro/.properties`;
-docs-only commits skip it). **bd sets `core.hooksPath` to `.beads/hooks`**, so
-git never reads `.git/hooks/` — the old symlink there ran nothing. The gate is
-therefore *called* from `.beads/hooks/pre-commit` (present locally but untracked since 2026-10-20, when `.beads/` was gitignored; a fresh clone gets the gate from `scripts/hooks/install.sh`), in a
-`PROJECT GATE` block above bd's own markers (bd regenerates only what sits
-between its markers). `scripts/hooks/install.sh` verifies that wiring, or
-installs the symlink on a clone that has no `core.hooksPath`.
+docs-only commits skip it). Since 2026-10-28 the clone runs two layers from
+`.git/hooks`: pre-commit's runner (`pre-commit install --hook-type pre-commit
+--hook-type commit-msg`, hooks from `.pre-commit-config.yaml`) calls the gate
+first through `.git/hooks/pre-commit.legacy`, then runs its own hooks.
+`scripts/hooks/install.sh` verifies or installs that wiring. bd's
+`core.hooksPath=.beads/hooks` is no longer set in Evan's clone (it pointed at
+an empty directory, so nothing ran); if `bd hooks install` is run again it
+must install into `.git/hooks` beside pre-commit, not re-point hooksPath.
 
 - The hook runs against the **working tree**, not the staged snapshot: stage
   everything you intend to ship, or stash the noise first.
-- Bypass in emergencies only: `git commit --no-verify`.
+- No bypass: `--no-verify` is prohibited (see "Version control"). If the gate
+  is wrong, fix the gate.
 - Not in the hook: Maestro flows (CI's `ui` job) and anything needing a
   device.
 
@@ -203,7 +211,10 @@ See `docs/PLAY_STORE.md` for the bootstrap, console quirks, and signing;
   version they *will be promoted as* — bump `versionName` first, then let
   `versionCode` tick underneath it. A `versionCode` bump alone is not a
   substitute when behaviour changed.
-- Log every cut (versionCode, date, track) in `docs/RELEASES.md`.
+- Log every cut (versionCode, date, track) in `docs/RELEASES.md`. The
+  user-facing changelog (`CHANGELOG.md`) is generated from the Conventional
+  Commits by `scripts/release.sh` (git-cliff); do not hand-edit it beyond a
+  one-line summary per release.
 
 ### Release procedure (day-to-day)
 
@@ -215,7 +226,7 @@ scripts/android/preflight-play.sh                  # auth + permissions, no side
 # Cut: refuses a dirty tree, runs scripts/verify.sh, bumps versionCode,
 # builds a SIGNED AAB, uploads to the internal track (no Play review).
 scripts/android/release-internal.sh --notes "What testers will see"
-git commit app/build.gradle.kts -m "release: versionCode N to internal"
+git commit app/build.gradle.kts -m "chore(release): versionCode N to internal"
 
 # Promote the tested build (a track move, not a re-upload):
 scripts/android/promote-play.sh [--rollout 0.2]
@@ -749,7 +760,7 @@ on iOS": check `scripts/release-drift.sh`.
 **Every credential an agent uses lives in 1Password.** API keys, tokens, DSNs, OAuth client secrets, webhook URLs, signing keys: if Claude Code, a cron job, an MCP server, or CI needs it, 1Password is the source of truth, and anything else (a local `.env`, SSM, GitHub Secrets, a server-side env file) is a derived copy seeded from it. This applies to the credentials this repo already uses, not only to new ones.
 
 - **Reference, don't copy.** Tracked files carry env var *names* and `op://<vault>/<item>/<field>` references, never values. Load at run time with `op run --env-file=op.env -- <cmd>` (an `op.env` of `op://` lines, gitignored) or `op read "op://..."` piped straight into the consumer. This repo's release scripts read `key=value` properties files instead (`app/keystore.properties`, `iosApp/team.properties`, repo-root `play.properties`, each with a tracked `.example`); those files are the derived copies here, and env vars override them.
-- **Name items `<repo>-<service>`** (for example `mc-epn`), one item per service, fields named after the env vars. Use the 1Password account that owns the work (personal `my.1password.com`, VisionWrights, or Newtack) and pass `--account` when more than one is signed in.
+- **Name items `<repo>-<service>`** (for example `mc-epn`), one item per service, fields named after the env vars. Use the 1Password account that owns the work (personal `my.1password.com` for this repo) and pass `--account` when more than one is signed in.
 - **A literal `.env` is debt, not a pattern.** It must be gitignored and `chmod 600`, and the inventory below marks it as pending migration. Move the values into 1Password the next time you touch them. Key *files* (`app/release.keystore`, `AuthKey_*.p8`, `play-service-account.json`) belong in 1Password as document attachments of the item that uses them; `docs/PLAY_STORE.md`'s "back up in the password manager" means that item.
 - **Never print a secret.** Prove a key works by calling the API (`scripts/android/preflight-play.sh` does exactly that for Play). Don't `cat` env files, echo variables, or paste values into transcripts, commit messages, or this file.
 - **Found a literal secret in a tracked file or in history?** Stop and tell the owner. It needs rotating and purging, and that is their call.
@@ -796,3 +807,14 @@ convention looks broken, or the workflow rubs wrong, file a bd issue (with
 an owner) and fix or hand it off — don't route around it silently.
 Friction with wyk is product data; surfacing it is the job.
 <!-- END WYK CONVENTIONS -->
+
+## Version control
+
+This repo follows the Raylytics Version Control Standard, tier 1, stack android. Source: STANDARD.md in the `raylytics` repo (2026-10-27); cite its section in a commit body when a rule decides something.
+
+- Branch from `main` as `type/short-kebab`. Every change lands as a squash-merged PR with CI green; the PR title is the Conventional Commit subject. Agent work always goes through a PR.
+- Commits follow Conventional Commits 1.0: `type(scope): subject`, subject at most 72 characters, imperative, no trailing period, then a body that says why. Types: feat, fix, perf, refactor, style, docs, test, build, ci, chore, revert. Scopes here: android, ios, shared, ui, alerts, glance, forecast, gazetteer, whatsnew, store, ci, deps, release, docs, vc. Release-script commits use `chore(release): ...` (the old `release: ...` form is not a Conventional Commit type).
+- Never add `Co-Authored-By`, `Generated with`, or any AI byline; the commit-msg hook refuses them. Never use `--no-verify`. Never force-push `main`.
+- Secrets never enter the tree; `.env.example` lists the variables; gitleaks runs in pre-commit and CI.
+- Commands: `pre-commit install --hook-type pre-commit --hook-type commit-msg` once; lint `./gradlew :app:ktlintCheck :shared:ktlintCheck`; test `./gradlew :app:testDebugUnitTest :shared:testAndroidHostTest` (`scripts/verify.sh` is the whole JVM gate); release `scripts/release.sh X.Y.Z` (bumps `VERSION`, which `scripts/sync-version.sh` copies into `versionName` and iOS `MARKETING_VERSION`, bumps `versionCode`, regenerates CHANGELOG.md with git-cliff, tags `vX.Y.Z`; store uploads stay with `scripts/android/release-internal.sh` and `scripts/ios/release-testflight.sh`, after the tag).
+- Do not commit `.claude/settings.local.json`, `QUEUE.md`, `HANDOFF*`, `.beads/`, scratch notes or session logs.

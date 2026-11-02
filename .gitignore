@@ -49,3 +49,19 @@ iosApp/team.properties
 
 # beads tracker state is local-only (decision 2026-10-20): never commit the export
 .beads/
+
+# Raylytics VC Standard
+.env
+.env.*
+!.env.example
+.vscode/
+*.log
+.claude/settings.local.json
+QUEUE.md
+HANDOFF*
+*.jks
+google-services.json
+GoogleService-Info.plist
+build/
+*.apk
+*.aab
