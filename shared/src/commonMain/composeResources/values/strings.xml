@@ -203,6 +203,10 @@
     <string name="whats_new_version">Version %1$s</string>
     <string name="whats_new_dismiss">Got it</string>
     <string name="whats_new_open_customize">Open Customize</string>
+    <string name="whats_new_0_4_2_restore_title">Restore purchases, always within reach</string>
+    <string name="whats_new_0_4_2_restore_body">Bought Remove ads on another phone, or before a reinstall? App Settings has a Restore purchases row under Ads now, whether or not the ads are already gone, so you can ask the store again at any time.</string>
+    <string name="whats_new_0_4_2_caret_title">Collapsed tiles keep their reading clear</string>
+    <string name="whats_new_0_4_2_caret_body">The caret that opens or closes a tile now sits at the end of its label line, so a wide value never runs under it.</string>
     <string name="whats_new_0_4_1_modules_title">New modules: humidity, dew point and visibility</string>
     <string name="whats_new_0_4_1_modules_body">Each can now have its own tile on your glance. They start switched off, so your glance looks just as you left it: turn them on in Customize. Tap a tile for the full reading, or set an alert on one.</string>
     <string name="whats_new_0_4_1_units_title">Visibility in miles or kilometres</string>

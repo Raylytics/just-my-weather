@@ -5,6 +5,10 @@ import io.raylytics.justmyweather.resources.whats_new_0_4_1_modules_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_modules_title
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_units_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_units_title
+import io.raylytics.justmyweather.resources.whats_new_0_4_2_caret_body
+import io.raylytics.justmyweather.resources.whats_new_0_4_2_caret_title
+import io.raylytics.justmyweather.resources.whats_new_0_4_2_restore_body
+import io.raylytics.justmyweather.resources.whats_new_0_4_2_restore_title
 import org.jetbrains.compose.resources.StringResource
 
 /*
@@ -34,6 +38,15 @@ data class ReleaseNote(val version: AppVersion, val highlights: List<Highlight>)
 object ReleaseNotes {
     val all: List<ReleaseNote> =
         listOf(
+            // 0.4.2 is two fixes, but the Restore purchases row is the one
+            // App Review asked for, so the sheet says where it is.
+            ReleaseNote(
+                AppVersion(0, 4, 2),
+                listOf(
+                    Highlight(Res.string.whats_new_0_4_2_restore_title, Res.string.whats_new_0_4_2_restore_body),
+                    Highlight(Res.string.whats_new_0_4_2_caret_title, Res.string.whats_new_0_4_2_caret_body),
+                ),
+            ),
             ReleaseNote(
                 AppVersion(0, 4, 1),
                 listOf(
