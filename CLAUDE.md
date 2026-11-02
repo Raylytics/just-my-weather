@@ -280,7 +280,8 @@ scripts/ios/release-testflight.sh   # release rehearsal; see docs/APP_STORE.md
   committing.
 - iOS is gated locally only (plan decision 7). CI runs the Android jobs and
   skips the shared module's iOS targets.
-- Debug builds always use Google's sample AdMob ids. Signing, AdMob ids and
+- No ad network ids until google-ads-exit Stage B lands AppLovin MAX (then a
+  gitignored xcconfig with a committed example, as AdMob's was). Signing and
   releases: `docs/APP_STORE.md`.
 
 ## App Store Releases
@@ -666,7 +667,13 @@ platform difference:
   object the UI depends on — wire shapes never leak past the repository.
 - **`ads/`** (app) + **`billing/`** — the banner and the purchase that removes it.
   `AdBanner` is the only composable that draws an ad (one, at the foot of the
-  glance; personalization follows the user's consent, per `AdPolicy`);
+  glance); `ConsentGateway` is the seam to the consent platform and
+  `AdsConsent` the gate that starts the ad SDK once consent allows.
+  **google-ads-exit:** Google Mobile Ads and UMP were removed in Stage A
+  (`raylytics/docs/ad-migration/RUNBOOK.md`); AppLovin MAX behind a
+  third-party CMP lands in Stage B. Until then `NoConsentGateway` never
+  allows ads and `AdBanner` draws nothing. `scripts/check-no-google-ads.sh`
+  (pre-commit and CI) refuses any Google ad dependency coming back.
   `RemoveAdsManager` keeps the on-device entitlement in step with Play behind
   the `BillingGateway` seam.
   See `docs/architecture.md`.
@@ -681,7 +688,7 @@ platform difference:
   registry; `RegionResolver` picks the region (manual choice > phone network
   > last fix > place shown > language settings; the iPhone's order is in
   docs/REGIONS.md "On iOS"). It drives units, dates
-  and clock. Whether ads may run is Google's UMP consent SDK's call
+  and clock. Whether ads may run is the consent platform's call
   (`ads/AdsConsent`), not the region's. **docs/REGIONS.md** has how it works and the
   step-by-step for adding, opening, pausing or removing a region. Never
   change the Play Console country list or App Store Connect's availability
@@ -774,7 +781,7 @@ on iOS": check `scripts/release-drift.sh`.
 | `IOS_ASC_KEY_ID`, `IOS_ASC_ISSUER_ID`, `IOS_ASC_KEY_PATH` (`ascKeyId` / `ascIssuerId` / `ascKeyPath`) | `scripts/ios/*`: TestFlight upload, profile creation (ASC API) | gitignored `iosApp/team.properties`, literal values; `.p8` in `~/.appstoreconnect/private_keys/` outside the repo (migrate) | `jmw-asc` (to create; if it is open-frame's key, share `open-frame-asc`) |
 | `PLAY_SERVICE_ACCOUNT` (`serviceAccountJsonPath`) | `scripts/android/upload-play.sh`, `promote-play.sh`, `preflight-play.sh`, `play-countries.sh` | path in gitignored repo-root `play.properties`; JSON key at repo-root `play-service-account.json`, gitignored (migrate) | `jmw-play` (to create; if it is open-frame's service account, share `open-frame-play`) |
 
-Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, the AdMob ids in gitignored `app/admob.properties` (`appId`, `bannerUnitId`), `local.properties` (SDK path). NWS and MET Norway need no key.
+Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, `local.properties` (SDK path). Ad network and CMP ids return in google-ads-exit Stage B, in a gitignored properties file and xcconfig with committed examples, as AdMob's were. NWS and MET Norway need no key.
 
 <!-- BEGIN WYK CONVENTIONS v:1 -->
 ## wyk — planning & handoff over bd

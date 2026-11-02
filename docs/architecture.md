@@ -71,10 +71,12 @@ port only gave it a common contract to implement.
 Two things are deliberately **not** seams:
 
 - **Ads consent** stays a per-platform twin, outside the shared code:
-  `ads/AdsConsent` + `UmpConsentGateway` + `AdBanner` on Android,
-  `AdsService.swift` (UMP, then Apple's tracking prompt) on iOS. The shared
-  UI only sees `canShowAds` and `privacyOptionsRequired`. The two consent
-  flows differ too much for one class to fit both.
+  `ads/AdsConsent` + `ConsentGateway` + `AdBanner` on Android,
+  `AdsService.swift` (the consent platform, then Apple's tracking prompt) on
+  iOS. The shared UI only sees `canShowAds` and `privacyOptionsRequired`.
+  The two consent flows differ too much for one class to fit both.
+  google-ads-exit Stage A removed Google's UMP and Mobile Ads SDK from
+  behind both twins; Stage B puts AppLovin MAX and a third-party CMP there.
 - **When the alert check runs.** The check is common (`alerts/AlertCheck`,
   `AlertWorker`'s old body). Its scheduling is each platform's: WorkManager
   on Android, `BGAppRefreshTask` on iOS (`AlertRefresh.swift`), which iOS
@@ -142,12 +144,12 @@ as an iOS file.
   (in-memory default, `DataStorePointCache` durable) survives the grid lookup
   across launches. `WeatherSnapshot` / `WeatherLocation` are the domain objects.
 - **`ads/`** (app) — the one banner, on Android. iOS has its own twin,
-  `iosApp/JustMyWeather/Platform/AdsService.swift`. `AdPolicy` is the pure rules (no
-  personalization override — the SDK applies the user's consent — sample
-  units in debug, nothing about the user in a request);
-  `AdBanner` is the single composable that draws an AdMob adaptive banner. It
-  is placed once, at the foot of the glance, and only while Remove Ads is not
-  owned.
+  `iosApp/JustMyWeather/Platform/AdsService.swift`. `ConsentGateway` is the
+  seam to the consent platform (`NoConsentGateway` until Stage B of
+  google-ads-exit; it never allows ads), `AdsConsent` starts the ad SDK once
+  and only after consent allows, and `AdBanner` is the single composable
+  that draws the adaptive banner (nothing, until Stage B). It is placed once,
+  at the foot of the glance, and only while Remove Ads is not owned.
 - **`billing/`** — the $0.99 Remove Ads purchase. `BillingGateway` is the seam
   (plain `PurchaseRecord`/`ProductOffer` values, a `BillingEvent` flow);
   `PlayBillingGateway` (app) is the only file that imports Play Billing,

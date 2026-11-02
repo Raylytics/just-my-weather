@@ -66,24 +66,15 @@ again. (The hand-off text in just-my-weather-r6d lists In-App Purchase only.)
   the row falls back to Apple's rate-limited review prompt, which never
   shows in TestFlight.
 
-### 3. AdMob iOS app and banner — just-my-weather-6p3
+### 3. Ad network ids — google-ads-exit
 
-AdMob console → Apps → Add app → iOS → Just My Weather, then a Banner unit.
-Put both ids in `iosApp/Config/AdMob.xcconfig` (gitignored; copy
-`AdMob.xcconfig.example`). xcconfig reads `//` as a comment, so write the
-unit id's slash as `/$()/`, as the example does.
-
-- Debug always serves Google's sample ids (`Config/Debug.xcconfig`).
-- Release uses the sample ids unless `AdMob.xcconfig` exists
-  (`Config/Release.xcconfig` ends with `#include? "AdMob.xcconfig"`).
-- `release-testflight.sh` refuses to run if `AdMob.xcconfig` is missing,
-  still holds the example's placeholders, or holds Google's sample publisher
-  `ca-app-pub-3940256099942544`. Unlike Android there is no `--sample-ads`
-  escape: a TestFlight build is promoted to the App Store as is.
-- In AdMob Privacy & messaging, make sure the GDPR message also targets the
-  iOS app, and publish an **IDFA explainer** (the ATT message) for it.
-  Google's consent SDK shows that explainer before Apple's "Allow to track"
-  prompt.
+AdMob is gone (Stage A, 2026-11): no `GADApplicationIdentifier`, no banner
+unit, no `AdMob.xcconfig`. Stage B brings AppLovin MAX and the CMP chosen in
+`raylytics-763`, with the same shape as before: a gitignored xcconfig with a
+committed example, Debug on test ids, and `release-testflight.sh` refusing a
+build whose ids are blank or still the example's placeholders. Until then
+nothing is cut (`raylytics/docs/ad-migration/RUNBOOK.md`). Keep
+`NSUserTrackingUsageDescription`: the ATT prompt returns with the ad SDK.
 
 ### 4. team.properties and the API key
 

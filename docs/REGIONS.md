@@ -30,10 +30,10 @@ else (`data/WeatherRepository.kt`). Someone in Leeds who looks at Ohio gets
 NWS's Ohio forecast, read in Celsius.
 
 A region the user picks by hand changes units and dates only. **Whether an
-ad may be shown is not a region matter at all.** Google's consent SDK (UMP)
-decides that on every launch, from Google's side: it asks the user where the
-law requires it (the EEA, the UK, Switzerland) and answers "not required"
-everywhere else. See "Ads and consent" below.
+ad may be shown is not a region matter at all.** The consent platform
+decides that on every launch: it asks the user where the law requires it
+(the EEA, the UK, Switzerland) and answers "not required" everywhere else.
+See "Ads and consent" below.
 
 The user can pin any unit by hand. A pinned unit overrides the region's,
 and the unpinned ones keep following the region. The date order and the
@@ -121,10 +121,11 @@ A region moves from `PLANNED` to `READY` only when every item holds:
    Today the UI is English only, so only English-reading regions pass.
 4. **Place search.** The region's major cities resolve from the gazetteer
    with the right label and time zone. Add them to `BundledGazetteerTest`.
-5. **Ads and billing.** AdMob serves there and the `remove_ads` product is
-   purchasable (Play Billing's country list; on iOS, the App Store
-   storefront exists and the in-app purchase is available there). Consent is handled by UMP
-   (see "Ads and consent"), so nothing per region is needed in code.
+5. **Ads and billing.** The ad network serves there and the `remove_ads`
+   product is purchasable (Play Billing's country list; on iOS, the App
+   Store storefront exists and the in-app purchase is available there).
+   Consent is handled by the consent platform (see "Ads and consent"), so
+   nothing per region is needed in code.
 6. **Privacy.** The privacy policy's claims hold there. If the country has
    a privacy law of its own beyond GDPR (India's DPDP, US state laws), it
    has been read.
@@ -145,8 +146,9 @@ A region moves from `PLANNED` to `READY` only when every item holds:
    units, date order and clock it should read in. If its units are wrong,
    fix the per-country unit tables in `Regions.kt` and say why in a
    comment.
-3. **Check its privacy regime.** UMP covers GDPR countries. A country with
-   its own consent law may need a message in AdMob's Privacy & messaging.
+3. **Check its privacy regime.** The consent platform covers GDPR countries
+   and the US state laws it is configured for. A country with its own
+   consent law may need a notice configured in the CMP's dashboard.
 4. **Check place search.** Add two or three of its cities to
    `BundledGazetteerTest`. If they are missing, the gazetteer only carries
    places of 15,000+ people (GeoNames `cities15000`); see
@@ -196,33 +198,34 @@ where its history and default place live.
 
 ## Ads and consent
 
-Google's EU User Consent Policy requires a Google-certified consent
-platform for ad traffic from the EEA, the UK and Switzerland, even for
-non-personalized ads. The app uses **Google's UMP SDK** (`ads/AdsConsent`,
-`ads/UmpConsentGateway`, decided 2026-10-07):
+Ad traffic from the EEA, the UK and Switzerland needs the user's consent,
+collected through an IAB TCF consent management platform (CMP), even for
+non-personalized ads. The app keeps that behind one seam on each platform:
+`ads/ConsentGateway` + `ads/AdsConsent` on Android, `AdsService.swift` on
+iOS. The shared UI sees only `canShowAds` and `privacyOptionsRequired`.
 
-- Every launch, MainActivity (on iOS, `AdsService.swift`) asks UMP whether
-  consent is needed. Google
-  decides that from the request, not the app, so a phone with no SIM and no
-  location is handled like any other. Where consent is needed, UMP shows the
-  form published in the **AdMob console** (Privacy & messaging, then the
-  GDPR message).
-- The ads SDK starts, and the banner loads, only once UMP's
-  `canRequestAds()` is true. Before an answer, or with no published form,
-  there are no ads.
-- Where a form applies, App settings shows **Privacy choices**, which Google
-  requires and which reopens the form. Remove Ads is offered wherever ads
-  can run.
-- Requests carry no personalization override (`AdPolicy`): the SDK applies
-  the user's choice, serving personalized ads only with consent or where
-  none is required (decided 2026-10-13 with the iOS port, as open-frame).
-- To test from anywhere: `./gradlew :app:assembleDebug -PumpGeography=eea`
-  (or `not_eea`). It's ignored in release builds. iOS has no equivalent
-  switch yet.
-- On iOS, once UMP allows ads, Apple's App Tracking Transparency prompt
-  follows (after Google's explainer, where one is published in AdMob). It
-  is never shown on top of Google's form, and never where ads won't run.
-  Declining it means AdMob never gets the advertising identifier.
+**google-ads-exit (2026-11):** Google's UMP and the Google Mobile Ads SDK
+were removed in Stage A. Until Stage B lands AppLovin MAX and the CMP
+chosen in `raylytics-763`, `NoConsentGateway` answers "no" on Android and
+`AdsService.swift` gathers nothing on iOS, so no ads run anywhere and no
+form is shown. Nothing ships in that state (`raylytics/docs/ad-migration/
+RUNBOOK.md`). The rules the Stage B integration keeps:
+
+- Every launch, MainActivity (on iOS, `AdsService.swift`) asks the CMP
+  whether consent is needed, after the store has answered whether the user
+  owns Remove Ads — an owner never meets the consent flow. Where consent is
+  needed, the CMP shows its form.
+- The ad SDK starts, and the banner loads, only once the CMP allows ads.
+  Before an answer there are no ads.
+- Where a form applies, App settings shows **Privacy choices**, which
+  reopens the CMP's form. Remove Ads is offered wherever ads can run.
+- Requests carry no personalization override: the SDK applies the user's
+  choice, serving personalized ads only with consent or where none is
+  required (decided 2026-10-13 with the iOS port, as open-frame).
+- On iOS, once the CMP allows ads, Apple's App Tracking Transparency prompt
+  follows. It is never shown on top of the consent form, and never where
+  ads won't run. Declining it means the ad network never gets the
+  advertising identifier.
 
 ## On iOS
 
