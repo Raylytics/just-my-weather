@@ -43,11 +43,8 @@ pattern="$(IFS='|'; echo "${DENY[*]}")"
 ALLOWED='com\.google\.android\.gms\.ads\.identifier'
 
 scan() { # scan <file>...  → prints hits, returns 1 if any, 2 on a grep error
-  local hits rc
-  set +e
-  hits="$(grep -nIE -- "$pattern" "$@")"
-  rc=$?
-  set -e
+  local hits rc=0
+  hits="$(grep -nIE -- "$pattern" "$@")" || rc=$?
   if [ "$rc" -gt 1 ]; then
     echo "check-no-google-ads: grep failed (exit $rc); a deny pattern is probably malformed" >&2
     return 2
@@ -102,10 +99,8 @@ while IFS= read -r f; do
   [ -f "$f" ] && files+=("$f")
 done < <(git ls-files)
 
-set +e
-scan "${files[@]}"
-rc=$?
-set -e
+rc=0
+scan "${files[@]}" || rc=$?
 case "$rc" in
   0) echo "check-no-google-ads: clean (${#files[@]} files)" ;;
   1) echo "check-no-google-ads: Google ad references found (above). Remove them; see RUNBOOK.md 'Deny list'." >&2; exit 1 ;;
