@@ -6,7 +6,7 @@
 # committed, so nothing in these scripts edits a .pbxproj — a setting written
 # there would vanish on the next `xcodegen generate`. Settings live in
 # project.yml (versions) and in the xcconfig files under iosApp/Config (team,
-# AdMob ids).
+# ad network ids).
 #
 # Source this in every ios/*.sh to get:
 #   - $APP_ID                iOS bundle id (io.raylytics.justmyweather)

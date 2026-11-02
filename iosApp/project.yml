@@ -22,13 +22,8 @@ settings:
     # No DEVELOPMENT_TEAM here, not even "": these settings override the
     # xcconfigs, and the team comes from Config/Team.xcconfig (gitignored,
     # written by scripts/ios/setup-team.sh).
-packages:
-  GoogleMobileAds:
-    url: https://github.com/googleads/swift-package-manager-google-mobile-ads
-    from: 12.11.0
-  GoogleUserMessagingPlatform:
-    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform
-    from: 3.0.0
+# No ad or consent packages here: Google Mobile Ads and UMP were removed in
+# the google-ads-exit epic (Stage A); AppLovin MAX and the CMP land in Stage B.
 targets:
   JustMyWeather:
     type: application
@@ -65,8 +60,6 @@ targets:
           if [ "${OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED:-}" = "YES" ]; then exit 0; fi
           cd "$SRCROOT/.." && ./gradlew :shared:embedAndSignAppleFrameworkForXcode
     dependencies:
-      - package: GoogleMobileAds
-      - package: GoogleUserMessagingPlatform
       - sdk: StoreKit.framework
       - sdk: BackgroundTasks.framework
       - sdk: UserNotifications.framework

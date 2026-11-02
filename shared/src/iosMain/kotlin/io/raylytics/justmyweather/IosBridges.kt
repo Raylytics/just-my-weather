@@ -42,10 +42,13 @@ interface StoreBridge {
 /** How a purchase sheet ended. */
 enum class StorePurchase { PURCHASED, PENDING, CANCELLED, FAILED }
 
-/** Google Mobile Ads + UMP + App Tracking Transparency (Platform/AdsService.swift). */
+/** The ads consent gate, the banner and App Tracking Transparency
+ * (Platform/AdsService.swift). google-ads-exit Stage A removed Google Mobile
+ * Ads and UMP from behind it; AppLovin MAX and the CMP land in Stage B. */
 interface AdsBridge {
-    /** Once per launch: UMP's consent request (and its form where the law
-     * asks), then Apple's tracking prompt where allowed; [done] once settled. */
+    /** Once per launch: the consent platform's request (and its form where
+     * the law asks), then Apple's tracking prompt where allowed; [done] once
+     * settled. */
     fun gather(host: UIViewController, done: () -> Unit)
 
     fun canRequestAds(): Boolean

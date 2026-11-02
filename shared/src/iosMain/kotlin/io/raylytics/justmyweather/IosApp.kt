@@ -184,7 +184,7 @@ class IosApp(private val platform: IosPlatform) {
     }
 }
 
-/** The one banner, drawn by the Google Mobile Ads SDK at the glance's foot. */
+/** The one banner, drawn by the host's ad SDK at the glance's foot. */
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 private fun Banner(platform: IosPlatform) {
