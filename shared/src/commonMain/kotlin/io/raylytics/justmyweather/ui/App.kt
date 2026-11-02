@@ -88,7 +88,7 @@ fun App(
     onThemeChange: (ThemeConfig) -> Unit,
     onEnterAlerts: () -> Unit,
     adsRemoved: Boolean,
-    /** Whether Google's consent SDK says ads may run (ads/AdsConsent). */
+    /** Whether the consent platform says ads may run (ads/AdsConsent). */
     canShowAds: Boolean,
     /** Whether a "Privacy choices" entry must be offered. */
     privacyOptionsRequired: Boolean,
@@ -144,7 +144,7 @@ fun App(
             val state by homeViewModel.state.collectAsStateWithLifecycle()
             // The glance, and under it — only here, and only until Remove
             // Ads is bought — the one banner. The glance keeps the height;
-            // the banner takes the few dp AdMob picks for this width and
+            // the banner takes the few dp the ad SDK picks for this width and
             // sits above the gesture inset the outer padding leaves.
             Column(Modifier.fillMaxSize()) {
                 HomeScreen(

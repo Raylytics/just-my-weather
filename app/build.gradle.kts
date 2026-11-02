@@ -20,30 +20,6 @@ val keystoreProperties =
         }
     }
 
-// AdMob ids. A debug build always serves Google's SAMPLE ids (labelled test
-// ads that earn nothing — clicking one's own live ads gets an AdMob account
-// suspended), so only release reads app/admob.properties (gitignored; see
-// admob.properties.example and just-my-weather-1zp). Absent, release falls
-// back to the samples with a warning so a contributor's bundleRelease still
-// assembles; scripts/android/release-internal.sh refuses to upload samples.
-val admobPropertiesFile = rootProject.file("app/admob.properties")
-val admobProperties =
-    Properties().apply {
-        if (admobPropertiesFile.exists()) {
-            load(FileInputStream(admobPropertiesFile))
-        }
-    }
-val admobSampleAppId = "ca-app-pub-3940256099942544~3347511713"
-val admobSampleBannerId = "ca-app-pub-3940256099942544/9214589741"
-val admobAppId = admobProperties.getProperty("appId") ?: admobSampleAppId
-val admobBannerId = admobProperties.getProperty("bannerUnitId") ?: admobSampleBannerId
-if (!admobPropertiesFile.exists()) {
-    logger.warn(
-        "app/admob.properties missing: release will serve AdMob SAMPLE ads " +
-            "(fine for internal testing, never for production)",
-    )
-}
-
 android {
     namespace = "io.raylytics.justmyweather"
     // Google Play has required new apps and updates to target API 36 since
@@ -69,18 +45,6 @@ android {
         // en-rUS carries only the widget picker's Fahrenheit sample
         // (values-en-rUS); without it listed, "en" alone strips it.
         resourceConfigurations += listOf("en", "en-rUS")
-
-        // The Google Mobile Ads SDK reads its app id from the manifest; the
-        // banner unit reaches AdBanner through BuildConfig. Debug pins both to
-        // the samples (AdPolicy.bannerUnitId re-checks the unit at runtime).
-        manifestPlaceholders["admobAppId"] = admobSampleAppId
-        buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobSampleBannerId\"")
-
-        // Debug-only: pretend to be in the EEA (or not) so the consent form can
-        // be checked on an emulator anywhere — `./gradlew assembleDebug
-        // -PumpGeography=eea`. Ignored by release builds (ads/UmpConsentGateway).
-        val umpGeography = (project.findProperty("umpGeography") as String?).orEmpty()
-        buildConfigField("String", "UMP_DEBUG_GEOGRAPHY", "\"$umpGeography\"")
     }
 
     signingConfigs {
@@ -97,8 +61,6 @@ android {
             isMinifyEnabled = false
         }
         release {
-            manifestPlaceholders["admobAppId"] = admobAppId
-            buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobBannerId\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -135,8 +97,9 @@ android {
     }
 }
 
-// Kotlin 2.3 (bumped 2026-10-03 for the Google Mobile Ads and Play Billing
-// SDKs, whose metadata 2.1 could not read) retired the kotlinOptions DSL.
+// Kotlin 2.3 (bumped 2026-10-03 for the Play Billing SDK and the since-removed
+// Google Mobile Ads SDK, whose metadata 2.1 could not read) retired the
+// kotlinOptions DSL.
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -184,21 +147,17 @@ dependencies {
     // libraries tolerate within a minor version.
     implementation("androidx.glance:glance-appwidget:1.2.0")
 
-    // The one banner ad and the purchase that removes it (Evan, 2026-10-03).
-    // Both are Google services the Play build cannot avoid; they stay behind
-    // ads/ and billing/ so a build without them (F-Droid, say) would drop two
-    // packages and one call site. Play requires Billing Library 8+ for new
-    // apps since 2026-08-31.
-    implementation("com.google.android.gms:play-services-ads:25.5.0")
-    // Google's certified consent platform (UMP), which decides whether ads may
-    // run at all — it asks the user where the law requires it (EEA, UK,
-    // Switzerland) and answers "not required" elsewhere (Evan, 2026-10-07).
-    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
+    // The purchase that removes the one banner ad (Evan, 2026-10-03). It stays
+    // behind billing/ so a build without it (F-Droid, say) would drop one
+    // package and one call site. Play requires Billing Library 8+ for new apps
+    // since 2026-08-31. The ad SDK itself lives behind ads/: Google Mobile Ads
+    // and its consent platform (UMP) were removed in the google-ads-exit epic
+    // (Stage A); AppLovin MAX and a third-party CMP land in Stage B.
     implementation("com.android.billingclient:billing-ktx:9.1.0")
-    // The ads SDK pulls in a pre-1.3 androidx.fragment, and release lint
+    // Google's ads SDK pulled in a pre-1.3 androidx.fragment, and release lint
     // (lintVitalRelease) refuses an app that registers for activity results
-    // on one (InvalidFragmentVersionForActivityResult). Pinned so the
-    // resolved version is one that calls super.onRequestPermissionsResult.
+    // on one (InvalidFragmentVersionForActivityResult). The pin stays so the
+    // next ad SDK cannot drag the floor back down.
     implementation("androidx.fragment:fragment:1.8.5")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.3")

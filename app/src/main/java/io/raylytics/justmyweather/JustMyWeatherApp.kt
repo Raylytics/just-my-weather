@@ -3,9 +3,8 @@ package io.raylytics.justmyweather
 import android.app.Application
 import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
-import com.google.android.gms.ads.MobileAds
 import io.raylytics.justmyweather.ads.AdsConsent
-import io.raylytics.justmyweather.ads.UmpConsentGateway
+import io.raylytics.justmyweather.ads.NoConsentGateway
 import io.raylytics.justmyweather.alerts.AlertNotifier
 import io.raylytics.justmyweather.alerts.AlertScheduling
 import io.raylytics.justmyweather.alerts.AlertWorker
@@ -34,7 +33,7 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
  * pieces (OkHttp, the settings DataStore, the bundled gazetteer asset,
  * LocationManager, the telephony/locale region signals, Play Billing, the
  * notification channels), plus what only Android has — home screen widgets,
- * the Gadgetbridge hand-off and Google's consent SDK.
+ * the Gadgetbridge hand-off and the ads consent gate.
  */
 class AppContainer private constructor(
     private val appContext: Context,
@@ -87,18 +86,14 @@ class AppContainer private constructor(
             broadcaster = GadgetbridgeBroadcaster(appContext),
         )
 
-    // Whether ads may run at all is Google's consent SDK's call (UMP): it asks
-    // the user where the law requires it and says "not required" elsewhere.
-    // The ads SDK starts once, only after that — and never for an owner of
-    // Remove Ads, who has nothing to show.
-    val adsConsent =
-        AdsConsent(
-            UmpConsentGateway(appContext, BuildConfig.UMP_DEBUG_GEOGRAPHY, BuildConfig.DEBUG),
-        ) {
-            scope.launch {
-                if (!adsEntitlementRepository.adsRemoved.first()) MobileAds.initialize(appContext) {}
-            }
-        }
+    // Whether ads may run at all is the consent platform's call (ads/ConsentGateway):
+    // it asks the user where the law requires it and says "not required"
+    // elsewhere. The ads SDK starts once, only after that — and never for an
+    // owner of Remove Ads, who has nothing to show. google-ads-exit Stage A:
+    // Google's UMP and Mobile Ads SDK are gone and the CMP and AppLovin MAX
+    // have not landed (Stage B), so the gateway never allows ads and the
+    // start hook has nothing to start.
+    val adsConsent = AdsConsent(NoConsentGateway()) {}
 }
 
 class JustMyWeatherApp : Application() {
@@ -125,7 +120,7 @@ class JustMyWeatherApp : Application() {
         appScope.launch {
             // Play is asked what the account owns, which is what turns a
             // reinstall back into an owner. The ads SDK is NOT started here:
-            // Google's consent SDK decides when it may be (AdsConsent, from
+            // the consent platform decides when it may be (AdsConsent, from
             // MainActivity), so it never starts before consent where the law
             // asks for it.
             container.removeAdsManager.start()
