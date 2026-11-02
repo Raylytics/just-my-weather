@@ -250,7 +250,7 @@ Apple reviews the app without it.
 | Contact email | `dev@raylytics.io` |
 | Contact phone | (provide at submission) |
 | Sign-in required | **No**. The app has no accounts. |
-| Demo video | Link in the Notes below; see `docs/APP_STORE.md` "Demo video for review". |
+| Demo video | None attached; the notes say a recording is available on request. See `docs/APP_STORE.md` "Demo video for review". |
 
 ### Notes for Reviewer (paste into the textarea)
 
@@ -263,7 +263,7 @@ Just My Weather is a weather app that shows only the data points the user picks,
 
 3. LOCATION. Location is optional, while using the app, approximate accuracy. If declined, the app shows its default place and the user can search for a place by name (an offline list bundled in the app).
 
-4. ALERTS. Alerts are rules such as "temperature below 35° overnight", checked with iOS background app refresh, so they can arrive late; the Alerts screen says so. Official NWS warnings (opt-in) post as time-sensitive notifications and exist only for US places during active warnings. The attached video shows an alert arriving on a physical iPhone, since a reviewer cannot trigger one on demand.
+4. ALERTS. Alerts are rules such as "temperature below 35° overnight", checked with iOS background app refresh, so they can arrive late; the Alerts screen says so. Official NWS warnings (opt-in) post as time-sensitive notifications and exist only for US places during active warnings. A reviewer cannot trigger one on demand; a recording of an alert arriving on a physical iPhone is available on request.
 
 5. ADS AND TRACKING. One AdMob banner at the bottom of the main screen. Google's consent form (UMP) runs first where required; Apple's tracking prompt follows only where ads may run. The ad is never given the user's places, rules or weather.
 
@@ -273,8 +273,10 @@ Contact: dev@raylytics.io
 ```
 
 The 0.4.0 submission's notes (read back from App Store Connect
-2026-11-02) were this text without a video line; keep it that way unless
-a video is actually attached (a placeholder is a 2.1(a) rejection).
+2026-11-02) were this text with no video line and no "attached video"
+sentence in note 4: nothing was attached, so nothing may claim to be.
+Keep it that way unless a video is actually attached (a placeholder, or a
+promise of one, is a 2.1(a) "Information Needed" rejection).
 
 ---
 
