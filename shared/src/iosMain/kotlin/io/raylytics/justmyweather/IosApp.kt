@@ -235,15 +235,16 @@ private class StoreKitGateway(private val store: StoreBridge) : BillingGateway {
         }
 
     override suspend fun ownedPurchases(): List<PurchaseRecord>? =
-        suspendCancellableCoroutine { c ->
-            store.ownedProducts { owned ->
-                c.resume(
-                    owned
-                        ?.mapNotNull(AppStoreProducts::sharedId)
-                        ?.map { PurchaseRecord(listOf(it), purchased = true, acknowledged = true, token = it) },
-                )
-            }
-        }
+        suspendCancellableCoroutine { c -> store.ownedProducts { c.resume(it?.toRecords()) } }
+
+    override suspend fun restorePurchases(): List<PurchaseRecord>? =
+        suspendCancellableCoroutine { c -> store.restore { c.resume(it?.toRecords()) } }
+
+    /** App Store ids to the shared code's records; a product the shared
+     * code doesn't know is dropped. */
+    private fun List<String>.toRecords(): List<PurchaseRecord> =
+        mapNotNull(AppStoreProducts::sharedId)
+            .map { PurchaseRecord(listOf(it), purchased = true, acknowledged = true, token = it) }
 
     override suspend fun acknowledge(token: String): Boolean = true
 

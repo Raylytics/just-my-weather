@@ -54,6 +54,13 @@ interface BillingGateway {
      * "owns nothing", null means "don't know". */
     suspend fun ownedPurchases(): List<PurchaseRecord>?
 
+    /** The same answer, asked for by the user through "Restore purchases".
+     * Play has no separate restore call, so Android answers as
+     * [ownedPurchases]; the App Store does (`AppStore.sync()`, which may ask
+     * the user to sign in), and App Review requires a Restore button that
+     * makes it (guideline 3.1.1; the 0.4.0 rejection, docs/APP_STORE.md). */
+    suspend fun restorePurchases(): List<PurchaseRecord>?
+
     suspend fun acknowledge(token: String): Boolean
 
     /** Opens Play's purchase sheet over [activity]; the outcome arrives on

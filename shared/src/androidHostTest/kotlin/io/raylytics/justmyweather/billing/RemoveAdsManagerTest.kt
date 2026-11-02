@@ -46,11 +46,20 @@ class RemoveAdsManagerTest {
         var offer: ProductOffer? = ProductOffer(REMOVE_ADS_PRODUCT_ID, "$0.99")
         val acknowledged = mutableListOf<String>()
         val launched = mutableListOf<String>()
+
+        /** How often the store's own restore call was made (the one App
+         * Review wants behind a Restore button). */
+        var restores = 0
         override val events = MutableSharedFlow<BillingEvent>(extraBufferCapacity = 8)
 
         override suspend fun queryOffer(productId: String) = offer
 
         override suspend fun ownedPurchases() = owned
+
+        override suspend fun restorePurchases(): List<PurchaseRecord>? {
+            restores++
+            return owned
+        }
 
         override suspend fun acknowledge(token: String): Boolean {
             acknowledged += token
@@ -133,6 +142,21 @@ class RemoveAdsManagerTest {
         assertEquals(RemoveAdsStatus.Restoring, manager.status.value)
         runCurrent()
         assertEquals(RemoveAdsStatus.Unreachable, manager.status.value, "unreachable on a restore is said so")
+    }
+
+    @Test
+    fun `restore makes the store's restore call, the sync at start does not`() = runTest(dispatcher) {
+        val (manager, gateway, entitlement) = harness()
+        manager.start()
+        runCurrent()
+        assertEquals(0, gateway.restores, "launch syncs quietly; App Review wants restore behind a button")
+
+        gateway.owned = listOf(owned()) // bought on another phone
+        manager.restore()
+        runCurrent()
+        assertEquals(1, gateway.restores)
+        assertTrue(entitlement.adsRemoved.first())
+        assertEquals(RemoveAdsStatus.Idle, manager.status.value)
     }
 
     @Test

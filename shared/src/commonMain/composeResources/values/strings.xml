@@ -123,7 +123,6 @@
     <string name="settings_ads">Ads</string>
     <string name="settings_ads_removed">Ads removed</string>
     <string name="settings_advanced">Advanced</string>
-    <string name="settings_already_bought_restore_purchase">Already bought it? Restore purchase</string>
     <string name="settings_app_settings">App settings</string>
     <string name="settings_change_what_agreed_about">Change what you agreed to about ads.</string>
     <string name="settings_checking_google_play">Checking with Google Play…</string>
@@ -144,6 +143,9 @@
     <string name="settings_rate_just_my_weather">Rate Just My Weather</string>
     <string name="settings_remove_ads">Remove ads · %1$s</string>
     <string name="settings_remove_ads_2">Remove ads</string>
+    <string name="settings_restore_purchases">Restore purchases</string>
+    <string name="settings_restore_purchases_detail">Bought it before, on this Google account? Ask Google Play again.</string>
+    <string name="settings_restore_purchases_detail_ios">Bought it on another device, or before a reinstall? Ask the App Store again.</string>
     <string name="settings_send_gadgetbridge">Send to Gadgetbridge</string>
     <string name="settings_something_wrong_email_developer">Something wrong? Email the developer, with your app version and device attached.</string>
     <string name="settings_store_unavailable">Google Play isn't available right now. Try again later.</string>

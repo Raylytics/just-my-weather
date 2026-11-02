@@ -39,7 +39,6 @@ import io.raylytics.justmyweather.resources.settings_about
 import io.raylytics.justmyweather.resources.settings_ads
 import io.raylytics.justmyweather.resources.settings_ads_removed
 import io.raylytics.justmyweather.resources.settings_advanced
-import io.raylytics.justmyweather.resources.settings_already_bought_restore_purchase
 import io.raylytics.justmyweather.resources.settings_app_settings
 import io.raylytics.justmyweather.resources.settings_banner_appears_once_app
 import io.raylytics.justmyweather.resources.settings_change_what_agreed_about
@@ -64,6 +63,9 @@ import io.raylytics.justmyweather.resources.settings_purchase_pending_banner_ios
 import io.raylytics.justmyweather.resources.settings_rate_just_my_weather
 import io.raylytics.justmyweather.resources.settings_remove_ads
 import io.raylytics.justmyweather.resources.settings_remove_ads_2
+import io.raylytics.justmyweather.resources.settings_restore_purchases
+import io.raylytics.justmyweather.resources.settings_restore_purchases_detail
+import io.raylytics.justmyweather.resources.settings_restore_purchases_detail_ios
 import io.raylytics.justmyweather.resources.settings_send_gadgetbridge
 import io.raylytics.justmyweather.resources.settings_something_wrong_email_developer
 import io.raylytics.justmyweather.resources.settings_store_unavailable
@@ -79,7 +81,6 @@ import io.raylytics.justmyweather.resources.settings_waiting_google_play_confirm
 import io.raylytics.justmyweather.resources.settings_waiting_google_play_confirm_ios
 import io.raylytics.justmyweather.resources.settings_weather_data_from_us
 import io.raylytics.justmyweather.resources.settings_where_law_asks_first
-import io.raylytics.justmyweather.ui.theme.textButtonColors
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -199,7 +200,14 @@ fun AppSettingsScreen(
 /**
  * The banner and the one-time purchase that removes it. The price is Play's
  * own, in the user's currency, never typed here; until Play answers the row
- * says so rather than guessing. Restore is for a new phone or a reinstall.
+ * says so rather than guessing.
+ *
+ * Restore purchases is its own row, and it is there in every state of the
+ * section — bought, no ads for now, or for sale — because App Review
+ * requires a distinct Restore button that makes the store's restore call
+ * (guideline 3.1.1; the 0.4.0 rejection, docs/APP_STORE.md). It is for a
+ * new phone or a reinstall, and after a refund it is what takes "Ads
+ * removed" away again.
  */
 @Composable
 private fun AdsSection(
@@ -212,147 +220,185 @@ private fun AdsSection(
     onBuy: () -> Unit,
     onRestore: () -> Unit,
 ) {
+    val busy = status == RemoveAdsStatus.Busy || status == RemoveAdsStatus.Restoring
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(stringResource(Res.string.settings_ads), style = MaterialTheme.typography.labelMedium)
-        if (adsRemoved) {
-            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                Text(stringResource(Res.string.settings_ads_removed), style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    text =
-                        stringResource(
-                            onStore(Res.string.settings_thank_banner_gone, Res.string.settings_thank_banner_gone_ios),
-                        ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            return@Column
-        }
-        // Wherever a consent form applies, the choice can be changed here —
-        // Google requires the entry, and it belongs beside the ads it governs.
-        if (privacyOptionsRequired) {
-            AboutLink(
-                title = stringResource(Res.string.settings_privacy_choices),
-                detail = stringResource(Res.string.settings_change_what_agreed_about),
-                onClick = onPrivacyChoices,
-            )
-        }
-        if (!canShowAds) {
+        when {
+            adsRemoved -> AdsRemovedRow()
             // Nothing to remove: selling Remove Ads where no banner is shown
             // would be selling nothing.
-            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                Text(stringResource(Res.string.settings_no_ads_now), style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    // Consent wording only where a form applies; a first launch
-                    // offline, anywhere, just hasn't reached Google yet (roborev 5436).
-                    text =
-                        if (privacyOptionsRequired) {
-                            stringResource(Res.string.settings_where_law_asks_first)
-                        } else {
-                            stringResource(Res.string.settings_banner_appears_once_app)
-                        },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            return@Column
+            !canShowAds -> NoAdsRow(privacyOptionsRequired, onPrivacyChoices)
+            else -> BuyRemoveAdsRow(privacyOptionsRequired, onPrivacyChoices, price, busy, onBuy)
         }
-        val busy = status == RemoveAdsStatus.Busy || status == RemoveAdsStatus.Restoring
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = !busy, onClick = onBuy)
-                    .padding(vertical = 8.dp)
-                    .testTag("remove-ads"),
-        ) {
-            Text(
-                text =
-                    if (price != null) {
-                        stringResource(Res.string.settings_remove_ads, price)
-                    } else {
-                        stringResource(Res.string.settings_remove_ads_2)
-                    },
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text =
-                    if (price != null) {
-                        stringResource(Res.string.settings_one_time_purchase_no)
-                    } else {
-                        stringResource(
-                            onStore(
-                                Res.string.settings_waiting_google_play_confirm,
-                                Res.string.settings_waiting_google_play_confirm_ios,
-                            ),
-                        )
-                    },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        val note =
-            when (status) {
-                RemoveAdsStatus.Idle -> null
-                RemoveAdsStatus.Busy ->
-                    stringResource(
-                        onStore(Res.string.settings_opening_google_play, Res.string.settings_opening_google_play_ios),
-                    )
-                RemoveAdsStatus.Restoring ->
-                    stringResource(
-                        onStore(Res.string.settings_checking_google_play, Res.string.settings_checking_google_play_ios),
-                    )
-                RemoveAdsStatus.Pending ->
-                    stringResource(
-                        onStore(
-                            Res.string.settings_purchase_pending_banner,
-                            Res.string.settings_purchase_pending_banner_ios,
-                        ),
-                    )
-                RemoveAdsStatus.Unavailable ->
-                    stringResource(
-                        onStore(Res.string.settings_store_unavailable, Res.string.settings_store_unavailable_ios),
-                    )
-                RemoveAdsStatus.Unreachable ->
-                    stringResource(
-                        onStore(Res.string.settings_store_unreachable, Res.string.settings_store_unreachable_ios),
-                    )
-                is RemoveAdsStatus.Failed -> status.message
-                RemoveAdsStatus.NothingToRestore ->
-                    stringResource(
-                        onStore(
-                            Res.string.settings_no_purchase_found_google,
-                            Res.string.settings_no_purchase_found_google_ios,
-                        ),
-                    )
-            }
-        if (note != null) {
-            Text(
-                text = note,
-                style = MaterialTheme.typography.bodySmall,
-                color =
-                    if (status is RemoveAdsStatus.Failed ||
-                        status == RemoveAdsStatus.Unavailable ||
-                        status == RemoveAdsStatus.Unreachable
-                    ) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
-        }
-        TextButton(
+        StoreNote(status)
+        AboutLink(
+            title = stringResource(Res.string.settings_restore_purchases),
+            detail =
+                stringResource(
+                    onStore(
+                        Res.string.settings_restore_purchases_detail,
+                        Res.string.settings_restore_purchases_detail_ios,
+                    ),
+                ),
             onClick = onRestore,
             enabled = !busy,
-            colors = textButtonColors(),
             modifier = Modifier.testTag("restore-purchase"),
-        ) {
-            Text(stringResource(Res.string.settings_already_bought_restore_purchase))
-        }
+        )
     }
+}
+
+@Composable
+private fun AdsRemovedRow() {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Text(stringResource(Res.string.settings_ads_removed), style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text =
+                stringResource(
+                    onStore(Res.string.settings_thank_banner_gone, Res.string.settings_thank_banner_gone_ios),
+                ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun NoAdsRow(
+    privacyOptionsRequired: Boolean,
+    onPrivacyChoices: () -> Unit,
+) {
+    PrivacyChoicesLink(privacyOptionsRequired, onPrivacyChoices)
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Text(stringResource(Res.string.settings_no_ads_now), style = MaterialTheme.typography.bodyLarge)
+        Text(
+            // Consent wording only where a form applies; a first launch
+            // offline, anywhere, just hasn't reached Google yet (roborev 5436).
+            text =
+                if (privacyOptionsRequired) {
+                    stringResource(Res.string.settings_where_law_asks_first)
+                } else {
+                    stringResource(Res.string.settings_banner_appears_once_app)
+                },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun BuyRemoveAdsRow(
+    privacyOptionsRequired: Boolean,
+    onPrivacyChoices: () -> Unit,
+    price: String?,
+    busy: Boolean,
+    onBuy: () -> Unit,
+) {
+    PrivacyChoicesLink(privacyOptionsRequired, onPrivacyChoices)
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !busy, onClick = onBuy)
+                .padding(vertical = 8.dp)
+                .testTag("remove-ads"),
+    ) {
+        Text(
+            text =
+                if (price != null) {
+                    stringResource(Res.string.settings_remove_ads, price)
+                } else {
+                    stringResource(Res.string.settings_remove_ads_2)
+                },
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            text =
+                if (price != null) {
+                    stringResource(Res.string.settings_one_time_purchase_no)
+                } else {
+                    stringResource(
+                        onStore(
+                            Res.string.settings_waiting_google_play_confirm,
+                            Res.string.settings_waiting_google_play_confirm_ios,
+                        ),
+                    )
+                },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Wherever a consent form applies, the choice can be changed here — Google
+ * requires the entry, and it belongs beside the ads it governs. */
+@Composable
+private fun PrivacyChoicesLink(
+    privacyOptionsRequired: Boolean,
+    onPrivacyChoices: () -> Unit,
+) {
+    if (!privacyOptionsRequired) return
+    AboutLink(
+        title = stringResource(Res.string.settings_privacy_choices),
+        detail = stringResource(Res.string.settings_change_what_agreed_about),
+        onClick = onPrivacyChoices,
+    )
+}
+
+/** What the store said to the last buy or restore, in one line under the
+ * rows; nothing while there is nothing to say. */
+@Composable
+private fun StoreNote(status: RemoveAdsStatus) {
+    val note =
+        when (status) {
+            RemoveAdsStatus.Idle -> null
+            RemoveAdsStatus.Busy ->
+                stringResource(
+                    onStore(Res.string.settings_opening_google_play, Res.string.settings_opening_google_play_ios),
+                )
+            RemoveAdsStatus.Restoring ->
+                stringResource(
+                    onStore(Res.string.settings_checking_google_play, Res.string.settings_checking_google_play_ios),
+                )
+            RemoveAdsStatus.Pending ->
+                stringResource(
+                    onStore(
+                        Res.string.settings_purchase_pending_banner,
+                        Res.string.settings_purchase_pending_banner_ios,
+                    ),
+                )
+            RemoveAdsStatus.Unavailable ->
+                stringResource(
+                    onStore(Res.string.settings_store_unavailable, Res.string.settings_store_unavailable_ios),
+                )
+            RemoveAdsStatus.Unreachable ->
+                stringResource(
+                    onStore(Res.string.settings_store_unreachable, Res.string.settings_store_unreachable_ios),
+                )
+            is RemoveAdsStatus.Failed -> status.message
+            RemoveAdsStatus.NothingToRestore ->
+                stringResource(
+                    onStore(
+                        Res.string.settings_no_purchase_found_google,
+                        Res.string.settings_no_purchase_found_google_ios,
+                    ),
+                )
+        } ?: return
+    Text(
+        text = note,
+        style = MaterialTheme.typography.bodySmall,
+        color =
+            if (status is RemoveAdsStatus.Failed ||
+                status == RemoveAdsStatus.Unavailable ||
+                status == RemoveAdsStatus.Unreachable
+            ) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+    )
 }
 
 /**
@@ -539,12 +585,15 @@ private fun AboutLink(
     title: String,
     detail: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** False while a tap would be a second request of the same thing. */
+    enabled: Boolean = true,
 ) {
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .padding(vertical = 8.dp),
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge)

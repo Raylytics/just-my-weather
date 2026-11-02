@@ -96,17 +96,19 @@ class RemoveAdsManager(
         }
     }
 
-    /** Asks Play again, for a new device or a reinstall. */
+    /** The Restore purchases button: asks the store again, for a new device
+     * or a reinstall. Unlike [start]'s quiet sync this is the store's own
+     * restore call, which on iOS may ask the user to sign in. */
     fun restore() {
         _status.value = RemoveAdsStatus.Restoring
         scope.launch { _status.value = restoreStatus() }
     }
 
-    /** Asks Play once and says what it found: owned (and recorded), a
-     * purchase still pending, nothing, or no answer. */
+    /** Asks the store once, on the user's behalf, and says what it found:
+     * owned (and recorded), a purchase still pending, nothing, or no answer. */
     private suspend fun restoreStatus(): RemoveAdsStatus {
         val purchases =
-            runCatching { gateway.ownedPurchases() }.getOrNull()
+            runCatching { gateway.restorePurchases() }.getOrNull()
                 ?: return RemoveAdsStatus.Unreachable
         return when {
             record(purchases) -> RemoveAdsStatus.Idle

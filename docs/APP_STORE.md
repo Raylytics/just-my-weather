@@ -317,6 +317,19 @@ No App Store Connect record is needed to test Remove Ads:
   reports "add an app version" even though one exists. Resolve or withdraw
   the old submission. The App Store Connect API shows the conflict
   (`GET /v1/reviewSubmissions?filter[app]=<appId>`); the web UI does not.
+- **Restore purchases is a review requirement (3.1.1), not a nicety.**
+  0.4.0 (3) was rejected on 2026-11-02 (submission b4b3ba3e): "the app
+  offers In-App Purchases that can be restored but does not include a
+  'Restore Purchases' feature". The build had "Already bought it? Restore
+  purchase" as a text link, shown only while the product was still for
+  sale, and it re-read `Transaction.currentEntitlements` without
+  `AppStore.sync()`. Apple's note: "automatically restoring purchases on
+  launch will not resolve this issue". What satisfies it, and what the app
+  does since just-my-weather-i3b: a distinct **Restore purchases** row in
+  App Settings > Ads, present in every state of the section (bought, no ads
+  for now, for sale), whose tap calls `AppStore.sync()` and then re-reads
+  the entitlements (`StoreService.restore`). Keep it visible after the
+  purchase: the reviewer buys first, then looks for Restore.
 - **iPhone only.** `TARGETED_DEVICE_FAMILY = 1` (plan decision 5). iPads
   install it in iPhone compatibility mode. A universal build needs iPad icons
   and iPad screenshots. Layouts are width-adaptive, so the switch is mostly

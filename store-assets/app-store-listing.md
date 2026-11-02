@@ -267,7 +267,7 @@ Just My Weather is a weather app that shows only the data points the user picks,
 
 5. ADS AND TRACKING. One AdMob banner at the bottom of the main screen. Google's consent form (UMP) runs first where required; Apple's tracking prompt follows only where ads may run. The ad is never given the user's places, rules or weather.
 
-6. IN-APP PURCHASE. "Remove ads" (remove_ads_just_my_weather), a $0.99 non-consumable in App Settings, removes the banner. "Restore purchase" sits under it.
+6. IN-APP PURCHASE. "Remove ads" (remove_ads_just_my_weather), a $0.99 non-consumable in App Settings, removes the banner. "Restore purchases" is the row under it, in every state of the Ads section (also after the purchase); it calls AppStore.sync() and re-reads the entitlements.
 
 Demo video: <link>
 Contact: dev@raylytics.io

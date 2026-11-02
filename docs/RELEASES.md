@@ -62,6 +62,13 @@ Privacy label was missing Device ID's "used for tracking: Yes" (Apple
 flags it because the build carries NSUserTrackingUsageDescription); fixed
 and republished.
 
+**Rejected 2026-11-02** under guideline 3.1.1: no distinct "Restore
+Purchases" feature (reviewed on iPhone 17 Pro Max and iPad Air 11-inch;
+the reviewer bought Remove ads, after which the old restore link was
+gone). Fixed on release/0.4.2 (just-my-weather-i3b): a Restore purchases
+row in every state of App Settings > Ads, calling `AppStore.sync()`. The
+resubmission is a new build, as 0.4.2 (docs/APP_STORE.md "Gotchas").
+
 ## 0.3.1 — build 2, TestFlight 2026-10-13
 
 The first iOS build (just-my-weather-nyt.10), cut from 4003b7f with Evan's

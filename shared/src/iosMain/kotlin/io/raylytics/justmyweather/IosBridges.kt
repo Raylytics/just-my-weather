@@ -22,6 +22,11 @@ interface StoreBridge {
     /** Product ids this Apple Account owns, verified; null when unknown. */
     fun ownedProducts(completion: (List<String>?) -> Unit)
 
+    /** The Restore purchases button: `AppStore.sync()` (which may ask the
+     * user to sign in), then what the account owns; null when the sync
+     * failed or was cancelled. */
+    fun restore(completion: (List<String>?) -> Unit)
+
     /** Shows the App Store's purchase sheet. */
     fun purchase(productId: String, completion: (StorePurchase) -> Unit)
 

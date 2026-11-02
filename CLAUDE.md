@@ -256,7 +256,12 @@ scripts/ios/release-testflight.sh   # release rehearsal; see docs/APP_STORE.md
   bootstatus <udid> -b`) before `xcodebuild test`. On a simulator xcodebuild
   cold-boots itself, the StoreKit test service is not ready and every
   StoreKit test fails with "no products" (seen 2026-10-13; 4/4 pass once the
-  simulator is up).
+  simulator is up). Even after `bootstatus`, the first `xcodebuild test`
+  after a boot can time out on the purchase and restore calls while the
+  StoreKit test service warms up; a `test-without-building` rerun passes
+  (seen 2026-11-02). A Debug build installed with `simctl` and launched
+  outside the scheme has no StoreKit configuration: it talks to the sandbox
+  and prompts "Sign in to Apple Account" at launch and on Restore.
 - `:shared:allTests` boots and shuts down its own simulator. It is still a
   simulator: don't run it while the Android emulator is up.
 - The pre-commit hook does not look at `.swift` or `project.yml`: a
