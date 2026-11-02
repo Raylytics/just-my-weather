@@ -223,7 +223,7 @@ Re-check after any Google SDK upgrade: the manifests are the source.
 | Price | USD 0.99 |
 | Display name (en-US) | Remove ads |
 | Description (en-US) | One purchase removes the banner for good. |
-| Review screenshot | App Settings with the Remove Ads row, from the simulator (the local StoreKit configuration shows the $0.99 price). |
+| Review screenshot | `store-assets/screenshots/ios/iap-review-remove-ads.png`: App Settings with the Remove ads row and the Restore purchases row under it (recaptured 2026-11-02 for just-my-weather-i3b; re-upload with the 0.4.2 resubmission so it matches the build). |
 | Family Sharing | Off (as in `Products.storekit`). **TBD** whether to turn it on. |
 
 The first submission must include the in-app purchase with the version, or
@@ -269,9 +269,12 @@ Just My Weather is a weather app that shows only the data points the user picks,
 
 6. IN-APP PURCHASE. "Remove ads" (remove_ads_just_my_weather), a $0.99 non-consumable in App Settings, removes the banner. "Restore purchases" is the row under it, in every state of the Ads section (also after the purchase); it calls AppStore.sync() and re-reads the entitlements.
 
-Demo video: <link>
 Contact: dev@raylytics.io
 ```
+
+The 0.4.0 submission's notes (read back from App Store Connect
+2026-11-02) were this text without a video line; keep it that way unless
+a video is actually attached (a placeholder is a 2.1(a) rejection).
 
 ---
 
