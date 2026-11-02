@@ -288,7 +288,7 @@ first. The detail is in `localization/PLAN.md`.
 ## Files at a glance
 
 - `region/Region.kt`: what a region is (`Region`, `PlayStatus`).
-- `ads/AdsConsent.kt`, `ads/UmpConsentGateway.kt` (app): whether ads may run (Google's UMP). iOS: `iosApp/JustMyWeather/Platform/AdsService.swift`.
+- `ads/AdsConsent.kt`, `ads/ConsentGateway.kt` (app): whether ads may run (the consent platform; `NoConsentGateway` until google-ads-exit Stage B). iOS: `iosApp/JustMyWeather/Platform/AdsService.swift`.
 - `region/Regions.kt`: **the registry**, plus derived conventions for every country.
 - `region/RegionResolver.kt`: the decision order, the user's settings, and the clues.
 - `region/RegionRepository.kt`, `AndroidRegionSignals.kt` (app), `IosRegionSignals.kt` (iosMain): gathering and remembering clues.
