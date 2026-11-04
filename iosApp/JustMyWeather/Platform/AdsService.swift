@@ -69,7 +69,14 @@ final class AdsService: NSObject, AdsBridge {
 
     // MARK: AdsBridge
 
+    /// Called from the shared code's background scope; everything here is
+    /// UIKit and the CMP's web view, and the request state is read by the
+    /// CMP's callbacks on the main queue, so the whole thing hops there.
     func gather(host: UIViewController, done: @escaping () -> Void) {
+        DispatchQueue.main.async { self.gatherOnMain(host: host, done: done) }
+    }
+
+    private func gatherOnMain(host: UIViewController, done: @escaping () -> Void) {
         switch phase {
         case .settled:
             done()
@@ -101,18 +108,21 @@ final class AdsService: NSObject, AdsBridge {
         }
     }
 
-    /// What the CMP last said, persisted by it across launches: under the
-    /// TCF (GDPR applies) a TC string with purpose 1 (store and/or access
-    /// information on a device) consented is the floor every ad request
-    /// needs; outside the TCF ads may run, with the US opt-out riding on the
-    /// GPP string the networks read; before the CMP has said which, no ads.
+    /// What the CMP last said, persisted by it across launches in the IAB
+    /// keys (so a stored choice holds offline, or while the CMP is failing
+    /// to load this time): under the TCF (GDPR applies) a TC string with
+    /// purpose 1 (store and/or access information on a device) consented is
+    /// the floor every ad request needs; outside the TCF ads may run, with
+    /// the US opt-out riding on the GPP string the networks read; before the
+    /// CMP has said which applies, no ads.
     func canRequestAds() -> Bool {
         guard configured else { return false }
-        let ping = ChoiceCmp.shared.ping()
-        guard ping.cmpStatus != .error else { return false }
-        guard let gdprApplies = ping.gdprApplies else { return false }
-        if !gdprApplies { return true }
         let defaults = UserDefaults.standard
+        let stored = defaults.object(forKey: "IABTCF_gdprApplies") as? Int
+        guard let gdprApplies = stored.map({ $0 == 1 }) ?? ChoiceCmp.shared.ping().gdprApplies else {
+            return false
+        }
+        if !gdprApplies { return true }
         let tcString = defaults.string(forKey: "IABTCF_TCString") ?? ""
         let purposes = defaults.string(forKey: "IABTCF_PurposeConsents") ?? ""
         return !tcString.isEmpty && purposes.hasPrefix("1")
@@ -167,11 +177,19 @@ final class AdsService: NSObject, AdsBridge {
         timeout = nil
         let callbacks = waiting
         waiting.removeAll()
-        let finish = { callbacks.forEach { $0() } }
-        guard canRequestAds() else { return finish() }
+        startAdsIfAllowed { callbacks.forEach { $0() } }
+    }
+
+    /// Whenever the answer may have changed (the request settling, a
+    /// privacy-options form closing, a form that came in after the offline
+    /// timeout): where ads may now run and the SDK is not up yet, the
+    /// tracking prompt and then Appodeal, before [then]. Otherwise straight
+    /// through. Idempotent, so a second settling costs nothing.
+    private func startAdsIfAllowed(then: @escaping () -> Void) {
+        guard canRequestAds(), !sdkStarted else { return then() }
         askToTrack { [weak self] in
             self?.startAppodeal()
-            finish()
+            then()
         }
     }
 
@@ -230,31 +248,36 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     /// The request is settled the moment the CMP is not showing anything:
     /// a form dismissed, a form not needed here, a stored choice applied.
     /// While a form is up the timeout is withdrawn — the user takes as long
-    /// as they take.
+    /// as they take. A form closing after the request already settled (the
+    /// privacy-options form, or a first-launch form that outlived the
+    /// offline timeout) may have changed the answer, so ads start then too.
     func cmpUIStatusChanged(info: DisplayInfo) {
         switch info.displayStatus {
         case .visible:
             timeout?.cancel()
             timeout = nil
         case .hidden, .disabled, .dismissed:
-            if let done = privacyOptionsDone {
-                privacyOptionsDone = nil
-                done()
-            }
-            settle()
+            formClosed()
         @unknown default:
-            settle()
+            formClosed()
         }
     }
 
     /// An error is an answer too: no form will come. Ads stay off unless a
-    /// stored choice allows them (`canRequestAds` reads the CMP's status).
+    /// stored choice allows them (`canRequestAds` reads the IAB keys the CMP
+    /// persisted on an earlier launch).
     func cmpDidError(error: Error) {
-        if let done = privacyOptionsDone {
-            privacyOptionsDone = nil
-            done()
+        formClosed()
+    }
+
+    private func formClosed() {
+        if phase == .inFlight {
+            settle()
+            return
         }
-        settle()
+        let done = privacyOptionsDone
+        privacyOptionsDone = nil
+        startAdsIfAllowed { done?() }
     }
 
     /// The user travelled into another regulation's territory; the CMP has
