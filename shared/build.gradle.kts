@@ -50,44 +50,44 @@ kotlin {
             languageSettings.optIn("androidx.compose.ui.ExperimentalComposeUiApi")
         }
         commonMain.dependencies {
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
             // Multiplatform since 1.1: the settings stores compile here unchanged,
             // so Android keeps the very same keys and file it shipped with.
-            api("androidx.datastore:datastore-preferences-core:1.1.1")
+            api("androidx.datastore:datastore-preferences-core:1.3.0")
             // Dates and zones in every model. On Android it is java.time
             // underneath, so arithmetic and zone rules are the ones the app
             // always used; formatting stays on java.time itself (TimeFormat.kt).
-            api("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+            api("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
 
             // The UI. Compose Multiplatform 1.11.1 is androidx Compose 1.11.2 /
             // Material 3 1.4.0 on Android — the versions the app's BOM pins
             // (just-my-weather-nyt.1), so Android draws with exactly what it did.
-            api("org.jetbrains.compose.runtime:runtime:1.11.1")
-            api("org.jetbrains.compose.foundation:foundation:1.11.1")
-            api("org.jetbrains.compose.ui:ui:1.11.1")
+            api("org.jetbrains.compose.runtime:runtime:1.12.2")
+            api("org.jetbrains.compose.foundation:foundation:1.12.2")
+            api("org.jetbrains.compose.ui:ui:1.12.2")
             api("org.jetbrains.compose.material3:material3:1.9.0")
-            implementation("org.jetbrains.compose.ui:ui-backhandler:1.11.1")
-            implementation("org.jetbrains.compose.components:components-resources:1.11.1")
-            api("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.6")
-            api("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.6")
+            implementation("org.jetbrains.compose.ui:ui-backhandler:1.12.2")
+            implementation("org.jetbrains.compose.components:components-resources:1.12.2")
+            api("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+            api("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
         }
         // The Android side of the seams, at the versions the app shipped with:
         // OkHttp under HttpTransport, DataStore under every settings store.
         androidMain.dependencies {
-            implementation("com.squareup.okhttp3:okhttp:4.12.0")
-            implementation("androidx.datastore:datastore-preferences:1.1.1")
+            implementation("com.squareup.okhttp3:okhttp:5.5.1")
+            implementation("androidx.datastore:datastore-preferences:1.3.0")
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
         getByName("androidHostTest").dependencies {
-            implementation("org.junit.jupiter:junit-jupiter-api:5.11.3")
-            implementation("org.junit.jupiter:junit-jupiter-params:5.11.3")
-            runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.3")
-            implementation("org.mockito:mockito-core:5.14.2")
-            implementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+            implementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
+            implementation("org.junit.jupiter:junit-jupiter-params:6.1.3")
+            runtimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
+            implementation("org.mockito:mockito-core:5.24.0")
+            implementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
         }
     }
 }
