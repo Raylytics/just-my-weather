@@ -16,6 +16,9 @@ final class LocationService: NSObject, LocationSource, CLLocationManagerDelegate
 
     /// At launch, as Android asks after consent: one system prompt, and a
     /// declined one leaves the app on its default place.
+    /// Whether `start()` would put the permission prompt up right now.
+    var wouldPrompt: Bool { manager.authorizationStatus == .notDetermined }
+
     func start() {
         lastStatus = manager.authorizationStatus
         manager.delegate = self

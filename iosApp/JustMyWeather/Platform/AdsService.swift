@@ -1,6 +1,7 @@
 import AppTrackingTransparency
 import Appodeal
 import InMobiCMP
+import OSLog
 import Shared
 import UIKit
 
@@ -38,11 +39,28 @@ final class AdsService: NSObject, AdsBridge {
 
     private enum Phase { case idle, inFlight, settled }
     private var phase: Phase = .idle
-    private var waiting: [() -> Void] = []
+    /// Every `gather` caller, kept for the app's life: each is told when the
+    /// request settles and again whenever a later choice changes the answer
+    /// (IosApp re-reads `canRequestAds` and `privacyOptionsRequired` in it).
+    private var listeners: [() -> Void] = []
     private var timeout: DispatchWorkItem?
+    /// After the CMP loads, a short grace in which a form may still appear;
+    /// if none does, there is nothing to wait for and the request settles.
+    private var grace: DispatchWorkItem?
+    /// A CMP form is on screen.
+    private var formVisible = false
+    /// A choice was made on the form; polling for the form to leave the
+    /// screen, since the US notice sends no dismissed status of its own.
+    private var closeWatch: DispatchWorkItem?
 
+    /// `startAdsIfAllowed` is in the tracking prompt; a second trigger waits.
+    private var adsStarting = false
+    private var afterStart: [() -> Void] = []
     private var sdkStarted = false
     private var sdkInitialized = false
+    /// The consent and ad sequence, for Stage C and for the field: every CMP
+    /// event with its status, and the SDK's start. Unified log, "ads".
+    private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "JustMyWeather", category: "ads")
     /// Banners handed to Compose before the SDK finished initializing; they
     /// load from the init callback.
     private let banners = NSHashTable<APDBannerView>.weakObjects()
@@ -77,11 +95,13 @@ final class AdsService: NSObject, AdsBridge {
     }
 
     private func gatherOnMain(host: UIViewController, done: @escaping () -> Void) {
+        log.info("gather: phase=\(String(describing: self.phase)) configured=\(self.configured)")
+        listeners.append(done)
         switch phase {
         case .settled:
             done()
         case .inFlight:
-            waiting.append(done)
+            break
         case .idle:
             guard configured else {
                 phase = .settled
@@ -89,7 +109,6 @@ final class AdsService: NSObject, AdsBridge {
                 return
             }
             phase = .inFlight
-            waiting.append(done)
             // No network on a first launch: the CMP cannot answer, and the
             // rest of the launch sequence (the location prompt) must not wait
             // forever. Before an answer there are no ads, so settling early
@@ -172,24 +191,40 @@ final class AdsService: NSObject, AdsBridge {
     /// behind the consent form and the ATT alert.
     private func settle() {
         guard phase == .inFlight else { return }
+        log.info("consent settled: canRequestAds=\(self.canRequestAds())")
         phase = .settled
         timeout?.cancel()
         timeout = nil
-        let callbacks = waiting
-        waiting.removeAll()
-        startAdsIfAllowed { callbacks.forEach { $0() } }
+        grace?.cancel()
+        grace = nil
+        startAdsIfAllowed { [weak self] in self?.notifyListeners() }
+    }
+
+    private func notifyListeners() {
+        listeners.forEach { $0() }
     }
 
     /// Whenever the answer may have changed (the request settling, a
     /// privacy-options form closing, a form that came in after the offline
     /// timeout): where ads may now run and the SDK is not up yet, the
     /// tracking prompt and then Appodeal, before [then]. Otherwise straight
-    /// through. Idempotent, so a second settling costs nothing.
+    /// through. While the tracking prompt is up, a second trigger queues its
+    /// follow-up behind the first rather than asking again.
     private func startAdsIfAllowed(then: @escaping () -> Void) {
+        if adsStarting {
+            afterStart.append(then)
+            return
+        }
         guard canRequestAds(), !sdkStarted else { return then() }
+        adsStarting = true
+        afterStart.append(then)
         askToTrack { [weak self] in
-            self?.startAppodeal()
-            then()
+            guard let self else { return }
+            self.startAppodeal()
+            self.adsStarting = false
+            let queued = self.afterStart
+            self.afterStart.removeAll()
+            queued.forEach { $0() }
         }
     }
 
@@ -203,6 +238,7 @@ final class AdsService: NSObject, AdsBridge {
     private func startAppodeal() {
         guard !sdkStarted else { return }
         sdkStarted = true
+        log.info("appodeal: initializing (banner)")
         #if DEBUG
             // Test creatives, 100% fill, so a debug build never serves a real
             // ad; verbose logs name the networks that answered (Stage C).
@@ -220,6 +256,7 @@ final class AdsService: NSObject, AdsBridge {
 extension AdsService: AppodealInitializationDelegate {
     /// The one place a banner is asked to load.
     func appodealSDKDidInitialize() {
+        log.info("appodeal: initialized; loading \(self.banners.count) banner(s)")
         sdkInitialized = true
         banners.allObjects.forEach { $0.loadAd() }
     }
@@ -228,20 +265,69 @@ extension AdsService: AppodealInitializationDelegate {
 // MARK: - InMobi CMP
 
 extension AdsService: ChoiceCmpDelegate, CCPADelegate {
-    func cmpDidLoad(info: PingResponse) {}
+    /// Loaded, with a stored choice applied or none needed: a form that is
+    /// going to show follows within about half a second (seen on the
+    /// simulator); after a short grace with none, the request settles.
+    func cmpDidLoad(info: PingResponse) {
+        log.info("cmp loaded: gdprApplies=\(String(describing: info.gdprApplies)) usRegulation=\(info.usRegulationApplies) display=\(info.displayStatus.rawValue) status=\(info.cmpStatus.rawValue)")
+        guard phase == .inFlight, !formVisible else { return }
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, !self.formVisible else { return }
+            self.settle()
+        }
+        grace = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: item)
+    }
 
-    func didReceiveIABVendorConsent(gdprData: GDPRData, updated: Bool) {}
+    func didReceiveIABVendorConsent(gdprData: GDPRData, updated: Bool) {
+        log.info("cmp iab consent: gdprApplies=\(String(describing: gdprData.gdprApplies)) updated=\(updated) tc=\(gdprData.tcString.isEmpty ? "empty" : "set")")
+        if updated { choiceMade() }
+    }
 
     func didReceiveNonIABVendorConsent(nonIabData: NonIABData, updated: Bool) {}
 
     /// Google's Additional Consent string carries AppLovin (provider 1301),
     /// which Appodeal mediates; the AppLovin SDK reads it from storage, so
     /// nothing is forwarded here.
-    func didReceiveAdditionalConsent(acData: ACData, updated: Bool) {}
+    func didReceiveAdditionalConsent(acData: ACData, updated: Bool) {
+        log.info("cmp additional consent: updated=\(updated) ac=\(acData.acString.isEmpty ? "empty" : "set")")
+    }
 
-    func didReceiveUSRegulationsConsent(usRegData: USRegulationsData) {}
+    func didReceiveUSRegulationsConsent(usRegData: USRegulationsData) {
+        log.info("cmp us regulations consent: gpp=\(usRegData.gppString.isEmpty ? "empty" : "set")")
+        choiceMade()
+    }
 
-    func didReceiveCCPAConsent(string: String) {}
+    func didReceiveCCPAConsent(string: String) {
+        choiceMade()
+    }
+
+    /// A choice landed while a form was up. The TCF form reports its own
+    /// dismissal; the US notice does not (its confirmation alert closes
+    /// quietly), so the SDK's ping is polled until the form has left the
+    /// screen, and then the tracking prompt can follow without stacking.
+    private func choiceMade() {
+        guard formVisible, closeWatch == nil else { return }
+        let started = Date()
+        let item = DispatchWorkItem { [weak self] in self?.watchForClose(since: started) }
+        closeWatch = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
+    }
+
+    private func watchForClose(since started: Date) {
+        closeWatch = nil
+        guard formVisible else { return }
+        let stillUp = ChoiceCmp.shared.ping().displayStatus == .visible
+        if stillUp, Date().timeIntervalSince(started) < 30 {
+            let item = DispatchWorkItem { [weak self] in self?.watchForClose(since: started) }
+            closeWatch = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
+            return
+        }
+        log.info("cmp form closed after a choice (ping says \(stillUp ? "still visible; giving up waiting" : "gone"))")
+        formVisible = false
+        formClosed()
+    }
 
     func didReceiveActionButtonTap(action: ActionButtons) {}
 
@@ -252,13 +338,21 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     /// privacy-options form, or a first-launch form that outlived the
     /// offline timeout) may have changed the answer, so ads start then too.
     func cmpUIStatusChanged(info: DisplayInfo) {
+        log.info("cmp ui: display=\(info.displayStatus.rawValue) regulation=\(info.regulationShown.rawValue) message=\(info.displayMessage, privacy: .public)")
         switch info.displayStatus {
         case .visible:
+            formVisible = true
             timeout?.cancel()
             timeout = nil
+            grace?.cancel()
+            grace = nil
         case .hidden, .disabled, .dismissed:
+            formVisible = false
+            closeWatch?.cancel()
+            closeWatch = nil
             formClosed()
         @unknown default:
+            formVisible = false
             formClosed()
         }
     }
@@ -267,9 +361,13 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     /// stored choice allows them (`canRequestAds` reads the IAB keys the CMP
     /// persisted on an earlier launch).
     func cmpDidError(error: Error) {
+        log.error("cmp error: \(error.localizedDescription, privacy: .public)")
         formClosed()
     }
 
+    /// A form closing after the request settled may have changed the
+    /// answer: ads start where they now may, then every `gather` caller is
+    /// told (the shared state re-reads), then the privacy-options follow-up.
     private func formClosed() {
         if phase == .inFlight {
             settle()
@@ -277,7 +375,10 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
         }
         let done = privacyOptionsDone
         privacyOptionsDone = nil
-        startAdsIfAllowed { done?() }
+        startAdsIfAllowed { [weak self] in
+            self?.notifyListeners()
+            done?()
+        }
     }
 
     /// The user travelled into another regulation's territory; the CMP has

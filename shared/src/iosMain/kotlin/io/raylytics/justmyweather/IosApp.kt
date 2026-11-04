@@ -136,11 +136,21 @@ class IosApp(private val platform: IosPlatform) {
             if (platform.backgroundRefreshAvailable()) BackgroundAlerts.BEST_EFFORT else BackgroundAlerts.REFRESH_OFF
     }
 
-    /** Asks the consent SDKs once the first screen is up (they present over it). */
-    fun gatherConsent(host: UIViewController) {
+    /** Asks the consent platform once the first screen is up (its form
+     * presents over it), then runs [then] once that has settled: the host's
+     * own first-launch prompt (location) waits behind the consent form and
+     * the tracking alert, as it does on Android. An owner of Remove Ads
+     * skips straight to [then]. */
+    fun gatherConsent(
+        host: UIViewController,
+        then: () -> Unit,
+    ) {
         scope.launch {
-            if (graph.adsEntitlementRepository.adsRemoved.first()) return@launch
-            platform.ads.gather(host) { updateAdsState() }
+            if (graph.adsEntitlementRepository.adsRemoved.first()) return@launch then()
+            platform.ads.gather(host) {
+                updateAdsState()
+                then()
+            }
         }
     }
 
