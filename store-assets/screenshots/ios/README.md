@@ -6,6 +6,15 @@ plus `iap-review-remove-ads.png` for the Remove ads purchase's review
 screenshot. The Android set lives one level up, in `screenshots/` and
 `screenshots/final/`.
 
+`iap-review-remove-ads.png` was recaptured 2026-11-02 on the project's
+iPhone 16 simulator (1179 × 2556; the purchase screenshot has no size
+class) after the Restore purchases row replaced the old text link
+(just-my-weather-i3b). Upload it to the in-app purchase's review
+screenshot in App Store Connect when the row ships. A build installed
+with `simctl install` has no StoreKit configuration, but the sandbox
+still answers the product query without a sign-in, so the $0.99 price
+shows; dismiss the "Sign in to Apple Account" prompts first.
+
 How the 2026-10-14 set was made: Google's test banner was painted over with
 the page background on 01, 02 and 04 (the buy sheet asks for a real sandbox
 Apple Account when the app is installed with `simctl install`, so the local

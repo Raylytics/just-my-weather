@@ -30,6 +30,9 @@ xcodegen_generate
 # it (Team.xcconfig, the includes, and nothing in project.yml shadowing them).
 require_team_configured
 
+# And the ad and consent ids: a Release archive is a store build.
+require_ads_configured
+
 # Clean the archive dir.
 echo "==> Cleaning $ARCHIVE_PATH" >&2
 rm -rf "$ARCHIVE_PATH"

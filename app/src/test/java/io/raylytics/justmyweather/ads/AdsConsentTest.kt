@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-/** Ads run only after Google's consent SDK allows them, and the ads SDK
+/** Ads run only after the consent platform allows them, and the ads SDK
  * starts exactly once — never before that answer. */
 class AdsConsentTest {
-    /** Answers the way UMP does; [settleWith] is what the next update says. */
+    /** Answers the way a CMP gateway does; [settleWith] is what the next update says. */
     private class FakeGateway(var can: Boolean = false, var options: Boolean = false) : ConsentGateway {
         var settleWith: (() -> Unit)? = null
         var pending: (() -> Unit)? = null
@@ -40,7 +40,7 @@ class AdsConsentTest {
         consent.gather(activity)
         assertFalse(consent.canShowAds.value, "no banner while the form is open")
         assertEquals(0, starts, "and the ads SDK is not started")
-        // The user chooses in Google's form.
+        // The user chooses in the consent form.
         gateway.settleWith = { gateway.can = true }
         gateway.pending!!()
         assertTrue(consent.canShowAds.value)
@@ -54,7 +54,7 @@ class AdsConsentTest {
         var starts = 0
         val consent = AdsConsent(gateway) { starts++ }
         consent.gather(activity)
-        // Google's last answer (persisted) applies before the network replies.
+        // The platform's last answer (persisted) applies before the network replies.
         assertTrue(consent.canShowAds.value)
         assertEquals(1, starts)
         gateway.pending!!()
@@ -181,8 +181,8 @@ class AdsConsentTest {
         val second: Activity = mock()
         var thens = 0
         consent.gather(first) { thens++ }
-        // Rotated with the form up: UMP reports "Activity is destroyed"
-        // while tearing the first activity down, before the second exists.
+        // Rotated with the form up: the SDK reports an error while tearing
+        // the first activity down, before the second exists.
         whenever(first.isDestroyed).thenReturn(true)
         gateway.pending!!()
         assertEquals(0, thens, "no choice was made, so nothing waiting runs")

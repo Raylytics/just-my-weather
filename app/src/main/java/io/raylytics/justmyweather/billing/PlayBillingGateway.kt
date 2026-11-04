@@ -111,6 +111,10 @@ class PlayBillingGateway(context: Context) : BillingGateway, PurchasesUpdatedLis
         }
     }
 
+    /** Play keeps no separate restore call: what the account owns is what
+     * `queryPurchasesAsync` says, so the Restore button asks the same question. */
+    override suspend fun restorePurchases(): List<PurchaseRecord>? = ownedPurchases()
+
     override suspend fun acknowledge(token: String): Boolean {
         if (!connected()) return false
         val params = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build()

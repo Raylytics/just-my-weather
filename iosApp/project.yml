@@ -17,18 +17,51 @@ settings:
     # One semver for both apps: scripts/sync-version.sh writes this from the
     # repo-root VERSION file. The build number is iOS's own counter
     # (scripts/ios/bump-build-number.sh), independent of Android's versionCode.
-    MARKETING_VERSION: 0.4.1
-    CURRENT_PROJECT_VERSION: 3
+    MARKETING_VERSION: 0.4.2
+    CURRENT_PROJECT_VERSION: 4
     # No DEVELOPMENT_TEAM here, not even "": these settings override the
     # xcconfigs, and the team comes from Config/Team.xcconfig (gitignored,
     # written by scripts/ios/setup-team.sh).
+# Ads and consent (google-ads-exit, Stage B): Appodeal mediation on its own
+# network accounts, behind the InMobi CMP. Every version is an exact pin at
+# least two weeks old (runbook hard rule); bump them together. The adapters
+# pull their network SDKs themselves (AppLovin, BidMachine, DT Exchange,
+# InMobi, Mintegral, myTarget, Unity Ads, Vungle). No AdMob, Google Ad
+# Manager, Meta or Yandex adapter: those need accounts we do not hold, and
+# AdMob is the suspended account this epic exists to leave. Appodeal's core
+# brings Google's User Messaging Platform along transitively; nothing here
+# names it and nothing in the app calls it (the guardrail enforces both).
 packages:
-  GoogleMobileAds:
-    url: https://github.com/googleads/swift-package-manager-google-mobile-ads
-    from: 12.11.0
-  GoogleUserMessagingPlatform:
-    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform
-    from: 3.0.0
+  Appodeal:
+    url: https://github.com/appodeal/Appodeal-Swift-Package
+    exactVersion: 4.4.0
+  AppodealAppLovin:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-AppLovin
+    exactVersion: 13060400.0.0
+  AppodealBidMachine:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-BidMachine
+    exactVersion: 3080000.0.0
+  AppodealDTExchange:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-DTExchange
+    exactVersion: 8040700.0.0
+  AppodealIAB:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-IAB
+    exactVersion: 4040000.0.0
+  AppodealInMobi:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-InMobi
+    exactVersion: 11030000.0.0
+  AppodealMintegral:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-Mintegral
+    exactVersion: 8010600.0.0
+  AppodealMyTarget:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-MyTarget
+    exactVersion: 5430000.0.0
+  AppodealUnityAds:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-UnityAds
+    exactVersion: 4200000.0.0
+  AppodealVungle:
+    url: https://github.com/appodeal/Appodeal-Swift-Package-Vungle
+    exactVersion: 7070300.0.0
 targets:
   JustMyWeather:
     type: application
@@ -46,6 +79,11 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.raylytics.justmyweather
         PRODUCT_NAME: JustMyWeather
+        # Info.plist carries NSAllowsArbitraryLoads: Appodeal's integration
+        # guide requires it to serve ads (creatives and some network
+        # endpoints are not all HTTPS). The app's own weather requests are
+        # https:// literals in the shared module, so nothing of ours
+        # degrades; it is a deliberate, vendor-required exception.
         INFOPLIST_FILE: JustMyWeather/Info.plist
         CODE_SIGN_ENTITLEMENTS: JustMyWeather/JustMyWeather.entitlements
         TARGETED_DEVICE_FAMILY: "1" # iPhone only for now (decision 5)
@@ -53,26 +91,61 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # The shared Kotlin framework, built by the script phase below.
         FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
-        OTHER_LDFLAGS: [$(inherited), -framework, Shared, -lsqlite3]
+        # -ObjC: Appodeal's SDK is Objective-C categories in static
+        # frameworks and does not work without it (its SwiftPM docs).
+        OTHER_LDFLAGS: [$(inherited), -ObjC, -framework, Shared, -lsqlite3]
         # The shared framework has arm64 slices only (no Intel Macs).
         EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
         # Gradle reads and writes outside the sandbox Xcode gives scripts.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
     preBuildScripts:
+      # The InMobi CMP ships as a zip, not a package: scripts/ios/
+      # fetch-inmobi-cmp.sh downloads, digest-checks and unpacks it into
+      # iosApp/Vendor (gitignored). Xcode reads a linked xcframework while
+      # planning the build, before any script phase runs, so this phase can
+      # only check: the release scripts fetch it (common.sh,
+      # xcodegen_generate), and a plain xcodegen/xcodebuild or Xcode run on
+      # a fresh clone needs `scripts/ios/fetch-inmobi-cmp.sh` once first.
+      - name: Check InMobi CMP is vendored
+        basedOnDependencyAnalysis: false
+        script: |
+          bash "$SRCROOT/../scripts/ios/fetch-inmobi-cmp.sh" --check
       - name: Compile Kotlin (shared)
         basedOnDependencyAnalysis: false
         script: |
           if [ "${OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED:-}" = "YES" ]; then exit 0; fi
           cd "$SRCROOT/.." && ./gradlew :shared:embedAndSignAppleFrameworkForXcode
     dependencies:
-      - package: GoogleMobileAds
-      - package: GoogleUserMessagingPlatform
       - sdk: StoreKit.framework
       - sdk: BackgroundTasks.framework
       - sdk: UserNotifications.framework
       - sdk: CoreLocation.framework
       - sdk: AppTrackingTransparency.framework
       - sdk: MessageUI.framework
+      # The consent form (InMobi CMP), vendored by scripts/ios/fetch-inmobi-cmp.sh.
+      - framework: Vendor/InMobiCMP.xcframework
+        embed: true
+      # Appodeal and its network adapters (see `packages` above).
+      - package: Appodeal
+        product: AppodealSDK
+      - package: AppodealAppLovin
+        product: AppodealAppLovinAdapter
+      - package: AppodealBidMachine
+        product: AppodealBidMachineAdapter
+      - package: AppodealDTExchange
+        product: AppodealDTExchangeAdapter
+      - package: AppodealIAB
+        product: AppodealIABAdapter
+      - package: AppodealInMobi
+        product: AppodealInMobiAdapter
+      - package: AppodealMintegral
+        product: AppodealMintegralAdapter
+      - package: AppodealMyTarget
+        product: AppodealMyTargetAdapter
+      - package: AppodealUnityAds
+        product: AppodealUnityAdapter
+      - package: AppodealVungle
+        product: AppodealVungleAdapter
     scheme:
       testTargets: [JustMyWeatherTests]
       # Debug runs against the local StoreKit configuration: Remove Ads can be

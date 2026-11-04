@@ -123,7 +123,6 @@
     <string name="settings_ads">Ads</string>
     <string name="settings_ads_removed">Ads removed</string>
     <string name="settings_advanced">Advanced</string>
-    <string name="settings_already_bought_restore_purchase">Already bought it? Restore purchase</string>
     <string name="settings_app_settings">App settings</string>
     <string name="settings_change_what_agreed_about">Change what you agreed to about ads.</string>
     <string name="settings_checking_google_play">Checking with Google Play…</string>
@@ -144,6 +143,9 @@
     <string name="settings_rate_just_my_weather">Rate Just My Weather</string>
     <string name="settings_remove_ads">Remove ads · %1$s</string>
     <string name="settings_remove_ads_2">Remove ads</string>
+    <string name="settings_restore_purchases">Restore purchases</string>
+    <string name="settings_restore_purchases_detail">Bought it before, on this Google account? Ask Google Play again.</string>
+    <string name="settings_restore_purchases_detail_ios">Bought it on another device, or before a reinstall? Ask the App Store again.</string>
     <string name="settings_send_gadgetbridge">Send to Gadgetbridge</string>
     <string name="settings_something_wrong_email_developer">Something wrong? Email the developer, with your app version and device attached.</string>
     <string name="settings_store_unavailable">Google Play isn't available right now. Try again later.</string>
@@ -201,6 +203,10 @@
     <string name="whats_new_version">Version %1$s</string>
     <string name="whats_new_dismiss">Got it</string>
     <string name="whats_new_open_customize">Open Customize</string>
+    <string name="whats_new_0_4_2_restore_title">Restore purchases, always within reach</string>
+    <string name="whats_new_0_4_2_restore_body">Bought Remove ads on another phone, or before a reinstall? App Settings has a Restore purchases row under Ads now, whether or not the ads are already gone, so you can ask the store again at any time.</string>
+    <string name="whats_new_0_4_2_caret_title">Collapsed tiles keep their reading clear</string>
+    <string name="whats_new_0_4_2_caret_body">The caret that opens or closes a tile now sits at the end of its label line, so a wide value never runs under it.</string>
     <string name="whats_new_0_4_1_modules_title">New modules: humidity, dew point and visibility</string>
     <string name="whats_new_0_4_1_modules_body">Each can now have its own tile on your glance. They start switched off, so your glance looks just as you left it: turn them on in Customize. Tap a tile for the full reading, or set an alert on one.</string>
     <string name="whats_new_0_4_1_units_title">Visibility in miles or kilometres</string>

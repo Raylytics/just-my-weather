@@ -7,6 +7,11 @@ Per-version log of what shipped where. Two audiences:
   User language: what they will notice, no issue ids.
 - **Internal notes** capture the changeset for bisecting later. Issue ids
   (`just-my-weather-xxx`) and roborev review numbers are fine here.
+- **Settings survive the update** (every cut): `PreferencesCompatibilityTest`
+  green, a fixture from the previous production build if this release
+  changes persisted state, and the upgrade check on the emulator before a
+  production promote (CLAUDE.md "User settings must survive every update").
+  Say in the entry that it was done.
 - **In-app "What's new"** (since 0.4.1) is the sheet an updating user sees
   once over the glance: `whatsnew/ReleaseNotes.kt` plus its strings. Decide
   per version whether it gets one; most patch releases should not. Write it
@@ -39,6 +44,31 @@ A version that reaches both stores gets an entry in each.
 
 # iOS (App Store)
 
+## 0.4.2 — build 4, App Store Connect 2026-11-04
+
+Cut from 2664c07 on `feat/applovin-max` (PR #10, auto-merge armed) with
+Evan's go-ahead; he ran `scripts/ios/release-testflight.sh
+--confirm-upload` himself. The resubmission after build 3's 3.1.1
+rejection, and the first build of the Google ads exit on iOS: AdMob and
+UMP are gone, the InMobi CMP gates consent, Apple's tracking prompt
+follows only where ads may run, Appodeal mediation serves the one banner
+(raylytics-98a; the Android half is still to come and is not a gate for
+this release, Evan's decision 2026-11-04). Also in it over build 3: the
+"Restore purchases" row in every state of App Settings > Ads with
+`AppStore.sync()` (just-my-weather-i3b), the collapse caret on the label
+line, humidity, dew point and visibility modules, the What's new sheet
+(0.4.2's notes name the two fixes), the iOS location prompt waiting for
+the consent flow. Gates: verify.sh (529), check-no-google-ads clean,
+`:shared:allTests`, 17/17 iOS unit tests, the rehearsal's archive
+inspected (no Google Mobile Ads SDK; UMP transitive only; InMobiCMP
+signed; 230 SKAdNetwork + 7 AdAttributionKit ids), simulator smoke of
+the consent, ATT and banner sequence. The archive's privacy report
+(build/release-prep/privacy-report.md) is what the App Privacy labels
+are re-entered from before submission. The step list is
+`docs/ad-migration/IOS_RELEASE_CHECKLIST.md`.
+
+Unverified: the EEA/TCF consent path on a device.
+
 ## 0.4.0 — build 3, TestFlight 2026-10-15
 
 Cut from fce707e with Evan's go-ahead (he ran the upload himself);
@@ -56,6 +86,13 @@ Release: automatic on approval. Before submitting, the published App
 Privacy label was missing Device ID's "used for tracking: Yes" (Apple
 flags it because the build carries NSUserTrackingUsageDescription); fixed
 and republished.
+
+**Rejected 2026-11-02** under guideline 3.1.1: no distinct "Restore
+Purchases" feature (reviewed on iPhone 17 Pro Max and iPad Air 11-inch;
+the reviewer bought Remove ads, after which the old restore link was
+gone). Fixed on release/0.4.2 (just-my-weather-i3b): a Restore purchases
+row in every state of App Settings > Ads, calling `AppStore.sync()`. The
+resubmission is a new build, as 0.4.2 (docs/APP_STORE.md "Gotchas").
 
 ## 0.3.1 — build 2, TestFlight 2026-10-13
 

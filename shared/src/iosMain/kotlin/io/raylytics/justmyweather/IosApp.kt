@@ -136,11 +136,21 @@ class IosApp(private val platform: IosPlatform) {
             if (platform.backgroundRefreshAvailable()) BackgroundAlerts.BEST_EFFORT else BackgroundAlerts.REFRESH_OFF
     }
 
-    /** Asks the consent SDKs once the first screen is up (they present over it). */
-    fun gatherConsent(host: UIViewController) {
+    /** Asks the consent platform once the first screen is up (its form
+     * presents over it), then runs [then] once that has settled: the host's
+     * own first-launch prompt (location) waits behind the consent form and
+     * the tracking alert, as it does on Android. An owner of Remove Ads
+     * skips straight to [then]. */
+    fun gatherConsent(
+        host: UIViewController,
+        then: () -> Unit,
+    ) {
         scope.launch {
-            if (graph.adsEntitlementRepository.adsRemoved.first()) return@launch
-            platform.ads.gather(host) { updateAdsState() }
+            if (graph.adsEntitlementRepository.adsRemoved.first()) return@launch then()
+            platform.ads.gather(host) {
+                updateAdsState()
+                then()
+            }
         }
     }
 
@@ -184,7 +194,7 @@ class IosApp(private val platform: IosPlatform) {
     }
 }
 
-/** The one banner, drawn by the Google Mobile Ads SDK at the glance's foot. */
+/** The one banner, drawn by the host's ad SDK at the glance's foot. */
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 private fun Banner(platform: IosPlatform) {
@@ -235,15 +245,16 @@ private class StoreKitGateway(private val store: StoreBridge) : BillingGateway {
         }
 
     override suspend fun ownedPurchases(): List<PurchaseRecord>? =
-        suspendCancellableCoroutine { c ->
-            store.ownedProducts { owned ->
-                c.resume(
-                    owned
-                        ?.mapNotNull(AppStoreProducts::sharedId)
-                        ?.map { PurchaseRecord(listOf(it), purchased = true, acknowledged = true, token = it) },
-                )
-            }
-        }
+        suspendCancellableCoroutine { c -> store.ownedProducts { c.resume(it?.toRecords()) } }
+
+    override suspend fun restorePurchases(): List<PurchaseRecord>? =
+        suspendCancellableCoroutine { c -> store.restore { c.resume(it?.toRecords()) } }
+
+    /** App Store ids to the shared code's records; a product the shared
+     * code doesn't know is dropped. */
+    private fun List<String>.toRecords(): List<PurchaseRecord> =
+        mapNotNull(AppStoreProducts::sharedId)
+            .map { PurchaseRecord(listOf(it), purchased = true, acknowledged = true, token = it) }
 
     override suspend fun acknowledge(token: String): Boolean = true
 

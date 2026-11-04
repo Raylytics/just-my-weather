@@ -122,6 +122,57 @@ must install into `.git/hooks` beside pre-commit, not re-point hooksPath.
 - Not in the hook: Maestro flows (CI's `ui` job) and anything needing a
   device.
 
+## User settings must survive every update (gate)
+
+**A user's settings are the product.** Their glance layout, theme, alert
+rules, saved places, units and widgets are hours of their tuning, and an
+update that loses or rewrites them is a disaster for an app like this, not
+a bug. So no version ships unless the settings an earlier version wrote
+still read, unchanged, in the new one. This is a release gate, not a
+nicety: an agent may not weaken it to make a build pass.
+
+What enforces it today:
+
+- **`PreferencesCompatibilityTest`** (`shared/src/androidHostTest/.../data/`)
+  reads real settings files captured from shipped builds
+  (`shared/src/androidHostTest/resources/prefs/*.preferences_pb`). Each must
+  re-serialize to the same bytes, and every stored value must decode and
+  re-encode unchanged through its codec. The one change allowed is a
+  catalog module appended on read, hidden.
+- It runs in the pre-commit hook, `scripts/verify.sh`, CI, and so in every
+  `release-internal.sh` cut. iOS uses the same DataStore file format and
+  the same codecs, so the same test covers it.
+- Each codec's own tests (`*CodecTest`) cover a blob from before each field
+  existed decoding to the default.
+
+The rules:
+
+1. **Never rename or repurpose a stored key or a stable `key` token**
+   (enum keys, unit keys, module keys). Add new ones instead.
+2. **Every codec field is defaulted**, so an older, partial or corrupt blob
+   decodes to a working value. It never throws, and never resets
+   neighbouring settings.
+3. **Never re-capture a fixture to make the test pass.** The fixtures are
+   what shipped builds wrote. A failure means users would lose something.
+4. **A release that adds or changes persisted state adds a fixture from
+   the previous production build** before it ships, so the gate covers
+   what users actually have on their phones (how: the fixture section of
+   `PreferencesCompatibilityTest`'s KDoc).
+5. **A new store or codec joins the test's codec map** in the same commit.
+6. **Before a production promote, run the upgrade check:** install the
+   current production build on the API 35 emulator, use it, install the
+   candidate over it with `adb install -r`, and confirm the settings are
+   intact. This is how the What's new sheet was checked for 0.4.1; the
+   bd memory `whats-new-sheet` has the steps.
+
+Android Auto Backup is on (`allowBackup`), so a phone restored from backup
+also hands an older settings file to a newer app. That is the same
+problem, and the same gate covers it.
+
+Known gaps (just-my-weather-rtu): the fixtures date from 0.3.1, so the
+fields 0.4.0 and 0.4.1 added are covered only by codec tests; Android
+widget configs have no fixture; the upgrade check is manual.
+
 ## Release confirmation gate (agents)
 
 Uploading ANY build to Google Play — internal track included — requires
@@ -216,7 +267,12 @@ scripts/ios/release-testflight.sh   # release rehearsal; see docs/APP_STORE.md
   bootstatus <udid> -b`) before `xcodebuild test`. On a simulator xcodebuild
   cold-boots itself, the StoreKit test service is not ready and every
   StoreKit test fails with "no products" (seen 2026-10-13; 4/4 pass once the
-  simulator is up).
+  simulator is up). Even after `bootstatus`, the first `xcodebuild test`
+  after a boot can time out on the purchase and restore calls while the
+  StoreKit test service warms up; a `test-without-building` rerun passes
+  (seen 2026-11-02). A Debug build installed with `simctl` and launched
+  outside the scheme has no StoreKit configuration: it talks to the sandbox
+  and prompts "Sign in to Apple Account" at launch and on Restore.
 - `:shared:allTests` boots and shuts down its own simulator. It is still a
   simulator: don't run it while the Android emulator is up.
 - The pre-commit hook does not look at `.swift` or `project.yml`: a
@@ -224,8 +280,12 @@ scripts/ios/release-testflight.sh   # release rehearsal; see docs/APP_STORE.md
   committing.
 - iOS is gated locally only (plan decision 7). CI runs the Android jobs and
   skips the shared module's iOS targets.
-- Debug builds always use Google's sample AdMob ids. Signing, AdMob ids and
-  releases: `docs/APP_STORE.md`.
+- Ad and consent ids live in `iosApp/Config/Ads.xcconfig` (gitignored; copy
+  `Ads.xcconfig.example`): the Appodeal app key and the InMobi CMP p-code.
+  Blank means the app builds ad-free; `archive.sh` refuses to cut that way.
+  The InMobi CMP framework is fetched by `scripts/ios/fetch-inmobi-cmp.sh`
+  (the release scripts call it; run it once before a plain xcodegen/Xcode
+  build on a fresh clone). Signing and releases: `docs/APP_STORE.md`.
 
 ## App Store Releases
 
@@ -610,7 +670,17 @@ platform difference:
   object the UI depends on — wire shapes never leak past the repository.
 - **`ads/`** (app) + **`billing/`** — the banner and the purchase that removes it.
   `AdBanner` is the only composable that draws an ad (one, at the foot of the
-  glance; personalization follows the user's consent, per `AdPolicy`);
+  glance); `ConsentGateway` is the seam to the consent platform and
+  `AdsConsent` the gate that starts the ad SDK once consent allows.
+  **google-ads-exit:** Google Mobile Ads and UMP were removed in Stage A
+  (`raylytics/docs/ad-migration/RUNBOOK.md`); Stage B puts Appodeal
+  mediation (on Appodeal's own network accounts) behind the InMobi CMP. iOS
+  has it (`AdsService.swift`); on Android `NoConsentGateway` still never
+  allows ads and `AdBanner` draws nothing until its half lands.
+  `scripts/check-no-google-ads.sh` (pre-commit and CI) refuses anything
+  that needs the AdMob account coming back, and any direct use of Google's
+  User Messaging Platform (Appodeal pulls it in transitively; nothing may
+  declare, import or call it).
   `RemoveAdsManager` keeps the on-device entitlement in step with Play behind
   the `BillingGateway` seam.
   See `docs/architecture.md`.
@@ -625,7 +695,7 @@ platform difference:
   registry; `RegionResolver` picks the region (manual choice > phone network
   > last fix > place shown > language settings; the iPhone's order is in
   docs/REGIONS.md "On iOS"). It drives units, dates
-  and clock. Whether ads may run is Google's UMP consent SDK's call
+  and clock. Whether ads may run is the consent platform's call
   (`ads/AdsConsent`), not the region's. **docs/REGIONS.md** has how it works and the
   step-by-step for adding, opening, pausing or removing a region. Never
   change the Play Console country list or App Store Connect's availability
@@ -651,6 +721,11 @@ platform difference:
   `WidgetData` the Glance composition draws from via the per-widget state
   (`WidgetState` — never read stores in `provideGlance`, a live session won't
   re-run it). See `docs/architecture.md`.
+- **`whatsnew/`** + **`ui/whatsnew/`** — the once-per-update "What's new"
+  sheet over the glance. `WhatsNew` decides (pure: update vs fresh install,
+  which releases), `ReleaseNotes` is the per-version catalog (strings in
+  `strings.xml`), `WhatsNewRepository` stores the seen version. Decide each
+  release's notes before the cut; docs/extending.md has the steps.
 - **`support/`** — the two mails to the developer, ported from open-frame:
   `SupportMail.kt` builds them (pure, tested), `SupportIntents.kt` (app) reads the
   device and own logcat and hands off to the email app. A bug report carries
@@ -713,7 +788,7 @@ on iOS": check `scripts/release-drift.sh`.
 | `IOS_ASC_KEY_ID`, `IOS_ASC_ISSUER_ID`, `IOS_ASC_KEY_PATH` (`ascKeyId` / `ascIssuerId` / `ascKeyPath`) | `scripts/ios/*`: TestFlight upload, profile creation (ASC API) | gitignored `iosApp/team.properties`, literal values; `.p8` in `~/.appstoreconnect/private_keys/` outside the repo (migrate) | `jmw-asc` (to create; if it is open-frame's key, share `open-frame-asc`) |
 | `PLAY_SERVICE_ACCOUNT` (`serviceAccountJsonPath`) | `scripts/android/upload-play.sh`, `promote-play.sh`, `preflight-play.sh`, `play-countries.sh` | path in gitignored repo-root `play.properties`; JSON key at repo-root `play-service-account.json`, gitignored (migrate) | `jmw-play` (to create; if it is open-frame's service account, share `open-frame-play`) |
 
-Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, the AdMob ids in gitignored `app/admob.properties` (`appId`, `bannerUnitId`), `local.properties` (SDK path). NWS and MET Norway need no key.
+Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, `local.properties` (SDK path). Ad network and CMP ids (the Appodeal app key, the InMobi CMP p-code) live in a gitignored xcconfig on iOS (`iosApp/Config/Ads.xcconfig`, example committed) and, once the Android half of google-ads-exit Stage B lands, a gitignored properties file with a committed example, as AdMob's was. NWS and MET Norway need no key.
 
 <!-- BEGIN WYK CONVENTIONS v:1 -->
 ## wyk — planning & handoff over bd

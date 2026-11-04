@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.raylytics.justmyweather.ads.AdBanner
-import io.raylytics.justmyweather.ads.AdPolicy
 import io.raylytics.justmyweather.alerts.AlertWorker
 import io.raylytics.justmyweather.support.AppInfo
 import io.raylytics.justmyweather.support.SupportMail
@@ -139,13 +138,13 @@ class MainActivity : ComponentActivity() {
         // (the safeDrawingPadding below) covers them all.
         enableEdgeToEdge()
 
-        // Once per launch: Google's consent SDK says whether ads may run here,
+        // Once per launch: the consent platform says whether ads may run here,
         // asking the user first where the law requires it (ads/AdsConsent).
         // The location prompt waits until that has settled, so a first launch
         // in Europe shows one dialog at a time rather than the permission
         // sheet stacked on top of the consent form (seen on the emulator).
         // An owner of Remove Ads never meets the consent flow: there are no
-        // ads to consent to, so no request to Google and no form (roborev 5436).
+        // ads to consent to, so no consent request and no form (roborev 5436).
         val askLocation = {
             val alive = !isFinishing && !isDestroyed
             if (alive && !container.locationProvider.hasPermission()) {
@@ -168,7 +167,7 @@ class MainActivity : ComponentActivity() {
                 onBuyRemoveAds = { appSettingsViewModel.buyRemoveAds(this@MainActivity) },
                 onRateApp = { openStoreListing() },
                 version = "${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
-                adBanner = { AdBanner(unitId = bannerUnitId) },
+                adBanner = { AdBanner() },
                 support = supportHost,
                 // The bars sit on the app-painted background, and the user can
                 // force a mood against the system setting — so bar icon contrast
@@ -201,9 +200,6 @@ class MainActivity : ComponentActivity() {
             theme = themeViewModel,
         )
     }
-
-    private val bannerUnitId: String
-        get() = AdPolicy.bannerUnitId(BuildConfig.DEBUG, BuildConfig.ADMOB_BANNER_UNIT_ID)
 
     private val supportHost =
         object : SupportHost {

@@ -170,9 +170,13 @@ Mirror the existing config trio: a pure data class + a `*Codec` (JSON by stable
 string keys, every field defaulted so old/partial/corrupt blobs degrade to the
 default rather than crash) + a `*Repository` over the shared DataStore, wired in
 `AppGraph` (`AppGraph.kt`), which both apps build. `ThemeConfig` /
-`AlertSettings` are the templates. Never rename a stored key: Android
-installs carry settings files from earlier versions, and
-`PreferencesCompatibilityTest` holds them to it.
+`AlertSettings` are the templates. Never rename a stored key: installs
+carry settings files from earlier versions, and
+`PreferencesCompatibilityTest` holds them to it. Add the new key's codec to
+that test's codec map in the same commit, and capture a fixture from the
+production build before the release ships. The rules are in CLAUDE.md "User
+settings must survive every update"; losing a user's settings is the one
+failure this app cannot have.
 
 ## Add release notes to the What's new sheet
 

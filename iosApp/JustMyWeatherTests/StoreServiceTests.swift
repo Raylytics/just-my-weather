@@ -47,6 +47,32 @@ final class StoreServiceTests: XCTestCase {
         wait(for: [owned], timeout: 10)
     }
 
+    /// The Restore purchases button: after a purchase, a restore (which syncs
+    /// with the store first) still finds it; with nothing bought it finds nothing
+    /// and says so, rather than failing.
+    func testRestoreFindsTheBoughtProductAndNothingOtherwise() {
+        let nothing = expectation(description: "restore, nothing bought")
+        store.restore { products in
+            XCTAssertEqual(products, [])
+            nothing.fulfill()
+        }
+        wait(for: [nothing], timeout: 10)
+
+        let bought = expectation(description: "purchase")
+        store.purchase(productId: removeAds) { result in
+            XCTAssertEqual(result, StorePurchase.purchased)
+            bought.fulfill()
+        }
+        wait(for: [bought], timeout: 10)
+
+        let restored = expectation(description: "restore, bought")
+        store.restore { products in
+            XCTAssertEqual(products, [removeAds])
+            restored.fulfill()
+        }
+        wait(for: [restored], timeout: 10)
+    }
+
     func testNothingBoughtIsNothingOwned() {
         let owned = expectation(description: "owned")
         store.ownedProducts { products in

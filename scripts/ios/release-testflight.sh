@@ -7,7 +7,8 @@
 # Pipeline:
 #   0. release-drift.sh        — what shared/ code iOS hasn't shipped (advisory)
 #   1. refuse a dirty tree     — the build must be a committed state
-#   2. AdMob ids               — refuse Google's SAMPLE publisher (see below)
+#   2. ad and consent ids      — archive.sh refuses a blank or placeholder
+#                                Appodeal app key or InMobi p-code
 #   3. scripts/verify.sh       — the JVM gate; plus :shared:allTests (the
 #                                shared module's iOS tests, which need a Mac)
 #   4. sync-version.sh --check — VERSION, versionName, MARKETING_VERSION agree
@@ -83,28 +84,11 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   die "working tree has uncommitted changes; commit (or stash) first so the cut is a known commit."
 fi
 
-# 2. Sample ads must never ship. Release.xcconfig falls back to Google's
-#    SAMPLE ids and only the gitignored AdMob.xcconfig replaces them, so a
-#    machine without that file — or with the example's placeholders, or with
-#    the sample ids pasted in — archives a build that serves test ads and
-#    earns nothing. The Android twin of this rule is in app/build.gradle.kts
-#    and scripts/android/release-internal.sh. Unlike Android there is no
-#    --sample-ads escape hatch: TestFlight builds are promoted to the App
-#    Store as-is, so a sample-ads build has nowhere safe to go.
-ADMOB_XCCONFIG="$CONFIG_DIR/AdMob.xcconfig"
-if [ ! -f "$ADMOB_XCCONFIG" ]; then
-  die "$ADMOB_XCCONFIG is missing, so this build would serve Google's SAMPLE ads. Copy AdMob.xcconfig.example and fill in the real ids."
-fi
-if grep -q "ca-app-pub-3940256099942544" "$ADMOB_XCCONFIG"; then
-  die "$ADMOB_XCCONFIG contains Google's sample publisher (ca-app-pub-3940256099942544). Put the real AdMob ids in it."
-fi
-for key in ADMOB_APP_ID ADMOB_BANNER_UNIT_ID; do
-  value="$(sed -nE "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*(.*)\$/\1/p" "$ADMOB_XCCONFIG" | head -1)"
-  case "$value" in
-    "") die "$key is missing from $ADMOB_XCCONFIG — Release would fall back to the SAMPLE id" ;;
-    *XXXX*|*NNNN*) die "$key in $ADMOB_XCCONFIG is still the example placeholder" ;;
-  esac
-done
+# 2. Ad and consent ids: archive.sh runs require_ads_configured (common.sh),
+#    which refuses a blank or placeholder Appodeal app key or InMobi CMP
+#    p-code in iosApp/Config/Ads.xcconfig, with the shape the AdMob gate had:
+#    no escape hatch, because a TestFlight build is promoted to the App Store
+#    as-is.
 
 # 3. The gates. verify.sh is the JVM gate (Android + the shared module's
 #    host tests); :shared:allTests adds the shared module's iOS tests, which

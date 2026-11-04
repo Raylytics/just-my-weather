@@ -43,14 +43,39 @@ final class StoreService: NSObject, StoreBridge {
 
     func ownedProducts(completion: @escaping ([String]?) -> Void) {
         Task {
-            var owned: [String] = []
-            for await result in Transaction.currentEntitlements {
-                if case .verified(let transaction) = result, transaction.revocationDate == nil {
-                    owned.append(transaction.productID)
-                }
-            }
+            let owned = await currentlyOwned()
             await MainActor.run { completion(owned) }
         }
+    }
+
+    /// The Restore purchases button. `AppStore.sync()` is StoreKit 2's restore:
+    /// it fetches the account's transactions from the App Store (and may ask
+    /// the user to sign in), which a plain entitlement read does not. App
+    /// Review requires a button that makes this call (guideline 3.1.1; the
+    /// 0.4.0 rejection). A sync the user cancels, or one the store refuses,
+    /// throws: that is "no answer", not "owns nothing".
+    func restore(completion: @escaping ([String]?) -> Void) {
+        Task {
+            do {
+                try await AppStore.sync()
+            } catch {
+                await MainActor.run { completion(nil) }
+                return
+            }
+            let owned = await currentlyOwned()
+            await MainActor.run { completion(owned) }
+        }
+    }
+
+    /// Every verified, unrevoked current entitlement's product id.
+    private func currentlyOwned() async -> [String] {
+        var owned: [String] = []
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result, transaction.revocationDate == nil {
+                owned.append(transaction.productID)
+            }
+        }
+        return owned
     }
 
     func purchase(productId: String, completion: @escaping (StorePurchase) -> Void) {
