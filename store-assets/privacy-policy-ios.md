@@ -106,8 +106,8 @@ law the form is an opt-out notice instead, and you may opt out of the sale
 or sharing of your data and of targeted advertising. You can change your
 choice any time in App settings → Privacy choices. The ad is served through
 **Appodeal**, an ad mediation service: Appodeal asks several ad networks
-(among them AppLovin, Unity Ads, ironSource, Vungle, Mintegral, InMobi,
-DT Exchange, BidMachine and myTarget) for an ad and shows the best offer.
+(AppLovin, Unity Ads, Vungle, Mintegral, InMobi, DT Exchange, BidMachine
+and myTarget) for an ad and shows the best offer.
 
 **Tracking and personalized ads.** Once the consent platform allows ads,
 the app may show Apple's "Allow to track" prompt. It is never shown on top
@@ -143,7 +143,10 @@ restore the purchase on a new device signed in to the same Apple Account.
 Once ads are removed, the app stops requesting ads and stops asking the
 consent platform.
 
-All of the app's network traffic uses HTTPS.
+The app's own requests — the weather services and the App Store — use
+HTTPS. The ad SDKs fetch their creatives and talk to their networks
+themselves; most of that traffic is HTTPS, but the app does not enforce it
+for them (Appodeal requires the exception).
 
 ## What stays on your iPhone
 

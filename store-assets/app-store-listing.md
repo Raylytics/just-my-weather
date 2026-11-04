@@ -55,7 +55,7 @@ Every content item **None** / **No**, except:
 
 | Question | Answer |
 |---|---|
-| Advertising | **Yes**. The app shows an AdMob banner to anyone who has not bought Remove Ads. Leaving it unset halted open-frame's 1.5.1 review (2026-10-10); Apple's scan finds the SDK. |
+| Advertising | **Yes**. The app shows one banner, mediated by Appodeal, to anyone who has not bought Remove Ads. Leaving it unset halted open-frame's 1.5.1 review (2026-10-10); Apple's scan finds the SDKs. |
 | Unrestricted web access | No |
 | Gambling and contests | No |
 | User-generated content | No |
@@ -135,7 +135,7 @@ NO ACCOUNT, YOUR DATA STAYS PUT
 
 • No sign-up and no analytics of our own. Your view, places, and alert rules stay on your iPhone.
 • Location is approximate and optional. The weather services receive only the coordinates of the place you are looking at.
-• Ads are served by Google AdMob, which measures its own ads. Ads are personalized only if you allow tracking and, where the law asks, consent.
+• Ads come through Appodeal, which measures its own ads. Ads are personalized only if you allow tracking and, where the law asks, consent.
 
 If you have been looking for a customizable weather app that shows only what you ask for, this is it.
 
@@ -177,9 +177,14 @@ search data.
 
 Entered under App Privacy, with the privacy policy URL above. Do not fill it
 from this file: take the answers from the archive's privacy report, as
-`docs/APP_STORE.md` "Privacy labels and the policy" explains (the Google
-Mobile Ads and UMP SDKs declare what they collect in their own manifests,
-and the report merges them). Record the published answers here once entered.
+`docs/APP_STORE.md` "Privacy labels and the policy" explains (the ad SDKs
+declare what they collect in their own manifests, and the report merges
+them). Record the published answers here once entered.
+
+**google-ads-exit:** the answers recorded below are AdMob's and UMP's, from
+the shipped build. The Appodeal, ad network and InMobi CMP answers are
+drafted in Stage D of the epic (the app's H5 task) from a fresh archive's
+privacy report; until then this section describes the old build on purpose.
 
 The app's own code collects nothing: it sends forecast coordinates to NWS
 and MET Norway and keeps everything else on the device.
@@ -265,7 +270,7 @@ Just My Weather is a weather app that shows only the data points the user picks,
 
 4. ALERTS. Alerts are rules such as "temperature below 35° overnight", checked with iOS background app refresh, so they can arrive late; the Alerts screen says so. Official NWS warnings (opt-in) post as time-sensitive notifications and exist only for US places during active warnings. A reviewer cannot trigger one on demand; a recording of an alert arriving on a physical iPhone is available on request.
 
-5. ADS AND TRACKING. One AdMob banner at the bottom of the main screen. Google's consent form (UMP) runs first where required; Apple's tracking prompt follows only where ads may run. The ad is never given the user's places, rules or weather.
+5. ADS AND TRACKING. One banner at the bottom of the main screen, mediated by Appodeal. The InMobi consent form (IAB TCF) runs first where required, and a US opt-out notice in states with a privacy law; Apple's tracking prompt follows only where ads may run. The ad is never given the user's places, rules or weather.
 
 6. IN-APP PURCHASE. "Remove ads" (remove_ads_just_my_weather), a $0.99 non-consumable in App Settings, removes the banner. "Restore purchases" is the row under it, in every state of the Ads section (also after the purchase); it calls AppStore.sync() and re-reads the entitlements.
 
