@@ -44,11 +44,23 @@ A version that reaches both stores gets an entry in each.
 
 # iOS (App Store)
 
-## 0.4.2 — build 4, App Store Connect 2026-11-04
+## 0.4.2 — build 4, upload REJECTED 2026-11-04; the number is free again
 
-Cut from 2664c07 on `feat/applovin-max` (PR #10, auto-merge armed) with
-Evan's go-ahead; he ran `scripts/ios/release-testflight.sh
---confirm-upload` himself. The resubmission after build 3's 3.1.1
+Cut from 2664c07 on `feat/applovin-max` (PR #10) with Evan's go-ahead; he
+ran `scripts/ios/release-testflight.sh --confirm-upload` himself. App
+Store Connect rejected the IPA at upload with 19 errors, all in
+Appodeal's frameworks: four-part `CFBundleShortVersionString` values
+(ITMS-90060) and `CFBundleSupportedPlatforms` listing iPhoneOS and
+iPhoneSimulator together (ITMS-91177); the same frameworks also declare
+`MinimumOSVersion` 12.0 while linked for 15.1, which Apple reports after
+accepting an upload (ITMS-90208). Nothing reached Apple, so build 4 was
+not burned: `CURRENT_PROJECT_VERSION` went back to 3 and the next cut is
+build 4 again. The fix is `scripts/ios/fix-framework-plists.sh`, run by
+`archive.sh` on every archive, and `scripts/ios/validate-ipa.sh`, which
+the rehearsal and the cut now run before any upload. The entry below
+describes the build's content; it applies to the next cut unchanged.
+
+The resubmission after build 3's 3.1.1
 rejection, and the first build of the Google ads exit on iOS: AdMob and
 UMP are gone, the InMobi CMP gates consent, Apple's tracking prompt
 follows only where ads may run, Appodeal mediation serves the one banner
