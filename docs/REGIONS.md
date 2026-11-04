@@ -227,8 +227,11 @@ is shown there. Nothing ships until both halves pass Stage C
   required (decided 2026-10-13 with the iOS port, as open-frame).
 - On iOS, once the CMP allows ads, Apple's App Tracking Transparency prompt
   follows. It is never shown on top of the consent form, and never where
-  ads won't run. Declining it means the ad network never gets the
-  advertising identifier.
+  ads won't run. Declining it means the ad networks never get the
+  advertising identifier. The app's own location prompt also waits for
+  the consent flow; the CMP's US notice page requests geolocation through
+  WebKit, so the system location prompt can still appear over that form
+  on a first launch (InMobi's request, not the app's).
 
 ## On iOS
 
