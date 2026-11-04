@@ -83,4 +83,7 @@ if [ ! -d "$ARCHIVE_PATH" ]; then
 Run xcodebuild archive without the grep filter to see full output."
 fi
 
+# Appodeal's frameworks ship Info.plist values App Store Connect rejects;
+# repair and re-sign them in the archive so the export carries the fix.
+bash "$SCRIPT_DIR/fix-framework-plists.sh" "$ARCHIVE_PATH/Products/Applications/$SCHEME.app"
 echo "==> Archive ready: $ARCHIVE_PATH" >&2
