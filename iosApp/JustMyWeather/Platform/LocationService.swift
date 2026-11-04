@@ -7,8 +7,11 @@ import Shared
 final class LocationService: NSObject, LocationSource, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     /// The status last seen, so a grant can be told from iOS re-reporting
-    /// an existing one (it calls the delegate as soon as it is set).
-    private var lastStatus: CLAuthorizationStatus = .notDetermined
+    /// an existing one (it calls the delegate as soon as it is set). Read at
+    /// construction, before any prompt: a grant made between then and
+    /// `start()` (the CMP's own geolocation request on a first launch) must
+    /// count as new, so the glance leaves its default place on that launch.
+    private var lastStatus: CLAuthorizationStatus
     /// True from a fresh grant until its first fix arrives.
     private var awaitingFirstFix = false
     /// Told about that first fix, so the glance leaves its default place.
@@ -22,10 +25,14 @@ final class LocationService: NSObject, LocationSource, CLLocationManagerDelegate
     /// asks after consent) and straight away otherwise: one system prompt,
     /// and a declined one leaves the app on its default place. A second
     /// call is ignored, so the host may call it from both places.
+    override init() {
+        lastStatus = manager.authorizationStatus
+        super.init()
+    }
+
     func start() {
         guard !started else { return }
         started = true
-        lastStatus = manager.authorizationStatus
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyReduced
         if manager.authorizationStatus == .notDetermined {

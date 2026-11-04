@@ -328,22 +328,25 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     /// dismissal; the US notice does not (its confirmation alert closes
     /// quietly), so the SDK's ping is polled until the form has left the
     /// screen, and then the tracking prompt can follow without stacking.
-    /// No cap: while the ping says the form is up, it is up.
+    /// A minute after the choice the request settles regardless: the choice
+    /// is made, so nothing can stack on a form still being answered, and a
+    /// ping that never clears must not hold the launch sequence forever.
     private func choiceMade() {
         guard formVisible, closeWatch == nil else { return }
-        watchForClose()
+        watchForClose(since: Date())
     }
 
-    private func watchForClose() {
+    private func watchForClose(since choice: Date) {
         closeWatch = nil
         guard formVisible else { return }
-        if ChoiceCmp.shared.ping().displayStatus == .visible {
-            let item = DispatchWorkItem { [weak self] in self?.watchForClose() }
+        let stillUp = ChoiceCmp.shared.ping().displayStatus == .visible
+        if stillUp, Date().timeIntervalSince(choice) < 60 {
+            let item = DispatchWorkItem { [weak self] in self?.watchForClose(since: choice) }
             closeWatch = item
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
             return
         }
-        log.info("cmp form closed after a choice")
+        log.info("cmp form closed after a choice\(stillUp ? " (ping still says visible a minute later; settling anyway)" : "")")
         formVisible = false
         formClosed()
     }
