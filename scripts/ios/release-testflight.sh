@@ -106,6 +106,9 @@ VERSION_NAME="$(head -1 "$PROJECT_ROOT/VERSION" | tr -d '[:space:]')"
 if [ "$confirm_upload" = 0 ]; then
   bash "$SCRIPT_DIR/archive.sh"
   IPA_PATH=$(bash "$SCRIPT_DIR/export-ipa.sh" --method app-store-connect | tail -n 1)
+  # Validate with App Store Connect (no upload): a rejection here costs
+  # nothing; one at upload may burn the build number (build 4, 2026-11-04).
+  bash "$SCRIPT_DIR/validate-ipa.sh" "$IPA_PATH"
   cat >&2 <<EOF
 
 ==> Rehearsal complete: $IPA_PATH
@@ -143,6 +146,9 @@ trap 'on_fail' EXIT
 # 6–8.
 bash "$SCRIPT_DIR/archive.sh"
 IPA_PATH=$(bash "$SCRIPT_DIR/export-ipa.sh" --method app-store-connect | tail -n 1)
+# Validate with App Store Connect (no upload): a rejection here costs
+# nothing; one at upload may burn the build number (build 4, 2026-11-04).
+bash "$SCRIPT_DIR/validate-ipa.sh" "$IPA_PATH"
 bash "$SCRIPT_DIR/upload-testflight.sh" "$IPA_PATH"
 uploaded=1
 trap - EXIT

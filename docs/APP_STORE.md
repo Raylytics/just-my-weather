@@ -277,6 +277,20 @@ No App Store Connect record is needed to test Remove Ads:
 
 ## Gotchas (from open-frame, and where they apply here)
 
+- **Appodeal's frameworks fail App Store Connect's plist checks.** Appodeal
+  4.4.0 and its nine adapters ship `CFBundleShortVersionString` with four
+  parts, `CFBundleSupportedPlatforms` with both iPhoneOS and
+  iPhoneSimulator, and `MinimumOSVersion` 12.0 under a 15.1 binary
+  (ITMS-90060, 91177, 90208; build 4's upload was rejected 2026-11-04;
+  Appodeal-Swift-Package-IAB issue #4 and the InMobi and UnityAds adapter
+  repos have the reports). `archive.sh` runs
+  `scripts/ios/fix-framework-plists.sh` on the archived app, which repairs
+  the values and re-signs the frameworks and the app; the export re-signs
+  again for distribution. `scripts/ios/validate-ipa.sh` (altool
+  `--validate-app`, no upload) runs after every export, in the rehearsal
+  and before the real upload, so a rejection never spends a build number.
+  When bumping the Appodeal pins, check whether the plists are clean and
+  retire the repair script if so.
 - **Age Rating: "Advertising" must be Yes.** Apple's automated scan finds
   the ad SDKs (Appodeal and its networks). open-frame's 1.5.1 review was halted on
   2026-10-10 because the descriptor was unset. The fix is metadata only.
