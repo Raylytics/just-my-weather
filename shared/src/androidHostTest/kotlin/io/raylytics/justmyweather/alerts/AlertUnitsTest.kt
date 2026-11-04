@@ -94,19 +94,23 @@ class AlertUnitsTest {
         // Every pairing of the unit a rule was SET in with the unit it is
         // READ in — the cross-unit case is where a threshold gains a decimal.
         val all = Regions.prepared.map { it.conventions }.toSet() + Conventions.US
-        for (setIn in all) for (c in all) for (subject in AlertSubject.current) {
-            for (threshold in listOf(0.0, 1.0, 2.0, 10.0, 30.0, 35.0, 1013.0)) {
-                val stored = subject.toCanonical(threshold, setIn)
-                // Readings a hair either side, in canonical units.
-                for (delta in listOf(-0.5, -0.06, -0.004, 0.004, 0.06, 0.5)) {
-                    val reading = stored + delta
-                    for (comparison in Comparison.entries) {
-                        if (!comparison.test(reading, stored)) continue
-                        val (actual, limit) = subject.formatPair(reading, stored, c)
-                        val a = leadingNumber(actual)
-                        val l = leadingNumber(limit)
-                        val consistent = if (comparison == Comparison.BELOW) a < l else a > l
-                        assertTrue(consistent, "${subject.key} $comparison in $c: \"$actual\" vs \"$limit\"")
+        for (setIn in all) {
+            for (c in all) {
+                for (subject in AlertSubject.current) {
+                    for (threshold in listOf(0.0, 1.0, 2.0, 10.0, 30.0, 35.0, 1013.0)) {
+                        val stored = subject.toCanonical(threshold, setIn)
+                        // Readings a hair either side, in canonical units.
+                        for (delta in listOf(-0.5, -0.06, -0.004, 0.004, 0.06, 0.5)) {
+                            val reading = stored + delta
+                            for (comparison in Comparison.entries) {
+                                if (!comparison.test(reading, stored)) continue
+                                val (actual, limit) = subject.formatPair(reading, stored, c)
+                                val a = leadingNumber(actual)
+                                val l = leadingNumber(limit)
+                                val consistent = if (comparison == Comparison.BELOW) a < l else a > l
+                                assertTrue(consistent, "${subject.key} $comparison in $c: \"$actual\" vs \"$limit\"")
+                            }
+                        }
                     }
                 }
             }

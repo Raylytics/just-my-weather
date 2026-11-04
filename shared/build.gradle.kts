@@ -14,7 +14,7 @@ plugins {
 kotlin {
     androidLibrary {
         namespace = "io.raylytics.justmyweather.shared"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 24
         // Compose resources (the shared string catalog) ride in the Android
         // library's assets; the KMP library plugin leaves those off by default.
@@ -85,6 +85,7 @@ kotlin {
             implementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
             implementation("org.junit.jupiter:junit-jupiter-params:6.1.3")
             runtimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
+            runtimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
             implementation("org.mockito:mockito-core:5.24.0")
             implementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")

@@ -3,7 +3,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jlleitschuh.gradle.ktlint")
@@ -25,7 +24,7 @@ android {
     // Google Play has required new apps and updates to target API 36 since
     // 2026-08-31; the internal track is not exempt. AGP 8.13 is the matching
     // toolchain (8.7 only warned at 36).
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "io.raylytics.justmyweather"
@@ -163,6 +162,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testImplementation("org.junit.jupiter:junit-jupiter-params:6.1.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
     testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")

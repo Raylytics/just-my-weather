@@ -109,8 +109,10 @@ class RegionRepository(
          */
         internal fun merge(stored: RegionClues?, gathered: RegionClues): RegionClues {
             val sawNothingStrong =
-                gathered.phoneNetwork == null && gathered.storefront == null &&
-                    gathered.phoneLocation == null && gathered.place == null
+                gathered.phoneNetwork == null &&
+                    gathered.storefront == null &&
+                    gathered.phoneLocation == null &&
+                    gathered.place == null
             return if (sawNothingStrong && stored?.place != null) gathered.copy(place = stored.place) else gathered
         }
 
