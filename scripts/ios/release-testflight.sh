@@ -7,7 +7,8 @@
 # Pipeline:
 #   0. release-drift.sh        — what shared/ code iOS hasn't shipped (advisory)
 #   1. refuse a dirty tree     — the build must be a committed state
-#   2. ad network ids          — none until Stage B of google-ads-exit (see below)
+#   2. ad and consent ids      — archive.sh refuses a blank or placeholder
+#                                Appodeal app key or InMobi p-code
 #   3. scripts/verify.sh       — the JVM gate; plus :shared:allTests (the
 #                                shared module's iOS tests, which need a Mac)
 #   4. sync-version.sh --check — VERSION, versionName, MARKETING_VERSION agree
@@ -83,9 +84,9 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   die "working tree has uncommitted changes; commit (or stash) first so the cut is a known commit."
 fi
 
-# 2. Ad network ids: the AdMob.xcconfig gate that lived here went with Google
-#    Mobile Ads (google-ads-exit Stage A). Stage B adds the equivalent gate
-#    for blank or placeholder AppLovin MAX and CMP ids, with the same shape:
+# 2. Ad and consent ids: archive.sh runs require_ads_configured (common.sh),
+#    which refuses a blank or placeholder Appodeal app key or InMobi CMP
+#    p-code in iosApp/Config/Ads.xcconfig, with the shape the AdMob gate had:
 #    no escape hatch, because a TestFlight build is promoted to the App Store
 #    as-is.
 

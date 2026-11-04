@@ -173,6 +173,32 @@ require_team_configured() {
   echo "    signing team: $team" >&2
 }
 
+# Gate: the ad and consent ids are set, and set to something real. A blank
+# or placeholder id makes AdsService.swift skip the ad path entirely, which
+# is right for a clone that has no Ads.xcconfig and wrong for a build that
+# goes to the store: a TestFlight build is promoted as-is, so there is no
+# escape hatch (the AdMob gate this replaces had none either).
+ADS_XCCONFIG="$CONFIG_DIR/Ads.xcconfig"
+export ADS_XCCONFIG
+read_ads_xcconfig() { # read_ads_xcconfig <KEY> → the value, or empty
+  [ -f "$ADS_XCCONFIG" ] || return 0
+  sed -nE "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*([^[:space:];]*).*/\1/p" "$ADS_XCCONFIG" | head -1
+}
+require_ads_configured() {
+  local key pcode
+  [ -f "$ADS_XCCONFIG" ] || die "no $ADS_XCCONFIG. Copy iosApp/Config/Ads.xcconfig.example to Ads.xcconfig and fill in the Appodeal app key and the InMobi CMP p-code."
+  key="$(read_ads_xcconfig JMW_APPODEAL_APP_KEY)"
+  pcode="$(read_ads_xcconfig JMW_INMOBI_PCODE)"
+  case "$key" in ''|REPLACE_WITH_*) die "JMW_APPODEAL_APP_KEY in $ADS_XCCONFIG is blank or a placeholder; a store build must carry the real Appodeal app key." ;; esac
+  case "$pcode" in ''|REPLACE_WITH_*) die "JMW_INMOBI_PCODE in $ADS_XCCONFIG is blank or a placeholder; a store build must carry the real InMobi CMP p-code." ;; esac
+  [[ "$pcode" == p-* ]] || die "JMW_INMOBI_PCODE in $ADS_XCCONFIG does not look like an InMobi p-code (expected p-...)."
+  for cfg in Debug Release; do
+    grep -qE '^[[:space:]]*#include\?[[:space:]]+"Ads\.xcconfig"' "$CONFIG_DIR/$cfg.xcconfig" \
+      || die "$CONFIG_DIR/$cfg.xcconfig does not #include? \"Ads.xcconfig\"; the ids would never reach the build."
+  done
+  echo "    ads: Appodeal app key and InMobi p-code set" >&2
+}
+
 # ASC API key flags for xcodebuild, when team.properties has them. Lets
 # xcodebuild register the bundle id's certificates/profiles through the API
 # instead of failing because the local keychain hasn't seen this app yet.

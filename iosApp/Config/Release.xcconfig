@@ -1,7 +1,7 @@
-// Ad network ids: none here since the google-ads-exit epic removed Google
-// Mobile Ads (Stage A). AppLovin MAX's ids arrive in Stage B through a
-// gitignored xcconfig with a committed example, as AdMob's did.
-
 // Signing team, per machine: scripts/ios/setup-team.sh writes Team.xcconfig
 // (gitignored). The ? makes a clone without one build unsigned as before.
 #include? "Team.xcconfig"
+
+// Ad and consent ids, per machine: copy Ads.xcconfig.example to Ads.xcconfig
+// (gitignored). Without it the app builds and shows no ads.
+#include? "Ads.xcconfig"

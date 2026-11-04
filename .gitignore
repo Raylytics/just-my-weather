@@ -42,7 +42,10 @@ maestro-retried
 iosApp/*.xcodeproj/
 iosApp/build/
 iosApp/Config/Team.xcconfig
+iosApp/Config/Ads.xcconfig
 iosApp/team.properties
+# the InMobi CMP framework, fetched and pinned by scripts/ios/fetch-inmobi-cmp.sh
+iosApp/Vendor/
 **/AuthKey_*.p8
 
 # beads tracker state is local-only (decision 2026-10-20): never commit the export

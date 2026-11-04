@@ -1,0 +1,12 @@
+// Ad and consent ids for the iOS app. Copy to Ads.xcconfig (gitignored) and
+// fill in the values from the Appodeal dashboard (Apps > Just My Weather >
+// App key) and the InMobi CMP portal (the property's p-code). Both ship in
+// the binary, so they are not secrets, but they live here rather than in
+// the project so a clone without them builds an app that shows no ads
+// (AdsService.swift treats a blank as "no ad path"), and so the release
+// scripts can refuse a cut that still carries a placeholder.
+//
+// Debug builds serve Appodeal test ads regardless of these values
+// (Appodeal.setTestingEnabled); the ids still have to be present.
+JMW_APPODEAL_APP_KEY = REPLACE_WITH_APPODEAL_APP_KEY
+JMW_INMOBI_PCODE = REPLACE_WITH_INMOBI_PCODE
