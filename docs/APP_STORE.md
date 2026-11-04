@@ -148,24 +148,33 @@ page must be live before review.
 The labels are entered in App Store Connect → App Privacy. Do not answer from
 memory or from this file. Take the answers from the **archive's privacy
 report** (Xcode Organizer → the archive → Generate Privacy Report). That
-report merges the privacy manifests of the Google Mobile Ads and UMP SDKs
-into the app's own.
+report merges the privacy manifests of the ad SDKs (Appodeal, its network
+adapters' SDKs, Stack Consent Manager, the InMobi CMP) into the app's own.
+Without Xcode's UI, the same merge is a script over every
+`PrivacyInfo.xcprivacy` in the `.xcarchive`; the 2026-11-04 rehearsal's
+result is `build/release-prep/privacy-report.md` (not tracked; regenerate
+from the archive that is uploaded).
 
 - The app itself collects nothing. It sends only forecast coordinates to NWS
   and MET Norway.
-- The Google SDKs collect data, so the answer to "Do you or your third-party
+- The ad SDKs collect data, so the answer to "Do you or your third-party
   partners collect data?" is **Yes**.
 - For reference, open-frame (same SDKs) entered, after correcting an earlier
   "No data collected": Device ID (tracking: yes), Coarse Location, Product
   Interaction, Advertising Data, Crash Data, Performance Data, Other
   Diagnostic Data (`../open-frame/store-assets/app-store-listing.md`, "App
   Privacy").
-- Settled 2026-10-13 from the first archive: the merged manifests match
-  open-frame's table exactly (Device ID, Coarse Location, Product
+- Settled 2026-10-13 from the first (AdMob) archive: the merged manifests
+  matched open-frame's table (Device ID, Coarse Location, Product
   Interaction and Advertising Data linked; the three diagnostics types not
-  linked; only Device ID used for tracking). The answers are in
-  `store-assets/app-store-listing.md` "App Privacy". The earlier hand-off
-  text that marked them "not linked" was wrong.
+  linked; only Device ID used for tracking). Those answers, still in
+  `store-assets/app-store-listing.md` "App Privacy", are AdMob's and are
+  **superseded** by the Appodeal archive: its merged report declares 13
+  data types and marks most of them as used for tracking (Device ID, User
+  ID, Purchase History, Product Interaction, Advertising Data, Coarse and
+  Precise Location, Performance and Crash Data among them), with one
+  tracking domain (myTarget's). Stage D (Evan) re-enters the labels from
+  that report before the first Appodeal build is submitted.
 
 ## Releasing (day-to-day)
 
@@ -187,7 +196,9 @@ The orchestrator runs, and stops at the first failure:
 0. `scripts/release-drift.sh`: an advisory report of the `shared/` commits
    iOS has not shipped. It never blocks.
 1. Refuses a tree with uncommitted changes to tracked files.
-2. Refuses sample or placeholder AdMob ids.
+2. Refuses a blank or placeholder Appodeal app key or InMobi p-code in
+   `iosApp/Config/Ads.xcconfig` (`require_ads_configured`), and fetches the
+   pinned InMobi CMP xcframework if it is missing.
 3. `scripts/verify.sh` (the JVM gate), then `./gradlew :shared:allTests`
    (the shared module's iOS tests, which need a Mac).
 4. `scripts/sync-version.sh --check`: `VERSION`, Android `versionName` and
@@ -267,7 +278,7 @@ No App Store Connect record is needed to test Remove Ads:
 ## Gotchas (from open-frame, and where they apply here)
 
 - **Age Rating: "Advertising" must be Yes.** Apple's automated scan finds
-  the Google Mobile Ads SDK. open-frame's 1.5.1 review was halted on
+  the ad SDKs (Appodeal and its networks). open-frame's 1.5.1 review was halted on
   2026-10-10 because the descriptor was unset. The fix is metadata only.
   Never answer that there are no ads.
 - **Export uses manual signing.** `signingStyle: automatic` sends export
@@ -302,9 +313,10 @@ No App Store Connect record is needed to test Remove Ads:
   the manifest is missing or malformed. Update it when a dependency adds a
   required-reason API.
 - **`NSPrivacyTracking` is false at the app level**, as in open-frame. The
-  app's own code does no tracking. The Google Mobile Ads SDK declares its own
-  tracking in its own manifest, and the archive's privacy report merges the
-  two. **Re-check this at review.** If Apple reads the app-level `false` as
+  app's own code does no tracking. The ad SDKs declare their own tracking
+  in their own manifests (Appodeal, Stack Consent Manager, AppLovin,
+  myTarget's MyTracker and others in the Appodeal archive), and the
+  archive's privacy report merges them. **Re-check this at review.** If Apple reads the app-level `false` as
   contradicting the "Data Used to Track You" label, the fix is a manifest
   change and a new build. open-frame ships the same arrangement (its
   roborev #5443); whether a review has examined it there is unverified.
@@ -362,13 +374,15 @@ for a video again, Apple's wording means it will ask every time after that.
 - `NSLocationWhenInUseUsageDescription`: approximate location for the
   weather where you are. When-in-use only, reduced accuracy.
 - `NSUserTrackingUsageDescription`: the ATT prompt's text. Asked only after
-  Google's consent SDK allows ads, never on top of Google's form, and never
-  where ads will not run.
+  the InMobi CMP allows ads, never on top of its form, and never where ads
+  will not run.
 - `UIBackgroundModes: fetch` and `BGTaskSchedulerPermittedIdentifiers:
   io.raylytics.justmyweather.alerts`: the background alert check.
-- `SKAdNetworkItems`: Google's 50 SKAdNetwork ids.
-- `GADApplicationIdentifier` and `JMWBannerUnitID` come from the xcconfig
-  (step 3).
+- `SKAdNetworkItems` (230) and `AdAttributionKitItems` (7): Appodeal's
+  lists from its integration page, 2026-11-04.
+- `JMWAppodealAppKey` and `JMWInMobiPcode` come from
+  `Config/Ads.xcconfig` (step 3); `NSAppTransportSecurity` allows arbitrary
+  loads, Appodeal's requirement.
 - `JMWAppStoreID`: the app's numeric App Store id, for the Rate row
   (step 2): `6822450301`.
 - Entitlements (`JustMyWeather.entitlements`): Time Sensitive Notifications

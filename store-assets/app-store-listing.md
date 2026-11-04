@@ -183,8 +183,17 @@ them). Record the published answers here once entered.
 
 **google-ads-exit:** the answers recorded below are AdMob's and UMP's, from
 the shipped build. The Appodeal, ad network and InMobi CMP answers are
-drafted in Stage D of the epic (the app's H5 task) from a fresh archive's
+entered in Stage D of the epic (the app's H5 task, Evan) from the archive's
 privacy report; until then this section describes the old build on purpose.
+The 2026-11-04 rehearsal archive's merged report
+(`build/release-prep/privacy-report.md`, regenerated per archive, not
+tracked) found 17 manifests, tracking declared, one tracking domain
+(myTarget's), and 13 collected types: Advertising Data, Coarse Location,
+Crash Data, Customer Support, Device ID, Other Data Types, Other
+Diagnostic Data, Other Usage Data, Performance Data, Precise Location,
+Product Interaction, Purchase History, User ID; most marked linked and
+used for tracking by at least one SDK. Expect "Data Used to Track You" to
+grow accordingly.
 
 The app's own code collects nothing: it sends forecast coordinates to NWS
 and MET Norway and keeps everything else on the device.

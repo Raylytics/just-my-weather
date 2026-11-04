@@ -98,7 +98,11 @@ ls iosApp/JustMyWeather/Platform
 
 On 2026-10-13: `AdsService.swift`, `AlertRefresh.swift`,
 `IosPlatformImpl.swift`, `LocationService.swift`, `Notifier.swift`,
-`StoreService.swift`, `SupportService.swift`.
+`StoreService.swift`, `SupportService.swift`. Added 2026-11-04:
+`AdsRules.swift`, the decisions `AdsService` makes from plain values (id
+parsing, whether the stored consent allows ads, whether a form is still
+coming, whether Privacy choices is owed), kept SDK-free so
+`AdsRulesTests` covers them without the InMobi CMP or Appodeal.
 
 The Kotlin twins in `iosMain` that are not `actual`s (they implement a
 common interface instead):
