@@ -1,6 +1,6 @@
 # Privacy Policy — Just My Weather (iOS)
 
-_Last updated: 2026-10-13_
+_Last updated: 2026-11-04_
 
 Just My Weather is a free iPhone weather app published by Raylytics, LLC. It
 shows the weather for a place you choose, lets you build your own view of
