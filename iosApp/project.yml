@@ -79,6 +79,11 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.raylytics.justmyweather
         PRODUCT_NAME: JustMyWeather
+        # Info.plist carries NSAllowsArbitraryLoads: Appodeal's integration
+        # guide requires it to serve ads (creatives and some network
+        # endpoints are not all HTTPS). The app's own weather requests are
+        # https:// literals in the shared module, so nothing of ours
+        # degrades; it is a deliberate, vendor-required exception.
         INFOPLIST_FILE: JustMyWeather/Info.plist
         CODE_SIGN_ENTITLEMENTS: JustMyWeather/JustMyWeather.entitlements
         TARGETED_DEVICE_FAMILY: "1" # iPhone only for now (decision 5)
@@ -94,12 +99,17 @@ targets:
         # Gradle reads and writes outside the sandbox Xcode gives scripts.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
     preBuildScripts:
-      # The InMobi CMP ships as a zip, not a package: fetched, digest-checked
-      # and unpacked into iosApp/Vendor (gitignored) by the script.
-      - name: Fetch InMobi CMP
+      # The InMobi CMP ships as a zip, not a package: scripts/ios/
+      # fetch-inmobi-cmp.sh downloads, digest-checks and unpacks it into
+      # iosApp/Vendor (gitignored). Xcode reads a linked xcframework while
+      # planning the build, before any script phase runs, so this phase can
+      # only check: the release scripts fetch it (common.sh,
+      # xcodegen_generate), and a plain xcodegen/xcodebuild or Xcode run on
+      # a fresh clone needs `scripts/ios/fetch-inmobi-cmp.sh` once first.
+      - name: Check InMobi CMP is vendored
         basedOnDependencyAnalysis: false
         script: |
-          bash "$SRCROOT/../scripts/ios/fetch-inmobi-cmp.sh"
+          bash "$SRCROOT/../scripts/ios/fetch-inmobi-cmp.sh" --check
       - name: Compile Kotlin (shared)
         basedOnDependencyAnalysis: false
         script: |

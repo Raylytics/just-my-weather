@@ -135,6 +135,10 @@ sedi() {
 xcodegen_generate() {
   command -v xcodegen >/dev/null 2>&1 \
     || die "xcodegen not found — the Xcode project is generated from iosApp/project.yml. Install it: brew install xcodegen"
+  # The InMobi CMP framework must exist before Xcode plans a build: a
+  # linked xcframework is read at planning time, before any script phase
+  # runs, so the target's own pre-build step can only check, not fetch.
+  bash "$SCRIPT_DIR/fetch-inmobi-cmp.sh" || die "fetch-inmobi-cmp.sh failed"
   echo "==> xcodegen generate (iosApp/project.yml → JustMyWeather.xcodeproj)" >&2
   (cd "$IOS_DIR" && xcodegen generate --quiet) || die "xcodegen generate failed"
 }
