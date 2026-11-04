@@ -70,10 +70,10 @@ struct ComposeView: UIViewControllerRepresentable {
         // the deferred start() below has nothing left to ask.)
         DispatchQueue.main.async {
             AppDelegate.app.gatherConsent(host: controller) {
-                DispatchQueue.main.async {
-                    let location = AppDelegate.platform.locationService
-                    if location.wouldPrompt { location.start() }
-                }
+                // start() is idempotent: this is the first call on a first
+                // launch (whether or not the CMP's own request already got
+                // the answer), a no-op when launch started it.
+                DispatchQueue.main.async { AppDelegate.platform.locationService.start() }
             }
         }
         return controller

@@ -14,12 +14,17 @@ final class LocationService: NSObject, LocationSource, CLLocationManagerDelegate
     /// Told about that first fix, so the glance leaves its default place.
     var onFirstFix: (() -> Void)?
 
-    /// At launch, as Android asks after consent: one system prompt, and a
-    /// declined one leaves the app on its default place.
     /// Whether `start()` would put the permission prompt up right now.
     var wouldPrompt: Bool { manager.authorizationStatus == .notDetermined }
+    private var started = false
 
+    /// Once per launch, after the consent flow on a first launch (as Android
+    /// asks after consent) and straight away otherwise: one system prompt,
+    /// and a declined one leaves the app on its default place. A second
+    /// call is ignored, so the host may call it from both places.
     func start() {
+        guard !started else { return }
+        started = true
         lastStatus = manager.authorizationStatus
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyReduced

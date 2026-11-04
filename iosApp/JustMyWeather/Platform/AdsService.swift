@@ -265,18 +265,40 @@ extension AdsService: AppodealInitializationDelegate {
 // MARK: - InMobi CMP
 
 extension AdsService: ChoiceCmpDelegate, CCPADelegate {
-    /// Loaded, with a stored choice applied or none needed: a form that is
-    /// going to show follows within about half a second (seen on the
-    /// simulator); after a short grace with none, the request settles.
+    /// Loaded. Whether a form is coming is read from what the CMP has
+    /// stored: under the TCF, no TC string yet means the form; under US
+    /// state law, a notice not yet shown means the notice; elsewhere, or
+    /// with a choice on file, nothing. With nothing coming the request
+    /// settles after a short grace (a re-consent form would show by then);
+    /// with a form coming it waits for the form, with a longer backstop than
+    /// the offline timeout since the page is loading over the network.
     func cmpDidLoad(info: PingResponse) {
         log.info("cmp loaded: gdprApplies=\(String(describing: info.gdprApplies)) usRegulation=\(info.usRegulationApplies) display=\(info.displayStatus.rawValue) status=\(info.cmpStatus.rawValue)")
         guard phase == .inFlight, !formVisible else { return }
+        if formExpected(info) {
+            timeout?.cancel()
+            let item = DispatchWorkItem { [weak self] in self?.settle() }
+            timeout = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 60, execute: item)
+            return
+        }
         let item = DispatchWorkItem { [weak self] in
             guard let self, !self.formVisible else { return }
             self.settle()
         }
         grace = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: item)
+    }
+
+    private func formExpected(_ info: PingResponse) -> Bool {
+        let defaults = UserDefaults.standard
+        if info.gdprApplies == true {
+            return (defaults.string(forKey: "IABTCF_TCString") ?? "").isEmpty
+        }
+        if info.usRegulationApplies {
+            return !defaults.bool(forKey: "INMOBI_MSPA_Shown")
+        }
+        return false
     }
 
     func didReceiveIABVendorConsent(gdprData: GDPRData, updated: Bool) {
@@ -306,25 +328,22 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     /// dismissal; the US notice does not (its confirmation alert closes
     /// quietly), so the SDK's ping is polled until the form has left the
     /// screen, and then the tracking prompt can follow without stacking.
+    /// No cap: while the ping says the form is up, it is up.
     private func choiceMade() {
         guard formVisible, closeWatch == nil else { return }
-        let started = Date()
-        let item = DispatchWorkItem { [weak self] in self?.watchForClose(since: started) }
-        closeWatch = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
+        watchForClose()
     }
 
-    private func watchForClose(since started: Date) {
+    private func watchForClose() {
         closeWatch = nil
         guard formVisible else { return }
-        let stillUp = ChoiceCmp.shared.ping().displayStatus == .visible
-        if stillUp, Date().timeIntervalSince(started) < 30 {
-            let item = DispatchWorkItem { [weak self] in self?.watchForClose(since: started) }
+        if ChoiceCmp.shared.ping().displayStatus == .visible {
+            let item = DispatchWorkItem { [weak self] in self?.watchForClose() }
             closeWatch = item
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
             return
         }
-        log.info("cmp form closed after a choice (ping says \(stillUp ? "still visible; giving up waiting" : "gone"))")
+        log.info("cmp form closed after a choice")
         formVisible = false
         formClosed()
     }
