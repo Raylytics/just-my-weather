@@ -69,21 +69,12 @@ final class AdsService: NSObject, AdsBridge {
 
     override init() {
         let info = Bundle.main.infoDictionary ?? [:]
-        appKey = Self.id(info["JMWAppodealAppKey"])
-        pcode = Self.id(info["JMWInMobiPcode"])
+        appKey = AdsRules.id(info["JMWAppodealAppKey"])
+        pcode = AdsRules.id(info["JMWInMobiPcode"])
         super.init()
     }
 
-    /// An id from Info.plist (filled in from Config/Ads.xcconfig), or empty:
-    /// a missing xcconfig leaves the `$(...)` reference unexpanded, and the
-    /// committed example carries placeholders; neither is an id.
-    private static func id(_ value: Any?) -> String {
-        let s = (value as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if s.isEmpty || s.hasPrefix("$(") || s.hasPrefix("REPLACE_WITH") { return "" }
-        return s
-    }
-
-    private var configured: Bool { !appKey.isEmpty && pcode.hasPrefix("p-") }
+    private var configured: Bool { AdsRules.configured(appKey: appKey, pcode: pcode) }
 
     // MARK: AdsBridge
 
@@ -129,30 +120,30 @@ final class AdsService: NSObject, AdsBridge {
 
     /// What the CMP last said, persisted by it across launches in the IAB
     /// keys (so a stored choice holds offline, or while the CMP is failing
-    /// to load this time): under the TCF (GDPR applies) a TC string with
-    /// purpose 1 (store and/or access information on a device) consented is
-    /// the floor every ad request needs; outside the TCF ads may run, with
-    /// the US opt-out riding on the GPP string the networks read; before the
-    /// CMP has said which applies, no ads.
+    /// to load this time). The decision is AdsRules.canRequestAds; this
+    /// reads the stored keys and, when nothing is stored yet, the SDK's
+    /// live answer. The ping is asked only when the stored key is absent:
+    /// before the CMP has loaded it is nil, and the rule then says no ads.
     func canRequestAds() -> Bool {
         guard configured else { return false }
         let defaults = UserDefaults.standard
         let stored = defaults.object(forKey: "IABTCF_gdprApplies") as? Int
-        guard let gdprApplies = stored.map({ $0 == 1 }) ?? ChoiceCmp.shared.ping().gdprApplies else {
-            return false
-        }
-        if !gdprApplies { return true }
-        let tcString = defaults.string(forKey: "IABTCF_TCString") ?? ""
-        let purposes = defaults.string(forKey: "IABTCF_PurposeConsents") ?? ""
-        return !tcString.isEmpty && purposes.hasPrefix("1")
+        return AdsRules.canRequestAds(
+            configured: true,
+            storedGdprApplies: stored,
+            pingGdprApplies: stored == nil ? ChoiceCmp.shared.ping().gdprApplies : nil,
+            tcString: defaults.string(forKey: "IABTCF_TCString"),
+            purposeConsents: defaults.string(forKey: "IABTCF_PurposeConsents")
+        )
     }
 
-    /// A "Privacy choices" entry is owed wherever a form applies: the TCF
-    /// regions and the US states with an opt-out notice.
+    /// A "Privacy choices" entry is owed wherever a form applies (AdsRules).
     func privacyOptionsRequired() -> Bool {
         guard configured else { return false }
         let ping = ChoiceCmp.shared.ping()
-        return ping.gdprApplies == true || ping.usRegulationApplies
+        return AdsRules.privacyOptionsRequired(
+            configured: true, gdprApplies: ping.gdprApplies, usRegulationApplies: ping.usRegulationApplies
+        )
     }
 
     func showPrivacyOptions(host: UIViewController, done: @escaping () -> Void) {
@@ -290,15 +281,15 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: item)
     }
 
+    /// The decision is AdsRules.formExpected; this reads what the CMP stored.
     private func formExpected(_ info: PingResponse) -> Bool {
         let defaults = UserDefaults.standard
-        if info.gdprApplies == true {
-            return (defaults.string(forKey: "IABTCF_TCString") ?? "").isEmpty
-        }
-        if info.usRegulationApplies {
-            return !defaults.bool(forKey: "INMOBI_MSPA_Shown")
-        }
-        return false
+        return AdsRules.formExpected(
+            gdprApplies: info.gdprApplies,
+            usRegulationApplies: info.usRegulationApplies,
+            tcString: defaults.string(forKey: "IABTCF_TCString"),
+            usNoticeShown: defaults.bool(forKey: "INMOBI_MSPA_Shown")
+        )
     }
 
     func didReceiveIABVendorConsent(gdprData: GDPRData, updated: Bool) {
