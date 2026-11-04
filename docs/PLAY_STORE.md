@@ -67,14 +67,15 @@ touches the listing, that constant, and this line.
 ### 4b. Ad network ids
 
 - **google-ads-exit (2026-11):** AdMob is gone (Stage A). The banner's ids
-  come back in Stage B with AppLovin MAX: a gitignored properties file with
-  a committed example, as `app/admob.properties` was, and
+  come back in the Android half of Stage B with Appodeal mediation behind
+  the InMobi CMP (iOS has it already): a gitignored properties file with a
+  committed example, as `app/admob.properties` was, and
   `scripts/android/release-internal.sh` refusing blank or placeholder ids.
   Until then release builds carry no ad network and nothing is cut
   (`raylytics/docs/ad-migration/RUNBOOK.md`).
 - Keep the Play Console's **Advertising ID** declaration and the Data
   safety form in step with the ad SDK (`store-assets/play-store-listing.md`);
-  Stage D of the epic drafts the MAX and CMP rows.
+  Stage D of the epic drafts the Appodeal, ad network and CMP rows.
 
 ### 5. First upload is manual — done 2026-10-02 (versionCode 2)
 
@@ -167,8 +168,9 @@ cut bumps to 3.
 - Data safety and the Advertising ID declaration are separate forms. Since
   2026-10-03 the app carries a banner ad (just-my-weather-zi8.3), so both
   apply: Advertising ID **Yes**, and Data safety carries the ad SDK's rows
-  in `store-assets/play-store-listing.md` (AdMob's today; MAX and the CMP's
-  after google-ads-exit Stage D). Re-check both whenever the ad SDK changes.
+  in `store-assets/play-store-listing.md` (AdMob's today; Appodeal's, its
+  networks' and the CMP's after google-ads-exit Stage D). Re-check both
+  whenever the ad SDK changes.
 
 ## Store listing assets
 

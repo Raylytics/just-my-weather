@@ -12,7 +12,7 @@
 # an explicit AAB) contradicts the intent of this script — run upload-play.sh
 # directly. The AdMob id check that lived here went with Google Mobile Ads
 # (google-ads-exit Stage A); Stage B adds the equivalent check for blank or
-# placeholder AppLovin MAX and CMP ids. Before the app's first production release Play accepts only
+# placeholder Appodeal and InMobi CMP ids. Before the app's first production release Play accepts only
 # draft releases, so until launch run this with `--status draft` and roll
 # the draft out from the console (docs/PLAY_STORE.md).
 #

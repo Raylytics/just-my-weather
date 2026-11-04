@@ -89,10 +89,10 @@ class AppContainer private constructor(
     // Whether ads may run at all is the consent platform's call (ads/ConsentGateway):
     // it asks the user where the law requires it and says "not required"
     // elsewhere. The ads SDK starts once, only after that — and never for an
-    // owner of Remove Ads, who has nothing to show. google-ads-exit Stage A:
-    // Google's UMP and Mobile Ads SDK are gone and the CMP and AppLovin MAX
-    // have not landed (Stage B), so the gateway never allows ads and the
-    // start hook has nothing to start.
+    // owner of Remove Ads, who has nothing to show. google-ads-exit: Google's
+    // UMP and Mobile Ads SDK are gone (Stage A) and the InMobi CMP and
+    // Appodeal have landed on iOS only (Stage B, iOS first), so here the
+    // gateway never allows ads and the start hook has nothing to start.
     val adsConsent = AdsConsent(NoConsentGateway()) {}
 }
 

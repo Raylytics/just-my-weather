@@ -76,7 +76,8 @@ Two things are deliberately **not** seams:
   iOS. The shared UI only sees `canShowAds` and `privacyOptionsRequired`.
   The two consent flows differ too much for one class to fit both.
   google-ads-exit Stage A removed Google's UMP and Mobile Ads SDK from
-  behind both twins; Stage B puts AppLovin MAX and a third-party CMP there.
+  behind both twins; Stage B puts Appodeal mediation behind the InMobi CMP
+  there (iOS first; Android's half follows).
 - **When the alert check runs.** The check is common (`alerts/AlertCheck`,
   `AlertWorker`'s old body). Its scheduling is each platform's: WorkManager
   on Android, `BGAppRefreshTask` on iOS (`AlertRefresh.swift`), which iOS
@@ -145,10 +146,10 @@ as an iOS file.
   across launches. `WeatherSnapshot` / `WeatherLocation` are the domain objects.
 - **`ads/`** (app) — the one banner, on Android. iOS has its own twin,
   `iosApp/JustMyWeather/Platform/AdsService.swift`. `ConsentGateway` is the
-  seam to the consent platform (`NoConsentGateway` until Stage B of
-  google-ads-exit; it never allows ads), `AdsConsent` starts the ad SDK once
-  and only after consent allows, and `AdBanner` is the single composable
-  that draws the adaptive banner (nothing, until Stage B). It is placed once,
+  seam to the consent platform (`NoConsentGateway` until the Android half
+  of google-ads-exit Stage B; it never allows ads), `AdsConsent` starts the
+  ad SDK once and only after consent allows, and `AdBanner` is the single
+  composable that draws the banner (nothing, until then). It is placed once,
   at the foot of the glance, and only while Remove Ads is not owned.
 - **`billing/`** — the $0.99 Remove Ads purchase. `BillingGateway` is the seam
   (plain `PurchaseRecord`/`ProductOffer` values, a `BillingEvent` flow);

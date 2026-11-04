@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.testTag
  * one call site.
  *
  * google-ads-exit Stage A: the Google Mobile Ads banner is gone and the
- * AppLovin MAX banner has not landed yet (Stage B), so this draws nothing.
+ * Appodeal banner has not landed on Android yet (Stage B, iOS first), so this draws nothing.
  * The composable keeps its place and its test tag so the glance's layout and
  * the UI flows do not move twice. App.kt composes it only while the consent
  * gate says ads may run, which NoConsentGateway never does.

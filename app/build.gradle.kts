@@ -152,7 +152,7 @@ dependencies {
     // package and one call site. Play requires Billing Library 8+ for new apps
     // since 2026-08-31. The ad SDK itself lives behind ads/: Google Mobile Ads
     // and its consent platform (UMP) were removed in the google-ads-exit epic
-    // (Stage A); AppLovin MAX and a third-party CMP land in Stage B.
+    // (Stage A); Appodeal behind the InMobi CMP lands in the Android half of Stage B.
     implementation("com.android.billingclient:billing-ktx:9.1.0")
     // Google's ads SDK pulled in a pre-1.3 androidx.fragment, and release lint
     // (lintVitalRelease) refuses an app that registers for activity results

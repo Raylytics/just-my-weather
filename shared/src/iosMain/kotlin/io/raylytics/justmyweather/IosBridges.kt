@@ -43,8 +43,9 @@ interface StoreBridge {
 enum class StorePurchase { PURCHASED, PENDING, CANCELLED, FAILED }
 
 /** The ads consent gate, the banner and App Tracking Transparency
- * (Platform/AdsService.swift). google-ads-exit Stage A removed Google Mobile
- * Ads and UMP from behind it; AppLovin MAX and the CMP land in Stage B. */
+ * (Platform/AdsService.swift): the InMobi CMP decides, Apple's prompt
+ * follows where ads may run, then Appodeal mediation serves the banner
+ * (google-ads-exit Stage B). */
 interface AdsBridge {
     /** Once per launch: the consent platform's request (and its form where
      * the law asks), then Apple's tracking prompt where allowed; [done] once

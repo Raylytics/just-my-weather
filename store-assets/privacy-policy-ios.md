@@ -17,24 +17,28 @@ accounts and no backend server of its own, and the developer runs no
 analytics, telemetry, or automatic crash reporting (the ad library's own
 measurement is described under "Ads and purchases").
 
-The app is free and shows one banner ad, served by **Google AdMob**, at the
-bottom of the screen. AdMob receives standard advertising signals from your
-device to serve that ad (see "Ads and purchases"). A one-time $0.99 purchase
-removes the ad. In the United Kingdom, the European Economic Area and
-Switzerland the app asks first, using Google's consent form, and shows no ad
-until you have chosen; you can change your choice any time in App settings →
-Privacy choices. The app may also show Apple's "Allow to track" prompt; the
-ad receives your device's advertising identifier only if you allow it.
+The app is free and shows one banner ad at the bottom of the screen, served
+through **Appodeal**, an ad mediation service that fills the space from
+several ad networks. Those networks receive standard advertising signals
+from your device to serve that ad (see "Ads and purchases"). A one-time
+$0.99 purchase removes the ad. In the United Kingdom, the European Economic
+Area and Switzerland the app asks first, using a consent form from
+**InMobi's consent platform**, and shows no ad until you have chosen; in US
+states with a privacy law it shows an opt-out notice instead. You can
+change your choice any time in App settings → Privacy choices. The app may
+also show Apple's "Allow to track" prompt; the ad networks receive your
+device's advertising identifier only if you allow it.
 
 Everything you set up — which modules show, how they are arranged, your theme,
 your saved places, your alert rules — stays on your iPhone (and in your own
 iCloud or computer backup, if you use one). The only data the app itself
 sends off your device is the latitude and longitude of the place you are
 viewing, or that your alerts watch, sent to public weather services so the
-app can fetch the forecast; separately, the ad library sends AdMob what it
-needs to show the banner (where one is shown); each time the app opens it
-asks Google's consent service whether your consent is needed (see "Ads and
-purchases"), unless you have bought ad removal; and Apple's App Store handles
+app can fetch the forecast; separately, the ad library sends the ad
+networks what they need to show the banner (where one is shown); each time
+the app opens it asks InMobi's consent platform whether your consent is
+needed (see "Ads and purchases"), unless you have bought ad removal; and
+Apple's App Store handles
 the ad-removal purchase and its restore check. A bug report or idea you send
 from the app goes from your own email app, and you see every line of it
 before you send it.
@@ -62,7 +66,7 @@ your App Store account, or the country of your approximate location or of the
 place you are viewing, matched against the bundled place list, or the Region
 in your iPhone's settings, or your iPhone's time zone, matched against the
 same list; you can also set your region yourself in App settings. Whether an
-ad may be shown does not depend on any of this: Google's consent service
+ad may be shown does not depend on any of this: the consent platform
 decides that (see "Ads and purchases"). All of this happens on your iPhone,
 and the country is not sent to the developer or to any weather or ad service.
 
@@ -90,44 +94,54 @@ no advertising identifier.
 ## Ads and purchases
 
 Unless you have bought ad removal, the app shows **one banner ad** at the
-bottom of the screen. Each time the app opens it asks **Google's consent
-service** (the User Messaging Platform) whether your consent is needed where
-you are; Google answers from the request (your IP address, as for any
-connection), and stores your answer on your device. Where consent is needed —
-the United Kingdom, the European Economic Area and Switzerland — the app shows
-Google's consent form and starts the ad SDK only after you have chosen; if you
-decline, Google may still show a limited ad that uses no cookies or advertising
-identifiers. You can change your choice any time in App settings → Privacy
-choices. The ad is served by **Google AdMob**, a Google service.
+bottom of the screen. Each time the app opens it asks **InMobi's consent
+platform** (the InMobi CMP, an IAB-registered consent management platform)
+whether your consent is needed where you are; InMobi answers from the
+request (your IP address, as for any connection), and stores your answer on
+your device in the industry-standard IAB format. Where consent is needed —
+the United Kingdom, the European Economic Area and Switzerland — the app
+shows InMobi's consent form and starts the ad SDK only after you have
+chosen; if you decline, no ad is requested. In US states with a privacy
+law the form is an opt-out notice instead, and you may opt out of the sale
+or sharing of your data and of targeted advertising. You can change your
+choice any time in App settings → Privacy choices. The ad is served through
+**Appodeal**, an ad mediation service: Appodeal asks several ad networks
+(among them AppLovin, Unity Ads, ironSource, Vungle, Mintegral, InMobi,
+DT Exchange, BidMachine and myTarget) for an ad and shows the best offer.
 
-**Tracking and personalized ads.** Once Google's consent service allows ads,
-the app may show Apple's "Allow to track" prompt, after a short explanation
-from Google. It is never shown where ads won't run. If you allow it, AdMob can
-use your device's advertising identifier to personalize ads; if you don't, it
-never receives that identifier. You can change this at any time in iOS
-Settings → Privacy & Security → Tracking. Ads may be personalized only where
-you have allowed tracking and, where consent is required, consented;
-otherwise Google serves non-personalized or limited ads. To serve, measure
-and — where allowed — personalize that ad, the Google Mobile Ads SDK built
-into the app may collect:
+**Tracking and personalized ads.** Once the consent platform allows ads,
+the app may show Apple's "Allow to track" prompt. It is never shown on top
+of the consent form, and never where ads won't run. If you allow it, the ad
+networks can use your device's advertising identifier to personalize ads;
+if you don't, they never receive that identifier. You can change this at
+any time in iOS Settings → Privacy & Security → Tracking. Ads may be
+personalized only where you have allowed tracking and, where consent is
+required, consented; otherwise the networks serve non-personalized ads. To
+serve, measure and — where allowed — personalize that ad, the Appodeal SDK
+and the ad network SDKs built into the app may collect:
 
 - your device's **advertising identifier**, only if you allow tracking;
 - your **IP address**, from which an approximate location can be inferred;
+- **device information** — model, operating system version, language,
+  screen size, network type, and the app's bundle id and version;
 - **ad interactions** — whether an ad loaded, was shown, or was tapped;
-- **diagnostic information** about the SDK and how ads perform.
+- **diagnostic information** about the SDKs and how ads perform.
 
-That data goes to Google, not to the developer, and Google's processing is
-governed by the [Google Privacy Policy](https://policies.google.com/privacy)
-and [how Google uses information from apps that use its services](https://policies.google.com/technologies/partner-sites).
-The ad is never given your saved places, your alert rules, or the weather
-you are looking at.
+That data goes to Appodeal and the ad network that serves the ad, not to
+the developer. Their processing is governed by the
+[Appodeal Privacy Policy](https://www.appodeal.com/privacy-policy) and
+each network's own policy, listed in the consent form's partner list; the
+consent platform's own processing is governed by the
+[InMobi Privacy Policy](https://www.inmobi.com/privacy-policy). The ad is
+never given your saved places, your alert rules, or the weather you are
+looking at.
 
 **Remove ads ($0.99, one-time).** The purchase is handled by **Apple** through
 the App Store; the developer never sees your payment details. The app keeps
 only a note on your device that ads are removed, and checks the App Store to
 restore the purchase on a new device signed in to the same Apple Account.
-Once ads are removed, the app stops requesting ads and stops asking Google's
-consent service.
+Once ads are removed, the app stops requesting ads and stops asking the
+consent platform.
 
 All of the app's network traffic uses HTTPS.
 
@@ -138,8 +152,9 @@ The app stores the following on your device, in its private app storage:
 - your view configuration (modules, sizes, order, labels, density, theme);
 - your saved places and the last location the app used;
 - your alert rules, whether each has fired, and your quiet-hours setting;
-- whether you have bought ad removal, and your choice in Google's consent form
-  (stored by Google's consent SDK on your device);
+- whether you have bought ad removal, and your choice in the consent form
+  (stored by InMobi's consent SDK on your device, in the IAB format the ad
+  networks read);
 - your region and unit settings, and the country the app last worked out;
 - a short-lived cache of the most recent weather so the app opens instantly;
 - a small cache of up to 32 recently looked-up approximate areas (coordinates
@@ -151,7 +166,7 @@ The app stores the following on your device, in its private app storage:
 
 Deleting the app deletes all of it. If you use iCloud Backup or back up your
 iPhone to a computer, the backup may include the app's stored data — your
-settings (including your region and your choice in Google's consent form),
+settings (including your region and your choice in the consent form),
 saved places, last position, the country the app last worked out, and the
 area cache — under your control; the developer has no access to that backup.
 
@@ -210,14 +225,14 @@ later in iOS Settings → Just My Weather.
 - No personalized ads without a choice: ads are personalized only where you
   allowed tracking and, where required, consented (see "Ads and purchases").
 - No analytics, telemetry, or automatic crash reporting run by the developer.
-  The AdMob SDK's own ad measurement and diagnostics are described under
+  The ad SDKs' own ad measurement and diagnostics are described under
   "Ads and purchases".
 - No selling of personal information.
 - No precise location. The positions the app keeps are the ones listed above;
   they leave your iPhone only as forecast coordinates sent to the weather
   services described here, or inside your own backup if you use one; never to
-  the developer. (AdMob may infer an approximate location from your IP
-  address, as any website can.)
+  the developer. (The ad networks and the consent platform may infer an
+  approximate location from your IP address, as any website can.)
 
 ## Children
 

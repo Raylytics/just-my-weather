@@ -20,11 +20,12 @@ INTERNET
 
 com.google.android.gms.permission.AD_ID
   Was merged in by the Google Mobile Ads SDK for the banner ad
-  (ads/AdBanner.kt). google-ads-exit Stage A removed that SDK; Stage B's
-  AppLovin MAX SDK declares the same permission again (it needs the
-  advertising ID). Keep the Play "Advertising ID" form at Yes. Ads are
-  personalized only with consent, or where none is required; the SDK applies
-  the choice made in the consent platform's form (ads/ConsentGateway.kt).
+  (ads/AdBanner.kt). google-ads-exit Stage A removed that SDK; the Android
+  half of Stage B's Appodeal SDK and its network adapters declare the same
+  permission again (they need the advertising ID). Keep the Play
+  "Advertising ID" form at Yes. Ads are personalized only with consent, or
+  where none is required; the SDKs apply the choice made in the consent
+  platform's form (ads/ConsentGateway.kt).
 
 android.permission.ACCESS_ADSERVICES_ATTRIBUTION / _AD_ID / _TOPICS
   Merged in by the same SDK for Android 13+'s Privacy Sandbox APIs; the app

@@ -205,11 +205,12 @@ non-personalized ads. The app keeps that behind one seam on each platform:
 iOS. The shared UI sees only `canShowAds` and `privacyOptionsRequired`.
 
 **google-ads-exit (2026-11):** Google's UMP and the Google Mobile Ads SDK
-were removed in Stage A. Until Stage B lands AppLovin MAX and the CMP
-chosen in `raylytics-763`, `NoConsentGateway` answers "no" on Android and
-`AdsService.swift` gathers nothing on iOS, so no ads run anywhere and no
-form is shown. Nothing ships in that state (`raylytics/docs/ad-migration/
-RUNBOOK.md`). The rules the Stage B integration keeps:
+were removed in Stage A. Stage B puts the **InMobi CMP** (IAB CMP 10,
+`raylytics-763`) and **Appodeal mediation** (`raylytics-0cz`) behind the
+seams: iOS has them in `AdsService.swift`; on Android `NoConsentGateway`
+still answers "no" until its half lands, so no Android ad runs and no form
+is shown there. Nothing ships until both halves pass Stage C
+(`raylytics/docs/ad-migration/RUNBOOK.md`). The rules the integration keeps:
 
 - Every launch, MainActivity (on iOS, `AdsService.swift`) asks the CMP
   whether consent is needed, after the store has answered whether the user
@@ -218,7 +219,9 @@ RUNBOOK.md`). The rules the Stage B integration keeps:
 - The ad SDK starts, and the banner loads, only once the CMP allows ads.
   Before an answer there are no ads.
 - Where a form applies, App settings shows **Privacy choices**, which
-  reopens the CMP's form. Remove Ads is offered wherever ads can run.
+  reopens the CMP's form (the TCF form in the EEA, UK and Switzerland; the
+  US opt-out notice in states with a privacy law). Remove Ads is offered
+  wherever ads can run.
 - Requests carry no personalization override: the SDK applies the user's
   choice, serving personalized ads only with consent or where none is
   required (decided 2026-10-13 with the iOS port, as open-frame).
@@ -288,7 +291,7 @@ first. The detail is in `localization/PLAN.md`.
 ## Files at a glance
 
 - `region/Region.kt`: what a region is (`Region`, `PlayStatus`).
-- `ads/AdsConsent.kt`, `ads/ConsentGateway.kt` (app): whether ads may run (the consent platform; `NoConsentGateway` until google-ads-exit Stage B). iOS: `iosApp/JustMyWeather/Platform/AdsService.swift`.
+- `ads/AdsConsent.kt`, `ads/ConsentGateway.kt` (app): whether ads may run (the consent platform; `NoConsentGateway` until the Android half of google-ads-exit Stage B). iOS: `iosApp/JustMyWeather/Platform/AdsService.swift` (InMobi CMP, then ATT, then Appodeal).
 - `region/Regions.kt`: **the registry**, plus derived conventions for every country.
 - `region/RegionResolver.kt`: the decision order, the user's settings, and the clues.
 - `region/RegionRepository.kt`, `AndroidRegionSignals.kt` (app), `IosRegionSignals.kt` (iosMain): gathering and remembering clues.

@@ -69,12 +69,19 @@ again. (The hand-off text in just-my-weather-r6d lists In-App Purchase only.)
 ### 3. Ad network ids — google-ads-exit
 
 AdMob is gone (Stage A, 2026-11): no `GADApplicationIdentifier`, no banner
-unit, no `AdMob.xcconfig`. Stage B brings AppLovin MAX and the CMP chosen in
-`raylytics-763`, with the same shape as before: a gitignored xcconfig with a
-committed example, Debug on test ids, and `release-testflight.sh` refusing a
-build whose ids are blank or still the example's placeholders. Until then
-nothing is cut (`raylytics/docs/ad-migration/RUNBOOK.md`). Keep
-`NSUserTrackingUsageDescription`: the ATT prompt returns with the ad SDK.
+unit, no `AdMob.xcconfig`. Stage B (iOS) brings Appodeal mediation behind
+the InMobi CMP, with the same shape: `iosApp/Config/Ads.xcconfig`
+(gitignored, example committed) carries `JMW_APPODEAL_APP_KEY` and
+`JMW_INMOBI_PCODE`, Info.plist reads them as `JMWAppodealAppKey` and
+`JMWInMobiPcode`, Debug builds serve Appodeal's test ads, and `archive.sh`
+(so every cut) refuses a build whose ids are blank or still the example's
+placeholders. Neither id is a secret (both ship in the binary); they are in
+`raylytics-763` and `raylytics-0cz`. `NSUserTrackingUsageDescription`
+stays: the ATT prompt follows the consent form where ads may run.
+Info.plist also carries Appodeal's SKAdNetwork and AdAttributionKit ids and
+`NSAllowsArbitraryLoads` (Appodeal's requirement; see project.yml). Nothing
+is cut until Stage C passes on both platforms
+(`raylytics/docs/ad-migration/RUNBOOK.md`).
 
 ### 4. team.properties and the API key
 
