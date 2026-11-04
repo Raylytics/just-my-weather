@@ -164,7 +164,8 @@ class MetNoClient(
         // precision the glance shows (whole degrees).
         val feelsLikeC =
             details.apparentTemperatureC?.takeIf { apparent ->
-                airC == null || Units.celsiusToFahrenheit(apparent).roundToLong() !=
+                airC == null ||
+                    Units.celsiusToFahrenheit(apparent).roundToLong() !=
                     Units.celsiusToFahrenheit(airC).roundToLong()
             }
         val hour = data.nextHour ?: data.nextSixHours

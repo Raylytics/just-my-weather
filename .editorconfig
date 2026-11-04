@@ -16,6 +16,11 @@ max_line_length = 120
 # Trailing commas are PREFERRED in this repo — they keep multi-line
 # constructor edits to single-line diffs. Make ktlint enforce them.
 ktlint_standard_no-wildcard-imports = enabled
+# ktlint 1.8 (Gradle plugin 14) adds these two rules to the standard set; they
+# would rewrite ~380 call chains and class headers. Keep the existing layout
+# until a dedicated style pass turns them on.
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_class-signature = disabled
 ktlint_standard_trailing-comma-on-call-site = required
 ktlint_standard_trailing-comma-on-declaration-site = required
 # argument-list-wrapping cascades off max-line-length and forces

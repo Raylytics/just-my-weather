@@ -152,7 +152,12 @@ class HomeViewModel(
 
     val state: StateFlow<HomeUiState> =
         combine(glance, configRepository.config, forecast, forecasts, safetyAlerts) {
-                (load, times, open), config, forecastChoice, forecasts, alerts ->
+            (load, times, open),
+            config,
+            forecastChoice,
+            forecasts,
+            alerts,
+            ->
             // Before the stored config lands, fall back to what it will say:
             // the config flow itself has already emitted by the time a Ready
             // state can exist, so this only covers the first frame.

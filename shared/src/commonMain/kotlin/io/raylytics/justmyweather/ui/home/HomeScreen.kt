@@ -458,8 +458,7 @@ private fun NowContent(
                 onSetForecastMode = onSetForecastMode,
                 // A module's detail needs the observation its value came
                 // from, which lives here and not on the tile.
-                onOpenModule = onOpenDetail?.let {
-                        open ->
+                onOpenModule = onOpenDetail?.let { open ->
                     { module -> Details.ofModule(module, snapshot, observedZone, conventions)?.let(open) }
                 },
                 onOpenDetail = onOpenDetail,

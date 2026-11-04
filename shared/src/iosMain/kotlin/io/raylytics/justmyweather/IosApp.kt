@@ -65,8 +65,7 @@ class IosApp(private val platform: IosPlatform) {
             metNoTransport = UrlSessionTransport.cached(),
             loadPlaces = BundlePlaceSource::load,
             locationSource = platform.location,
-            regionSignals = {
-                    lookup ->
+            regionSignals = { lookup ->
                 IosRegionSignals(platform.store::storefrontCountryCode, platform.location, lookup)
             },
             billingGateway = StoreKitGateway(platform.store),

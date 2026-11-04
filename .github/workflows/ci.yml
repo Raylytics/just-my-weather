@@ -38,7 +38,7 @@ jobs:
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
-      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
@@ -61,7 +61,7 @@ jobs:
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
-      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
       # google-ads-exit guardrail: no Google ad dependency, import, id or
       # adapter may come back (scripts/check-no-google-ads.sh, also a
       # pre-commit hook). Fails the job on the first hit.
@@ -94,7 +94,7 @@ jobs:
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
-      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
       - run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
   pr-title:
@@ -136,7 +136,7 @@ jobs:
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
-      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Build the debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
