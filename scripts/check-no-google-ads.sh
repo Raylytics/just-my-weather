@@ -71,7 +71,7 @@ scan() { # scan <pattern> <file>...  → prints hits, returns 1 if any, 2 on a g
   local pattern="$1"; shift
   [ "$#" -gt 0 ] || return 0
   local hits rc=0
-  hits="$(grep -nIE -- "$pattern" "$@")" || rc=$?
+  hits="$(grep -HnIE -- "$pattern" "$@")" || rc=$?
   if [ "$rc" -gt 1 ]; then
     echo "check-no-google-ads: grep failed (exit $rc); a deny pattern is probably malformed" >&2
     return 2
@@ -119,7 +119,8 @@ self_test() {
   printf '#import <GoogleMobileAds/GoogleMobileAds.h>\n' > "$tmp/bridge.m"
   printf '  - GoogleUserMessagingPlatform (3.1.0)\n' > "$tmp/Podfile.lock"
   printf '"location" : "https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git"\n' > "$tmp/Package.resolved"
-  printf '  - Google-Mobile-Ads-SDK (12.0.0)\n' > "$tmp/ads.Podfile.lock"
+  mkdir "$tmp/ads"
+  printf '  - Google-Mobile-Ads-SDK (12.0.0)\n' > "$tmp/ads/Podfile.lock"
   printf "pod 'GoogleUserMessagingPlatform'\n" > "$tmp/Podfile"
   printf 'import UserMessagingPlatform\n' > "$tmp/Consent.swift"
   local ok=1
@@ -133,7 +134,9 @@ self_test() {
   if scan_files "$tmp/bridge.m" >/dev/null; then echo "self-test FAILED: the Objective-C header import must be caught" >&2; ok=0; fi
   scan_files "$tmp/Podfile.lock" >/dev/null || { echo "self-test FAILED: UMP in Podfile.lock must pass" >&2; ok=0; }
   scan_files "$tmp/Package.resolved" >/dev/null || { echo "self-test FAILED: the UMP package in Package.resolved must pass" >&2; ok=0; }
-  if scan_files "$tmp/ads.Podfile.lock" >/dev/null; then echo "self-test FAILED: Google Mobile Ads in a lockfile must still be caught" >&2; ok=0; fi
+  if scan_files "$tmp/ads/Podfile.lock" >/dev/null; then echo "self-test FAILED: Google Mobile Ads in a lockfile must still be caught" >&2; ok=0; fi
+  printf 'com.google.android.gms:play-services-ads:25.5.0=25.5.0\n' > "$tmp/gradle.lockfile"
+  if scan_files "$tmp/gradle.lockfile" >/dev/null; then echo "self-test FAILED: play-services-ads in a Gradle lockfile must still be caught" >&2; ok=0; fi
   if scan_files "$tmp/Podfile" >/dev/null; then echo "self-test FAILED: UMP declared in a Podfile must be caught" >&2; ok=0; fi
   if scan_files "$tmp/Consent.swift" >/dev/null; then echo "self-test FAILED: a UMP import must be caught" >&2; ok=0; fi
   rm -rf "$tmp"
