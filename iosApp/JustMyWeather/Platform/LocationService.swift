@@ -21,15 +21,15 @@ final class LocationService: NSObject, LocationSource, CLLocationManagerDelegate
     var wouldPrompt: Bool { manager.authorizationStatus == .notDetermined }
     private var started = false
 
-    /// Once per launch, after the consent flow on a first launch (as Android
-    /// asks after consent) and straight away otherwise: one system prompt,
-    /// and a declined one leaves the app on its default place. A second
-    /// call is ignored, so the host may call it from both places.
     override init() {
         lastStatus = manager.authorizationStatus
         super.init()
     }
 
+    /// Once per launch, after the consent flow on a first launch (as Android
+    /// asks after consent) and straight away otherwise: one system prompt,
+    /// and a declined one leaves the app on its default place. A second
+    /// call is ignored, so the host may call it from both places.
     func start() {
         guard !started else { return }
         started = true
