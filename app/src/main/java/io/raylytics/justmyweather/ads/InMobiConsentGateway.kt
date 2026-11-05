@@ -65,7 +65,9 @@ class InMobiConsentGateway(
     private var phase = Phase.IDLE
     private var lastPing: PingReturn? = null
 
-    /** The CMP has loaded or failed on this launch (AdsRules.canRequestAds). */
+    /** The CMP has answered on this launch (AdsRules.canRequestAds): loaded
+     * with no form to come, a form closed, or an error. A load with a form
+     * still to come is not an answer: the form may change it. */
     private var answered = false
 
     /** Every `update` caller of the request in flight, told once it settles. */
@@ -88,11 +90,15 @@ class InMobiConsentGateway(
 
     // --- ConsentGateway ------------------------------------------------------
 
-    override fun canRequestAds(): Boolean {
+    override fun canRequestAds(): Boolean = readAnswer(answered)
+
+    override fun storedAnswerAllowsAds(): Boolean = readAnswer(answeredThisLaunch = true)
+
+    private fun readAnswer(answeredThisLaunch: Boolean): Boolean {
         val p = prefs()
         return AdsRules.canRequestAds(
             configured = true,
-            answeredThisLaunch = answered,
+            answeredThisLaunch = answeredThisLaunch,
             storedGdprApplies = if (p.contains(KEY_GDPR_APPLIES)) p.intOrNull(KEY_GDPR_APPLIES) else null,
             pingGdprApplies = lastPing?.gdprApplies,
             tcString = p.getString(KEY_TC_STRING, null),
@@ -187,6 +193,7 @@ class InMobiConsentGateway(
      * the answer: the privacy-options callers are told, then AdsConsent.
      */
     private fun formClosed() {
+        answered = true
         if (phase == Phase.IN_FLIGHT) {
             settle()
             return
@@ -208,22 +215,11 @@ class InMobiConsentGateway(
      */
     override fun onCmpLoaded(info: PingReturn) {
         lastPing = info
-        answered = true
         Log.i(
             TAG,
             "cmp loaded: gdprApplies=${info.gdprApplies} usRegulation=${info.usRegulationApplies} " +
                 "display=${info.displayStatus} status=${info.cmpStatus}",
         )
-        if (formVisible) return
-        if (phase == Phase.SETTLED) {
-            // Loaded after the request settled on the offline timeout: the
-            // first answer of this launch may allow ads, or owe a Privacy
-            // choices entry, that the timed-out read could not see. A form
-            // that follows reports its own closing (formClosed).
-            onChange()
-            return
-        }
-        if (phase != Phase.IN_FLIGHT) return
         val p = prefs()
         val expected =
             AdsRules.formExpected(
@@ -232,6 +228,19 @@ class InMobiConsentGateway(
                 tcString = p.getString(KEY_TC_STRING, null),
                 usNoticeShown = p.getBoolean(KEY_US_NOTICE_SHOWN, false),
             )
+        // With a form to come the CMP has not answered yet: the form may
+        // change the stored choice, and formClosed records the answer.
+        if (!expected) answered = true
+        if (formVisible) return
+        if (phase == Phase.SETTLED) {
+            // Loaded after the request settled on the offline timeout. With
+            // no form to come this is the launch's answer: have AdsConsent
+            // re-read it (ads, the Privacy choices entry). With a form to
+            // come, its closing does that (formClosed).
+            if (!expected) onChange()
+            return
+        }
+        if (phase != Phase.IN_FLIGHT) return
         if (expected) {
             armTimeout(FORM_BACKSTOP_MS)
             return

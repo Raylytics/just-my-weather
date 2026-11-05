@@ -12,11 +12,17 @@ import org.mockito.kotlin.whenever
  * starts exactly once — never before that answer. */
 class AdsConsentTest {
     /** Answers the way a CMP gateway does; [settleWith] is what the next update says. */
-    private class FakeGateway(var can: Boolean = false, var options: Boolean = false) : ConsentGateway {
+    private class FakeGateway(
+        var can: Boolean = false,
+        var options: Boolean = false,
+        var stored: Boolean? = null,
+    ) : ConsentGateway {
         var settleWith: (() -> Unit)? = null
         var pending: (() -> Unit)? = null
 
         override fun canRequestAds() = can
+
+        override fun storedAnswerAllowsAds() = stored ?: can
 
         override fun privacyOptionsRequired() = options
 
@@ -103,6 +109,23 @@ class AdsConsentTest {
         gateway.pending!!()
         assertFalse(consent.canShowAds.value)
         assertEquals(0, starts)
+    }
+
+    @Test
+    fun `the slot follows the stored answer before the platform has answered, the SDK does not`() {
+        // InMobi before it loads: no answer this launch, a stored yes on file.
+        val gateway = FakeGateway(can = false, stored = true)
+        var starts = 0
+        val consent = AdsConsent(gateway) { starts++ }
+        consent.gather(activity)
+        assertTrue(consent.canShowAds.value, "slot reserved from the stored answer")
+        assertEquals(0, starts)
+        gateway.pending!!() // the offline timeout: still no answer
+        assertFalse(consent.canShowAds.value)
+        assertEquals(0, starts, "a timeout settle starts nothing")
+        gateway.can = true
+        gateway.changed() // the CMP loads late and allows ads
+        assertEquals(1, starts)
     }
 
     @Test

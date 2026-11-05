@@ -113,14 +113,18 @@ class AdsConsent(
     /**
      * Re-read the platform's answer. [startIfAllowed] is false only for the
      * read at the top of [gather], before this launch's request: the stored
-     * answer may show the banner's slot at once, but the ads SDK starts only
+     * answer ([ConsentGateway.storedAnswerAllowsAds]) shows the banner's slot
+     * at once, but the ads SDK starts only
      * once the platform has answered on this launch (the runbook rule: no
      * Appodeal before the CMP resolves), since what applies can have
      * changed since the stored choice (consent expired, a new vendor list,
      * the user moved into another regulation's territory).
      */
     private fun settle(startIfAllowed: Boolean = true) {
-        val can = runCatching { gateway.canRequestAds() }.getOrDefault(false)
+        val can =
+            runCatching {
+                if (startIfAllowed) gateway.canRequestAds() else gateway.storedAnswerAllowsAds()
+            }.getOrDefault(false)
         canShow.value = can
         privacyOptions.value = runCatching { gateway.privacyOptionsRequired() }.getOrDefault(false)
         if (startIfAllowed && can && !started) {

@@ -17,6 +17,13 @@ interface ConsentGateway {
      * from the first frame. False until it has said so at least once. */
     fun canRequestAds(): Boolean
 
+    /** What the platform stored on an earlier launch, read without waiting
+     * for this launch's answer: it only reserves the banner's slot early, so
+     * the glance does not shift when the answer lands. Never starts the SDK
+     * ([canRequestAds] decides that). Defaults to [canRequestAds] for a
+     * gateway with no such distinction. */
+    fun storedAnswerAllowsAds(): Boolean = canRequestAds()
+
     /** Whether the user must be offered a way to change their choice (a
      * "Privacy choices" entry): true where a consent form applies. */
     fun privacyOptionsRequired(): Boolean
