@@ -23,8 +23,15 @@ app="${1:?usage: fix-framework-plists.sh <App.app>}"
 [ -d "$app/Frameworks" ] || { echo "fix-framework-plists: no Frameworks in $app" >&2; exit 0; }
 
 # The identity the app was signed with; the frameworks get the same one.
-identity=$(codesign -dvv "$app" 2>&1 | sed -n 's/^Authority=//p' | head -n 1)
-[ -n "$identity" ] || { echo "fix-framework-plists: $app is not signed; cannot re-sign frameworks" >&2; exit 1; }
+# By the leaf certificate's SHA-1, not its name: after a renewal the
+# keychain often holds two certificates with the same common name, and
+# `codesign --sign "<name>"` then fails as ambiguous (roborev 6954).
+certs=$(mktemp -d -t jmw-fwcert.XXXXXX)
+# shellcheck disable=SC2064
+trap "rm -rf '$certs'" EXIT
+codesign -d --extract-certificates="$certs/cert" "$app" >/dev/null 2>&1 || true
+[ -s "$certs/cert0" ] || { echo "fix-framework-plists: $app is not signed; cannot re-sign frameworks" >&2; exit 1; }
+identity=$(shasum -a 1 "$certs/cert0" | awk '{print toupper($1)}')
 
 # The platform this archive is for: the app's own value, one entry.
 platform=$(plutil -extract CFBundleSupportedPlatforms.0 raw -o - "$app/Info.plist")
@@ -51,7 +58,15 @@ for fw in "$app"/Frameworks/*.framework; do
 
   # "12" and "12.0" are the same version: compare major.minor as numbers.
   declared=$(plutil -extract MinimumOSVersion raw -o - "$plist" 2>/dev/null || true)
-  linked=$(xcrun vtool -show-build "$fw/$name" 2>/dev/null | awk '/minos/ {print $2; exit}' || true)
+  # The binary is CFBundleExecutable, which need not match the bundle name.
+  exe=$(plutil -extract CFBundleExecutable raw -o - "$plist" 2>/dev/null || true)
+  exe=${exe:-$name}
+  # LC_BUILD_VERSION reports "minos"; older binaries carry
+  # LC_VERSION_MIN_IPHONEOS, which reports "version" (OMSDK_Appodeal).
+  linked=$(xcrun vtool -show-build "$fw/$exe" 2>/dev/null | awk '$1 == "minos" || $1 == "version" {print $2; exit}' || true)
+  if [ -n "$declared" ] && [ -z "$linked" ]; then
+    echo "    $name: WARNING could not read the linked minimum OS from $exe; MinimumOSVersion ($declared) not checked" >&2
+  fi
   if [ -n "$declared" ] && [ -n "$linked" ] && \
      awk -F. -v d="$declared" -v l="$linked" 'BEGIN { split(d, a, "."); split(l, b, "."); exit !((b[1] + 0 > a[1] + 0) || (b[1] + 0 == a[1] + 0 && b[2] + 0 > a[2] + 0)) }'; then
     plutil -replace MinimumOSVersion -string "$linked" "$plist"

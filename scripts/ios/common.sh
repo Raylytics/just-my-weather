@@ -221,3 +221,23 @@ asc_auth_args() {
     echo "    no ASC API key in team.properties — relying on local Xcode keychain" >&2
   fi
 }
+
+# altool finds an App Store Connect API key (.p8) only in its conventional
+# directories; --apiKey takes an id, not a path. When team.properties names
+# the key file (ascKeyPath), copy it to ~/.appstoreconnect/private_keys/
+# under the name altool expects. Shared by upload-testflight.sh and
+# validate-ipa.sh so a fix lands in both (roborev 6954).
+stage_asc_key() {
+  [ -n "${IOS_ASC_KEY_PATH:-}" ] || return 0
+  local expanded_path target_dir target_file
+  expanded_path="${IOS_ASC_KEY_PATH/#\~/$HOME}"
+  [ -f "$expanded_path" ] || die "ascKeyPath set to '$IOS_ASC_KEY_PATH' but file not found at '$expanded_path'"
+  target_dir="$HOME/.appstoreconnect/private_keys"
+  target_file="$target_dir/AuthKey_${IOS_ASC_KEY_ID}.p8"
+  if [ ! -f "$target_file" ] || ! cmp -s "$expanded_path" "$target_file"; then
+    mkdir -p "$target_dir"
+    cp "$expanded_path" "$target_file"
+    chmod 600 "$target_file"
+    echo "==> Copied .p8 to $target_file" >&2
+  fi
+}

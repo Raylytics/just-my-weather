@@ -37,24 +37,7 @@ if [ -z "$IPA_PATH" ] || [ ! -f "$IPA_PATH" ]; then
   die "no IPA found. Pass a path or run scripts/ios/export-ipa.sh --method app-store-connect first."
 fi
 
-# If ascKeyPath is set, copy the .p8 into a place altool will find.
-# We can't pass a path directly to altool's --apiKey; it always looks
-# in conventional dirs. So we ensure ~/.appstoreconnect/private_keys/
-# has the right file.
-if [ -n "${IOS_ASC_KEY_PATH:-}" ]; then
-  expanded_path="${IOS_ASC_KEY_PATH/#\~/$HOME}"
-  if [ ! -f "$expanded_path" ]; then
-    die "ascKeyPath set to '$IOS_ASC_KEY_PATH' but file not found at '$expanded_path'"
-  fi
-  target_dir="$HOME/.appstoreconnect/private_keys"
-  target_file="$target_dir/AuthKey_${IOS_ASC_KEY_ID}.p8"
-  if [ ! -f "$target_file" ] || ! cmp -s "$expanded_path" "$target_file"; then
-    mkdir -p "$target_dir"
-    cp "$expanded_path" "$target_file"
-    chmod 600 "$target_file"
-    echo "==> Copied .p8 to $target_file" >&2
-  fi
-fi
+stage_asc_key
 
 echo "==> Uploading $IPA_PATH to App Store Connect" >&2
 echo "    keyId=$IOS_ASC_KEY_ID issuerId=$IOS_ASC_ISSUER_ID" >&2

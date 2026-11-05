@@ -108,7 +108,9 @@ if [ "$confirm_upload" = 0 ]; then
   IPA_PATH=$(bash "$SCRIPT_DIR/export-ipa.sh" --method app-store-connect | tail -n 1)
   # Validate with App Store Connect (no upload): a rejection here costs
   # nothing; one at upload may burn the build number (build 4, 2026-11-04).
-  bash "$SCRIPT_DIR/validate-ipa.sh" "$IPA_PATH"
+  # The rehearsal's IPA carries the last cut's build number, which App
+  # Store Connect has already seen: tolerate that one error (roborev 6954).
+  bash "$SCRIPT_DIR/validate-ipa.sh" --allow-used-build-number "$IPA_PATH"
   cat >&2 <<EOF
 
 ==> Rehearsal complete: $IPA_PATH
