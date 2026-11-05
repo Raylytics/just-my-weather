@@ -209,7 +209,16 @@ class InMobiConsentGateway(
             "cmp loaded: gdprApplies=${info.gdprApplies} usRegulation=${info.usRegulationApplies} " +
                 "display=${info.displayStatus} status=${info.cmpStatus}",
         )
-        if (phase != Phase.IN_FLIGHT || formVisible) return
+        if (formVisible) return
+        if (phase == Phase.SETTLED) {
+            // Loaded after the request settled on the offline timeout: the
+            // first answer of this launch may allow ads, or owe a Privacy
+            // choices entry, that the timed-out read could not see. A form
+            // that follows reports its own closing (formClosed).
+            onChange()
+            return
+        }
+        if (phase != Phase.IN_FLIGHT) return
         val p = prefs()
         val expected =
             AdsRules.formExpected(

@@ -54,15 +54,14 @@ class AdsConsent(
 
     /**
      * Once per launch, from the first activity. A choice made on an earlier
-     * launch applies at once ([settle] before the request), so a returning
-     * user's banner doesn't wait on the network; then the platform is asked
-     * again, since what applies can change (the user travelled, the rules
-     * moved).
+     * launch is read at once, so the banner's slot appears without waiting;
+     * the ads SDK waits for the platform's answer on this launch, since what
+     * applies can change (the user travelled, the rules moved).
      * [then] runs once that has settled — form shown and dismissed, no form
      * needed, or an error — so a first launch's other prompts can wait.
      */
     fun gather(activity: Activity, then: () -> Unit = {}) {
-        settle()
+        settle(startIfAllowed = false)
         // Once per PROCESS (roborev 5436), but never "done" before the
         // platform has answered (roborev 5439): an activity recreated by a rotation while
         // the request is in flight waits with the others, so its location
@@ -111,11 +110,20 @@ class AdsConsent(
         gateway.showPrivacyOptions(activity) { settle() }
     }
 
-    private fun settle() {
+    /**
+     * Re-read the platform's answer. [startIfAllowed] is false only for the
+     * read at the top of [gather], before this launch's request: the stored
+     * answer may show the banner's slot at once, but the ads SDK starts only
+     * once the platform has answered on this launch (the runbook rule: no
+     * Appodeal before the CMP resolves), since what applies can have
+     * changed since the stored choice (consent expired, a new vendor list,
+     * the user moved into another regulation's territory).
+     */
+    private fun settle(startIfAllowed: Boolean = true) {
         val can = runCatching { gateway.canRequestAds() }.getOrDefault(false)
         canShow.value = can
         privacyOptions.value = runCatching { gateway.privacyOptionsRequired() }.getOrDefault(false)
-        if (can && !started) {
+        if (startIfAllowed && can && !started) {
             started = true
             startAds()
         }

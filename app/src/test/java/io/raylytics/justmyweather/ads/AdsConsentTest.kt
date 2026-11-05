@@ -76,19 +76,33 @@ class AdsConsentTest {
     }
 
     @Test
-    fun `where no consent is needed ads start once, and a returning user's choice applies at once`() {
+    fun `a returning user's stored choice shows the slot, but the SDK waits for this launch's answer`() {
         val gateway = FakeGateway(can = true)
         var starts = 0
         val consent = AdsConsent(gateway) { starts++ }
         consent.gather(activity)
-        // The platform's last answer (persisted) applies before the network replies.
+        // The platform's last answer (persisted) is read before the network
+        // replies, so the slot is there; the SDK is not started on it.
         assertTrue(consent.canShowAds.value)
-        assertEquals(1, starts)
+        assertEquals(0, starts, "no SDK before the platform has answered on this launch")
         gateway.pending!!()
+        assertEquals(1, starts)
         consent.gather(activity)
         gateway.pending!!()
         assertEquals(1, starts, "never started twice")
         assertFalse(consent.privacyOptionsRequired.value)
+    }
+
+    @Test
+    fun `a stored yes that the platform withdraws on this launch never starts the SDK`() {
+        val gateway = FakeGateway(can = true)
+        var starts = 0
+        val consent = AdsConsent(gateway) { starts++ }
+        consent.gather(activity)
+        gateway.settleWith = { gateway.can = false } // consent expired; the form is owed
+        gateway.pending!!()
+        assertFalse(consent.canShowAds.value)
+        assertEquals(0, starts)
     }
 
     @Test
