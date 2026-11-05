@@ -66,13 +66,21 @@ touches the listing, that constant, and this line.
 
 ### 4b. Ad network ids
 
-- **google-ads-exit (2026-11):** AdMob is gone (Stage A). The banner's ids
-  come back in the Android half of Stage B with Appodeal mediation behind
-  the InMobi CMP (iOS has it already): a gitignored properties file with a
-  committed example, as `app/admob.properties` was, and
-  `scripts/android/release-internal.sh` refusing blank or placeholder ids.
-  Until then release builds carry no ad network and nothing is cut
+- **google-ads-exit (2026-11):** AdMob is gone (Stage A); Appodeal
+  mediation behind the InMobi CMP replaced it (Stage B). The ids live in
+  gitignored `app/ads.properties` (copy `app/ads.properties.example`):
+  `appodealAppKey` is the Appodeal app for Google Play (Appodeal → Apps →
+  Just My Weather, the Google Play row, not the iOS one) and `inmobiPcode`
+  the InMobi account's p-code. `release-internal.sh` and
+  `bundle-release.sh` refuse blank or placeholder ids. Debug builds serve
+  Appodeal's test ads. Nothing is cut before Stage C passes
   (`raylytics/docs/ad-migration/RUNBOOK.md`).
+- The ad SDKs merge permissions into the manifest that the app's own does
+  not declare: `AD_ID`, Unity's `ACCESS_ADSERVICES_ATTRIBUTION` and
+  `_TOPICS`, AppLovin's `ACCESS_WIFI_STATE`, `VIBRATE` and `CHECK_LICENSE`,
+  Vungle and BidMachine's `com.amazon.privacypass.ATTEST`. Vungle's external
+  storage pair (maxSdkVersion 18, inert at minSdk 24) is removed in the
+  manifest. Stage D reconciles these with the Data safety form.
 - Keep the Play Console's **Advertising ID** declaration and the Data
   safety form in step with the ad SDK (`store-assets/play-store-listing.md`);
   Stage D of the epic drafts the Appodeal, ad network and CMP rows.

@@ -674,13 +674,17 @@ platform difference:
   `AdsConsent` the gate that starts the ad SDK once consent allows.
   **google-ads-exit:** Google Mobile Ads and UMP were removed in Stage A
   (`raylytics/docs/ad-migration/RUNBOOK.md`); Stage B puts Appodeal
-  mediation (on Appodeal's own network accounts) behind the InMobi CMP. iOS
-  has it (`AdsService.swift`); on Android `NoConsentGateway` still never
-  allows ads and `AdBanner` draws nothing until its half lands.
+  mediation (on Appodeal's own network accounts) behind the InMobi CMP:
+  iOS in `AdsService.swift`, Android in `InMobiConsentGateway` (the CMP),
+  `AppodealAds` (the SDK, started by `AdsConsent` only once the CMP allows
+  ads) and `AdBanner` (Appodeal's one banner view, shown from the init
+  callback); `AdsRules` holds the pure decisions on both platforms.
+  A build without ids (`app/ads.properties`, `iosApp/Config/Ads.xcconfig`)
+  runs ad-free (`NoConsentGateway`), and the release scripts refuse it.
   `scripts/check-no-google-ads.sh` (pre-commit and CI) refuses anything
   that needs the AdMob account coming back, and any direct use of Google's
-  User Messaging Platform (Appodeal pulls it in transitively; nothing may
-  declare, import or call it).
+  User Messaging Platform or Appodeal's own consent manager (Appodeal pulls
+  both in transitively; nothing may declare, import or call them).
   `RemoveAdsManager` keeps the on-device entitlement in step with Play behind
   the `BillingGateway` seam.
   See `docs/architecture.md`.
@@ -788,7 +792,7 @@ on iOS": check `scripts/release-drift.sh`.
 | `IOS_ASC_KEY_ID`, `IOS_ASC_ISSUER_ID`, `IOS_ASC_KEY_PATH` (`ascKeyId` / `ascIssuerId` / `ascKeyPath`) | `scripts/ios/*`: TestFlight upload, profile creation (ASC API) | gitignored `iosApp/team.properties`, literal values; `.p8` in `~/.appstoreconnect/private_keys/` outside the repo (migrate) | `jmw-asc` (to create; if it is open-frame's key, share `open-frame-asc`) |
 | `PLAY_SERVICE_ACCOUNT` (`serviceAccountJsonPath`) | `scripts/android/upload-play.sh`, `promote-play.sh`, `preflight-play.sh`, `play-countries.sh` | path in gitignored repo-root `play.properties`; JSON key at repo-root `play-service-account.json`, gitignored (migrate) | `jmw-play` (to create; if it is open-frame's service account, share `open-frame-play`) |
 
-Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, `local.properties` (SDK path). Ad network and CMP ids (the Appodeal app key, the InMobi CMP p-code) live in a gitignored xcconfig on iOS (`iosApp/Config/Ads.xcconfig`, example committed) and, once the Android half of google-ads-exit Stage B lands, a gitignored properties file with a committed example, as AdMob's was. NWS and MET Norway need no key.
+Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, `local.properties` (SDK path). Ad network and CMP ids (the Appodeal app key, the InMobi CMP p-code) live in a gitignored xcconfig on iOS (`iosApp/Config/Ads.xcconfig`, example committed) and `app/ads.properties` on Android (`appodealAppKey`, `inmobiPcode`; example committed). NWS and MET Norway need no key.
 
 <!-- BEGIN WYK CONVENTIONS v:1 -->
 ## wyk — planning & handoff over bd
