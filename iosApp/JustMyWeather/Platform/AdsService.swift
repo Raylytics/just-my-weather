@@ -53,6 +53,15 @@ final class AdsService: NSObject, AdsBridge {
     /// screen, since the US notice sends no dismissed status of its own.
     private var closeWatch: DispatchWorkItem?
 
+    /// The CMP has answered on this launch: loaded with no form to come, a
+    /// form closed, or an error. Until then the stored IAB keys are an
+    /// earlier launch's answer and may be stale (consent expired, a new
+    /// vendor list, the user moved), so they may size the banner's slot
+    /// (`bannerHeight`) but never start ATT or Appodeal — including when the
+    /// request settled on the offline timeout (roborev 6989/6991, the Android
+    /// twin's `answeredThisLaunch` in AdsRules.kt).
+    private var answered = false
+
     /// `startAdsIfAllowed` is in the tracking prompt; a second trigger waits.
     private var adsStarting = false
     private var afterStart: [() -> Void] = []
@@ -206,7 +215,7 @@ final class AdsService: NSObject, AdsBridge {
             afterStart.append(then)
             return
         }
-        guard canRequestAds(), !sdkStarted else { return then() }
+        guard answered, canRequestAds(), !sdkStarted else { return then() }
         adsStarting = true
         afterStart.append(then)
         askToTrack { [weak self] in
@@ -265,8 +274,17 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     /// the offline timeout since the page is loading over the network.
     func cmpDidLoad(info: PingResponse) {
         log.info("cmp loaded: gdprApplies=\(String(describing: info.gdprApplies)) usRegulation=\(info.usRegulationApplies) display=\(info.displayStatus.rawValue) status=\(info.cmpStatus.rawValue)")
+        let expected = formExpected(info)
+        // With a form to come the CMP has not answered yet; formClosed does.
+        if !expected { answered = true }
+        if phase == .settled, !formVisible, !expected {
+            // Loaded after the request settled on the offline timeout, with
+            // no form to come: this is the launch's answer.
+            startAdsIfAllowed { [weak self] in self?.notifyListeners() }
+            return
+        }
         guard phase == .inFlight, !formVisible else { return }
-        if formExpected(info) {
+        if expected {
             timeout?.cancel()
             let item = DispatchWorkItem { [weak self] in self?.settle() }
             timeout = item
@@ -382,6 +400,7 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     /// answer: ads start where they now may, then every `gather` caller is
     /// told (the shared state re-reads), then the privacy-options follow-up.
     private func formClosed() {
+        answered = true
         if phase == .inFlight {
             settle()
             return
