@@ -121,13 +121,15 @@ class AdsConsent(
      * the user moved into another regulation's territory).
      */
     private fun settle(startIfAllowed: Boolean = true) {
-        val can =
-            runCatching {
-                if (startIfAllowed) gateway.canRequestAds() else gateway.storedAnswerAllowsAds()
-            }.getOrDefault(false)
-        canShow.value = can
+        // The slot follows the stored answer throughout, so it neither waits
+        // for this launch's answer nor collapses when a request settles on
+        // the offline timeout (roborev 6999); once the platform has answered,
+        // the two reads agree, so a real "no" still removes it. Only the SDK
+        // start waits for this launch's answer.
+        canShow.value = runCatching { gateway.storedAnswerAllowsAds() }.getOrDefault(false)
         privacyOptions.value = runCatching { gateway.privacyOptionsRequired() }.getOrDefault(false)
-        if (startIfAllowed && can && !started) {
+        val can = startIfAllowed && runCatching { gateway.canRequestAds() }.getOrDefault(false)
+        if (can && !started) {
             started = true
             startAds()
         }

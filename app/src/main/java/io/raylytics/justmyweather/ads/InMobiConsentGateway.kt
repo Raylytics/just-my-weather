@@ -228,18 +228,28 @@ class InMobiConsentGateway(
                 tcString = p.getString(KEY_TC_STRING, null),
                 usNoticeShown = p.getBoolean(KEY_US_NOTICE_SHOWN, false),
             )
+        if (formVisible) return
+        if (phase == Phase.SETTLED) {
+            // Loaded after the request settled on the offline timeout. With no
+            // form expected, the same grace as below (a re-consent form, which
+            // formExpected cannot see, would show by then): if none shows,
+            // this is the launch's answer and AdsConsent re-reads it (ads, the
+            // Privacy choices entry). A form that does show records the answer
+            // when it closes (formClosed).
+            if (expected) return
+            val r =
+                Runnable {
+                    if (formVisible) return@Runnable
+                    answered = true
+                    onChange()
+                }
+            grace = r
+            main.postDelayed(r, LOAD_GRACE_MS)
+            return
+        }
         // With a form to come the CMP has not answered yet: the form may
         // change the stored choice, and formClosed records the answer.
         if (!expected) answered = true
-        if (formVisible) return
-        if (phase == Phase.SETTLED) {
-            // Loaded after the request settled on the offline timeout. With
-            // no form to come this is the launch's answer: have AdsConsent
-            // re-read it (ads, the Privacy choices entry). With a form to
-            // come, its closing does that (formClosed).
-            if (!expected) onChange()
-            return
-        }
         if (phase != Phase.IN_FLIGHT) return
         if (expected) {
             armTimeout(FORM_BACKSTOP_MS)

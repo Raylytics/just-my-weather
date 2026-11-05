@@ -121,10 +121,11 @@ class AdsConsentTest {
         assertTrue(consent.canShowAds.value, "slot reserved from the stored answer")
         assertEquals(0, starts)
         gateway.pending!!() // the offline timeout: still no answer
-        assertFalse(consent.canShowAds.value)
+        assertTrue(consent.canShowAds.value, "the slot does not collapse on a timeout settle")
         assertEquals(0, starts, "a timeout settle starts nothing")
         gateway.can = true
         gateway.changed() // the CMP loads late and allows ads
+        assertTrue(consent.canShowAds.value)
         assertEquals(1, starts)
     }
 
