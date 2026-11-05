@@ -21,7 +21,8 @@
 # build archives, exports and validates (and leaves the tree clean), then
 # stops. The rehearsal archives as the NEXT build number (an xcodebuild
 # override; project.yml is not written), so App Store Connect validates it
-# fully; it is still not for uploading.
+# fully; it is still not for uploading, and upload-testflight.sh refuses
+# any IPA whose build number is not project.yml's.
 #
 # Agents: CLAUDE.md "Release confirmation gate" — uploading ANY build, the
 # TestFlight internal group included, needs Evan's explicit go-ahead for
@@ -108,7 +109,8 @@ if [ "$confirm_upload" = 0 ]; then
   # Archive as the next build number, unused on App Store Connect, without
   # writing project.yml: validation then runs every check instead of
   # stopping at the last cut's number (roborev 6954, 7010).
-  rehearsal_build=$(( $(read_build_number) + 1 ))
+  current_build=$(read_build_number)
+  rehearsal_build=$((current_build + 1))
   JMW_ARCHIVE_BUILD_NUMBER="$rehearsal_build" bash "$SCRIPT_DIR/archive.sh"
   IPA_PATH=$(bash "$SCRIPT_DIR/export-ipa.sh" --method app-store-connect | tail -n 1)
   # Validate with App Store Connect (no upload): a rejection here costs

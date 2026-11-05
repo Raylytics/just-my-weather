@@ -243,8 +243,18 @@ stage_asc_key() {
 }
 
 # The iOS build number (CFBundleVersion): CURRENT_PROJECT_VERSION in
-# project.yml, the highest if there are several (bump-build-number.sh
-# keeps them equal).
+# project.yml, the highest if there are several. Same rules as
+# bump-build-number.sh: no value, or one that is not a plain integer, is a
+# hard failure rather than a guess (roborev 7013; an empty read once made
+# the rehearsal's "next" build 1). Call it in a plain assignment
+# (n=$(read_build_number)) so set -e stops the caller on failure.
 read_build_number() {
-  sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION:[[:space:]]*"?([0-9]+)"?.*/\1/p' "$PROJECT_YML" | sort -n | tail -n 1
+  local values v max=""
+  values=$(sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION:[[:space:]]*"?([^"#[:space:]]*)"?.*/\1/p' "$PROJECT_YML")
+  [ -n "$values" ] || die "could not find CURRENT_PROJECT_VERSION in $PROJECT_YML"
+  for v in $values; do
+    [[ "$v" =~ ^[0-9]+$ ]] || die "CURRENT_PROJECT_VERSION = '$v' is not a plain integer"
+    if [ -z "$max" ] || [ "$v" -gt "$max" ]; then max=$v; fi
+  done
+  echo "$max"
 }

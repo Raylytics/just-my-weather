@@ -37,6 +37,17 @@ if [ -z "$IPA_PATH" ] || [ ! -f "$IPA_PATH" ]; then
   die "no IPA found. Pass a path or run scripts/ios/export-ipa.sh --method app-store-connect first."
 fi
 
+# Only an IPA built from the committed build number may go up. A rehearsal
+# IPA carries the NEXT number (release-testflight.sh archives it that way
+# so validation runs fully); uploading it would spend that number with
+# nothing recording it, and the next real cut would be rejected as a
+# duplicate (roborev 7013).
+expected_build=$(read_build_number)
+ipa_build=$(unzip -p "$IPA_PATH" 'Payload/*.app/Info.plist' | plutil -extract CFBundleVersion raw -o - - 2>/dev/null || true)
+[ -n "$ipa_build" ] || die "could not read CFBundleVersion from $IPA_PATH"
+[ "$ipa_build" = "$expected_build" ] \
+  || die "$IPA_PATH is build $ipa_build but project.yml says $expected_build. A rehearsal IPA (next build number) is never uploaded; run release-testflight.sh --confirm-upload, which bumps and rebuilds."
+
 stage_asc_key
 
 echo "==> Uploading $IPA_PATH to App Store Connect" >&2
