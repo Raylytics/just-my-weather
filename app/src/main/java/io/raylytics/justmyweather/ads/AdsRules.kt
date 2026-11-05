@@ -37,15 +37,24 @@ object AdsRules {
      * [storedGdprApplies] is `IABTCF_gdprApplies` (1 or 0), or null when the
      * CMP has not written it; [pingGdprApplies] is then the CMP's live answer
      * from its last load, itself null before the CMP has loaded.
+     *
+     * [answeredThisLaunch]: the CMP has loaded (or failed) on this launch.
+     * Before that the stored keys are an earlier launch's answer and may be
+     * stale (consent expired, a new vendor list, the user moved), and the
+     * runbook forbids starting Appodeal before the CMP resolves — so no ads,
+     * even when a request settled early on the offline timeout (roborev
+     * 6989). After an error the stored answer stands: the CMP cannot say
+     * otherwise this launch.
      */
     fun canRequestAds(
         configured: Boolean,
+        answeredThisLaunch: Boolean,
         storedGdprApplies: Int?,
         pingGdprApplies: Boolean?,
         tcString: String?,
         purposeConsents: String?,
     ): Boolean {
-        if (!configured) return false
+        if (!configured || !answeredThisLaunch) return false
         val gdprApplies = storedGdprApplies?.let { it == 1 } ?: pingGdprApplies ?: return false
         if (!gdprApplies) return true
         return !tcString.isNullOrEmpty() && purposeConsents.orEmpty().startsWith("1")

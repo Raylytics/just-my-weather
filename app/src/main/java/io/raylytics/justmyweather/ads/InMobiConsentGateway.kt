@@ -65,6 +65,9 @@ class InMobiConsentGateway(
     private var phase = Phase.IDLE
     private var lastPing: PingReturn? = null
 
+    /** The CMP has loaded or failed on this launch (AdsRules.canRequestAds). */
+    private var answered = false
+
     /** Every `update` caller of the request in flight, told once it settles. */
     private val waiting = mutableListOf<() -> Unit>()
 
@@ -89,6 +92,7 @@ class InMobiConsentGateway(
         val p = prefs()
         return AdsRules.canRequestAds(
             configured = true,
+            answeredThisLaunch = answered,
             storedGdprApplies = if (p.contains(KEY_GDPR_APPLIES)) p.intOrNull(KEY_GDPR_APPLIES) else null,
             pingGdprApplies = lastPing?.gdprApplies,
             tcString = p.getString(KEY_TC_STRING, null),
@@ -204,6 +208,7 @@ class InMobiConsentGateway(
      */
     override fun onCmpLoaded(info: PingReturn) {
         lastPing = info
+        answered = true
         Log.i(
             TAG,
             "cmp loaded: gdprApplies=${info.gdprApplies} usRegulation=${info.usRegulationApplies} " +
@@ -318,7 +323,15 @@ class InMobiConsentGateway(
      * persisted on an earlier launch). */
     override fun onCmpError(error: ChoiceError) {
         Log.w(TAG, "cmp error: $error")
+        val first = !answered
+        answered = true
         formVisible = false
+        // Failed after the request settled on the offline timeout: the stored
+        // answer now stands for this launch, so have AdsConsent re-read it.
+        if (first && phase == Phase.SETTLED) {
+            onChange()
+            return
+        }
         formClosed()
     }
 

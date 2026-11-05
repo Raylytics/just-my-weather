@@ -33,32 +33,39 @@ class AdsRulesTest {
 
     @Test
     fun `unconfigured never requests ads`() {
-        assertFalse(AdsRules.canRequestAds(false, 0, false, "tc", "1"))
+        assertFalse(AdsRules.canRequestAds(false, true, 0, false, "tc", "1"))
+    }
+
+    @Test
+    fun `a stored yes counts only once the CMP has answered on this launch`() {
+        assertFalse(AdsRules.canRequestAds(true, false, 0, false, null, null), "offline-timeout settle, CMP not loaded")
+        assertFalse(AdsRules.canRequestAds(true, false, 1, null, "CP...", "1111"))
+        assertTrue(AdsRules.canRequestAds(true, true, 0, null, null, null), "loaded, or errored with a stored answer")
     }
 
     @Test
     fun `before the CMP has said which regime applies there are no ads`() {
-        assertFalse(AdsRules.canRequestAds(true, null, null, null, null))
+        assertFalse(AdsRules.canRequestAds(true, true, null, null, null, null))
     }
 
     @Test
     fun `outside the TCF ads may run`() {
-        assertTrue(AdsRules.canRequestAds(true, 0, null, null, null), "stored answer")
-        assertTrue(AdsRules.canRequestAds(true, null, false, null, null), "live answer when nothing is stored")
+        assertTrue(AdsRules.canRequestAds(true, true, 0, null, null, null), "stored answer")
+        assertTrue(AdsRules.canRequestAds(true, true, null, false, null, null), "live answer when nothing is stored")
     }
 
     @Test
     fun `the stored answer wins over the live ping`() {
-        assertFalse(AdsRules.canRequestAds(true, 1, false, "", ""), "stored says GDPR applies, no consent yet")
-        assertTrue(AdsRules.canRequestAds(true, 0, true, "", ""), "stored says outside the TCF")
+        assertFalse(AdsRules.canRequestAds(true, true, 1, false, "", ""), "stored says GDPR applies, no consent yet")
+        assertTrue(AdsRules.canRequestAds(true, true, 0, true, "", ""), "stored says outside the TCF")
     }
 
     @Test
     fun `under the TCF purpose 1 consent is the floor`() {
-        assertTrue(AdsRules.canRequestAds(true, 1, null, "CP...", "1011"))
-        assertFalse(AdsRules.canRequestAds(true, 1, null, "CP...", "0111"), "purpose 1 refused")
-        assertFalse(AdsRules.canRequestAds(true, 1, null, "", "1"), "no TC string yet")
-        assertFalse(AdsRules.canRequestAds(true, 1, null, "CP...", null), "purposes never written")
+        assertTrue(AdsRules.canRequestAds(true, true, 1, null, "CP...", "1011"))
+        assertFalse(AdsRules.canRequestAds(true, true, 1, null, "CP...", "0111"), "purpose 1 refused")
+        assertFalse(AdsRules.canRequestAds(true, true, 1, null, "", "1"), "no TC string yet")
+        assertFalse(AdsRules.canRequestAds(true, true, 1, null, "CP...", null), "purposes never written")
     }
 
     @Test
