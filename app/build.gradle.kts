@@ -209,8 +209,12 @@ dependencies {
     // The InMobi CMP (Choice; Maven Central), driven by ads/InMobiConsentGateway.
     // Its POM declares no dependencies, so the libraries its classes use
     // (read from the 2.4.3 AAR: AppCompat and Material for its bottom-sheet
-    // UI, RecyclerView, CardView, ConstraintLayout, LiveData, Gson, and the
-    // IAB GPP encoder) are declared here; a Compose-only app carries none of them.
+    // UI, RecyclerView, CardView, ConstraintLayout, LiveData, AndroidX
+    // Preference for its storage, Gson, and the IAB GPP encoder) are declared
+    // here; a Compose-only app carries none of them. A missing one is not a
+    // build error: startChoice dies with NoClassDefFoundError at launch (seen
+    // on the emulator with Preference left out), so re-read the AAR's class
+    // references when bumping the CMP.
     implementation("com.inmobi:inmobicmp:2.4.3")
     implementation("com.iabgpp:iabgpp-encoder:3.2.3")
     implementation("androidx.appcompat:appcompat:1.7.1")
@@ -219,6 +223,7 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.7")
+    implementation("androidx.preference:preference:1.2.1")
     implementation("com.google.code.gson:gson:2.13.2")
     // Google's ads SDK pulled in a pre-1.3 androidx.fragment, and release lint
     // (lintVitalRelease) refuses an app that registers for activity results
