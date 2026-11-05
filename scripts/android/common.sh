@@ -195,3 +195,23 @@ play_node() {
     });
   '
 }
+
+# google-ads-exit Stage B: a store build must carry the real Appodeal app key
+# and InMobi CMP p-code. Without them the app builds and runs ad-free (blank
+# ids mean no consent request, no SDK and no banner), which is right for a
+# contributor's clone and wrong for Play. Mirrors scripts/ios/common.sh
+# require_ads_configured and app/.../ads/AdsRules.configured.
+ADS_PROPERTIES="$PROJECT_ROOT/app/ads.properties"
+read_ads_property() {
+  sed -nE "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*(.*)$/\1/p" "$ADS_PROPERTIES" | head -1 | tr -d '[:space:]'
+}
+require_ads_configured() {
+  local key pcode
+  [ -f "$ADS_PROPERTIES" ] || die "no $ADS_PROPERTIES. Copy app/ads.properties.example to app/ads.properties and fill in the Appodeal app key (Google Play app) and the InMobi CMP p-code."
+  key="$(read_ads_property appodealAppKey)"
+  pcode="$(read_ads_property inmobiPcode)"
+  case "$key" in ''|REPLACE_WITH_*) die "appodealAppKey in $ADS_PROPERTIES is blank or a placeholder; a store build must carry the real Appodeal app key." ;; esac
+  case "$pcode" in ''|REPLACE_WITH_*) die "inmobiPcode in $ADS_PROPERTIES is blank or a placeholder; a store build must carry the real InMobi CMP p-code." ;; esac
+  [[ "$pcode" == p-* ]] || die "inmobiPcode in $ADS_PROPERTIES does not look like an InMobi p-code (expected p-...)."
+  echo "    ads: Appodeal app key and InMobi p-code set" >&2
+}
