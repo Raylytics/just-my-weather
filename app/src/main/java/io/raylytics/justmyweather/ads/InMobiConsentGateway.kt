@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -35,10 +36,14 @@ import com.inmobi.cmp.model.PingReturn
  * the CMP governs.
  *
  * The CMP's `ping()` is not public on Android, so the last `onCmpLoaded`
- * answer stands in for it, and the form's closing is read from
- * `onCMPUIStatusChanged` (the CMP is its own Activity here, so a rotation of
- * MainActivity does not take its form down) with a short fallback after a
- * choice. The p-code is passed without its "p-" prefix, as InMobi's Android
+ * answer stands in for it. Its form is its own Activity
+ * (`com.inmobi.cmp.presentation.components.CmpActivity`), so whether a form
+ * is up is read from that Activity's lifecycle as well as from
+ * `onCMPUIStatusChanged`: the form is gone when either says so. The consent
+ * callbacks are NOT a sign of a choice: the CMP fires its US-regulation one
+ * by itself at load, with the notice still on screen (seen on the emulator
+ * 2026-11-05: a post-choice timer settled the request and the location
+ * prompt stacked on the notice), so they only log. The p-code is passed without its "p-" prefix, as InMobi's Android
  * SDK expects; the property is picked by the app's package name, which the
  * portal's Just My Weather property carries (the iOS and Android apps share
  * one property and one bundle id / package name).
@@ -74,8 +79,9 @@ class InMobiConsentGateway(
     /** A CMP form is on screen. */
     private var formVisible = false
 
-    /** A choice was made on the form; its own closing is awaited briefly. */
-    private var choiceSettle: Runnable? = null
+    init {
+        app.registerActivityLifecycleCallbacks(CmpActivityWatch())
+    }
 
     // --- ConsentGateway ------------------------------------------------------
 
@@ -210,7 +216,7 @@ class InMobiConsentGateway(
                 gdprApplies = info.gdprApplies,
                 usRegulationApplies = info.usRegulationApplies == true,
                 tcString = p.getString(KEY_TC_STRING, null),
-                gppString = p.getString(KEY_GPP_STRING, null),
+                usNoticeShown = p.getBoolean(KEY_US_NOTICE_SHOWN, false),
             )
         if (expected) {
             armTimeout(FORM_BACKSTOP_MS)
@@ -224,23 +230,62 @@ class InMobiConsentGateway(
     /** The request is settled the moment the CMP is not showing anything. */
     override fun onCMPUIStatusChanged(status: DisplayInfo) {
         Log.i(TAG, "cmp ui: display=${status.displayStatus} regulation=${status.regulationShown}")
-        if (status.displayStatus == DisplayStatus.VISIBLE) {
-            formVisible = true
-            cancel(timeout)
-            timeout = null
-            cancel(grace)
-            grace = null
-        } else {
-            formVisible = false
-            cancel(choiceSettle)
-            choiceSettle = null
-            formClosed()
+        if (status.displayStatus == DisplayStatus.VISIBLE) formShown() else formGone()
+    }
+
+    private fun formShown() {
+        formVisible = true
+        cancel(timeout)
+        timeout = null
+        cancel(grace)
+        grace = null
+    }
+
+    /** Idempotent: the UI status and the Activity's end can both report it. */
+    private fun formGone() {
+        if (!formVisible) return
+        formVisible = false
+        formClosed()
+    }
+
+    /** The CMP's form Activity: shown when it resumes, gone when it is
+     * destroyed for good (a rotation recreates it and is not a close). */
+    private inner class CmpActivityWatch : Application.ActivityLifecycleCallbacks {
+        private fun isCmp(activity: Activity) = activity.javaClass.name == CMP_ACTIVITY
+
+        override fun onActivityResumed(activity: Activity) {
+            if (isCmp(activity) && !formVisible) {
+                Log.i(TAG, "cmp activity resumed")
+                formShown()
+            }
         }
+
+        override fun onActivityDestroyed(activity: Activity) {
+            if (isCmp(activity) && !activity.isChangingConfigurations) {
+                Log.i(TAG, "cmp activity destroyed")
+                formGone()
+            }
+        }
+
+        override fun onActivityCreated(
+            activity: Activity,
+            savedInstanceState: Bundle?,
+        ) {}
+
+        override fun onActivityStarted(activity: Activity) {}
+
+        override fun onActivityPaused(activity: Activity) {}
+
+        override fun onActivityStopped(activity: Activity) {}
+
+        override fun onActivitySaveInstanceState(
+            activity: Activity,
+            outState: Bundle,
+        ) {}
     }
 
     override fun onIABVendorConsentGiven(gdprData: GDPRData) {
         Log.i(TAG, "cmp iab consent: tc=${if (gdprData.tcString.isNullOrEmpty()) "empty" else "set"}")
-        choiceMade()
     }
 
     override fun onNonIABVendorConsentGiven(nonIABData: NonIABData) {}
@@ -255,38 +300,16 @@ class InMobiConsentGateway(
     override fun onReceiveUSRegulationsConsent(usRegulationData: USRegulationData) {
         val gpp = if (usRegulationData.gppString.isNullOrEmpty()) "empty" else "set"
         Log.i(TAG, "cmp us regulations consent: gpp=$gpp")
-        choiceMade()
     }
 
-    override fun onCCPAConsentGiven(consentString: String) {
-        choiceMade()
-    }
-
-    /**
-     * A choice landed while a form was up. The form normally reports its own
-     * closing through onCMPUIStatusChanged; if it has not within a few
-     * seconds the request settles anyway — the choice is made, so nothing can
-     * stack on a form still being answered.
-     */
-    private fun choiceMade() {
-        if (!formVisible || choiceSettle != null) return
-        val r =
-            Runnable {
-                choiceSettle = null
-                if (!formVisible) return@Runnable
-                Log.i(TAG, "cmp form still reported visible after a choice; settling")
-                formVisible = false
-                formClosed()
-            }
-        choiceSettle = r
-        main.postDelayed(r, CHOICE_SETTLE_MS)
-    }
+    override fun onCCPAConsentGiven(consentString: String) {}
 
     /** An error is an answer too: no form will come. Ads stay off unless a
      * stored choice allows them (canRequestAds reads the IAB keys the CMP
      * persisted on an earlier launch). */
     override fun onCmpError(error: ChoiceError) {
         Log.w(TAG, "cmp error: $error")
+        formVisible = false
         formClosed()
     }
 
@@ -302,11 +325,11 @@ class InMobiConsentGateway(
         const val OFFLINE_TIMEOUT_MS = 15_000L
         const val FORM_BACKSTOP_MS = 60_000L
         const val LOAD_GRACE_MS = 2_000L
-        const val CHOICE_SETTLE_MS = 3_000L
         const val KEY_GDPR_APPLIES = "IABTCF_gdprApplies"
         const val KEY_TC_STRING = "IABTCF_TCString"
         const val KEY_PURPOSE_CONSENTS = "IABTCF_PurposeConsents"
-        const val KEY_GPP_STRING = "IABGPP_HDR_GppString"
+        const val KEY_US_NOTICE_SHOWN = "MSPAShown"
+        const val CMP_ACTIVITY = "com.inmobi.cmp.presentation.components.CmpActivity"
     }
 }
 

@@ -53,20 +53,21 @@ object AdsRules {
 
     /**
      * Once the CMP has loaded, whether a form is still coming: under the TCF,
-     * no TC string yet means the form; under US state law, no GPP string yet
-     * means the notice (Android's CMP writes no "notice shown" flag, unlike
-     * iOS's INMOBI_MSPA_Shown, and the GPP string is what the notice leaves
-     * behind); elsewhere, or with a choice on file, nothing.
+     * no TC string yet means the form; under US state law, a notice not yet
+     * shown means the notice ([usNoticeShown] is the CMP's `MSPAShown`, the
+     * twin of iOS's `INMOBI_MSPA_Shown`; not the GPP string, which the
+     * Android CMP writes at load, before the notice is up); elsewhere, or
+     * with a choice on file, nothing.
      */
     fun formExpected(
         gdprApplies: Boolean?,
         usRegulationApplies: Boolean,
         tcString: String?,
-        gppString: String?,
+        usNoticeShown: Boolean,
     ): Boolean =
         when {
             gdprApplies == true -> tcString.isNullOrEmpty()
-            usRegulationApplies -> gppString.isNullOrEmpty()
+            usRegulationApplies -> !usNoticeShown
             else -> false
         }
 

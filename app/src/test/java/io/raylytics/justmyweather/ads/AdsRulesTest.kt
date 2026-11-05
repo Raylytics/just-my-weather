@@ -63,22 +63,22 @@ class AdsRulesTest {
 
     @Test
     fun `under the TCF the form comes until a TC string is stored`() {
-        assertTrue(AdsRules.formExpected(true, false, null, null))
-        assertTrue(AdsRules.formExpected(true, false, "", "gpp"))
-        assertFalse(AdsRules.formExpected(true, false, "CP...", null))
+        assertTrue(AdsRules.formExpected(true, false, null, false))
+        assertTrue(AdsRules.formExpected(true, false, "", true), "the US flag does not stand in for a TC string")
+        assertFalse(AdsRules.formExpected(true, false, "CP...", false))
     }
 
     @Test
-    fun `in a US state the notice comes until a GPP string is stored`() {
-        assertTrue(AdsRules.formExpected(false, true, null, null))
-        assertTrue(AdsRules.formExpected(null, true, null, ""))
-        assertFalse(AdsRules.formExpected(false, true, null, "DBABLA~..."))
+    fun `in a US state the notice comes until it has been shown`() {
+        assertTrue(AdsRules.formExpected(false, true, null, false))
+        assertTrue(AdsRules.formExpected(null, true, null, false))
+        assertFalse(AdsRules.formExpected(false, true, null, true))
     }
 
     @Test
     fun `elsewhere no form is coming`() {
-        assertFalse(AdsRules.formExpected(false, false, null, null))
-        assertFalse(AdsRules.formExpected(null, false, null, null))
+        assertFalse(AdsRules.formExpected(false, false, null, false))
+        assertFalse(AdsRules.formExpected(null, false, null, false))
     }
 
     @Test
