@@ -18,9 +18,10 @@
 #   8. upload-testflight.sh    — xcrun altool → App Store Connect
 #
 # Without --confirm-upload, steps 5 and 8 are skipped: the run proves the
-# build archives and exports (and leaves the tree clean), then stops. The
-# rehearsal's IPA carries the CURRENT build number, which App Store Connect
-# has already seen if it was uploaded before — it is not for uploading.
+# build archives, exports and validates (and leaves the tree clean), then
+# stops. The rehearsal archives as the NEXT build number (an xcodebuild
+# override; project.yml is not written), so App Store Connect validates it
+# fully; it is still not for uploading.
 #
 # Agents: CLAUDE.md "Release confirmation gate" — uploading ANY build, the
 # TestFlight internal group included, needs Evan's explicit go-ahead for
@@ -104,13 +105,15 @@ bash "$PROJECT_ROOT/scripts/sync-version.sh" --check
 VERSION_NAME="$(head -1 "$PROJECT_ROOT/VERSION" | tr -d '[:space:]')"
 
 if [ "$confirm_upload" = 0 ]; then
-  bash "$SCRIPT_DIR/archive.sh"
+  # Archive as the next build number, unused on App Store Connect, without
+  # writing project.yml: validation then runs every check instead of
+  # stopping at the last cut's number (roborev 6954, 7010).
+  rehearsal_build=$(( $(read_build_number) + 1 ))
+  JMW_ARCHIVE_BUILD_NUMBER="$rehearsal_build" bash "$SCRIPT_DIR/archive.sh"
   IPA_PATH=$(bash "$SCRIPT_DIR/export-ipa.sh" --method app-store-connect | tail -n 1)
   # Validate with App Store Connect (no upload): a rejection here costs
   # nothing; one at upload may burn the build number (build 4, 2026-11-04).
-  # The rehearsal's IPA carries the last cut's build number, which App
-  # Store Connect has already seen: tolerate that one error (roborev 6954).
-  bash "$SCRIPT_DIR/validate-ipa.sh" --allow-used-build-number "$IPA_PATH"
+  bash "$SCRIPT_DIR/validate-ipa.sh" "$IPA_PATH"
   cat >&2 <<EOF
 
 ==> Rehearsal complete: $IPA_PATH

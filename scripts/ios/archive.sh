@@ -63,6 +63,17 @@ fi
 echo "==> Archiving (Release configuration)" >&2
 asc_auth_args
 
+# JMW_ARCHIVE_BUILD_NUMBER: archive as this build number without writing
+# project.yml (an xcodebuild build-setting override). The rehearsal uses
+# the next, unused number so App Store Connect's validation runs every
+# check rather than stopping at a number it has already seen (roborev 7010).
+build_override=()
+if [ -n "${JMW_ARCHIVE_BUILD_NUMBER:-}" ]; then
+  [[ "$JMW_ARCHIVE_BUILD_NUMBER" =~ ^[0-9]+$ ]] || die "JMW_ARCHIVE_BUILD_NUMBER must be an integer"
+  build_override=("CURRENT_PROJECT_VERSION=$JMW_ARCHIVE_BUILD_NUMBER")
+  echo "    build number $JMW_ARCHIVE_BUILD_NUMBER for this archive only (project.yml unchanged)" >&2
+fi
+
 # -project, never -workspace: there is no workspace (no CocoaPods; the Swift
 # packages resolve through the project itself).
 xcodebuild archive \
@@ -73,6 +84,7 @@ xcodebuild archive \
   -destination "generic/platform=iOS" \
   -allowProvisioningUpdates \
   ${ASC_AUTH_ARGS[@]+"${ASC_AUTH_ARGS[@]}"} \
+  ${build_override[@]+"${build_override[@]}"} \
   | grep -E "^(===|Archive Succeeded|error:|\*\* )" || true
 
 # The grep above hides xcodebuild's exit status (and `|| true` keeps a

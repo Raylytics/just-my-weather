@@ -289,10 +289,10 @@ No App Store Connect record is needed to test Remove Ads:
   again for distribution. `scripts/ios/validate-ipa.sh` (altool
   `--validate-app`, no upload) runs after every export, in the rehearsal
   and before the real upload, so a rejection never spends a build number.
-  The rehearsal passes `--allow-used-build-number`: its IPA carries the last
-  cut's build number, which App Store Connect reports as a redundant binary
-  (ITMS-90189), so that one error alone is a warning there; the real cut,
-  just after the bump, validates strictly. The repair re-signs by the
+  The rehearsal archives as the next build number (`JMW_ARCHIVE_BUILD_NUMBER`,
+  an xcodebuild override; `project.yml` is not written), so validation never
+  stops at a number App Store Connect has already seen and runs every check;
+  validation is strict in both paths. The repair re-signs by the
   certificate's SHA-1 (two same-named certificates after a renewal make a
   name ambiguous) and reads each framework's binary from its
   `CFBundleExecutable`, including the older `LC_VERSION_MIN_IPHONEOS` form.

@@ -241,3 +241,10 @@ stage_asc_key() {
     echo "==> Copied .p8 to $target_file" >&2
   fi
 }
+
+# The iOS build number (CFBundleVersion): CURRENT_PROJECT_VERSION in
+# project.yml, the highest if there are several (bump-build-number.sh
+# keeps them equal).
+read_build_number() {
+  sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION:[[:space:]]*"?([0-9]+)"?.*/\1/p' "$PROJECT_YML" | sort -n | tail -n 1
+}
