@@ -19,6 +19,8 @@ captures/
 *.keystore
 !debug.keystore
 keystore.properties
+# Appodeal app key + InMobi p-code (google-ads-exit Stage B); example committed
+app/ads.properties
 play.properties
 **/play-service-account.json
 **/*service-account*.json

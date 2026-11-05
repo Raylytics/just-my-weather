@@ -1,0 +1,13 @@
+# Ad and consent ids for the Android app. Copy to app/ads.properties
+# (gitignored) and fill in the values from the Appodeal dashboard (Apps >
+# Just My Weather, Google Play > App key) and the InMobi CMP portal (the
+# account's p-code, "p-..."). Both ship in the binary, so they are not
+# secrets, but they live here rather than in git so a clone without them
+# builds an app that shows no ads (blank ids mean no consent request, no SDK
+# and no banner), and so scripts/android/release-internal.sh can refuse a
+# cut that still carries a placeholder.
+#
+# Debug builds serve Appodeal test ads regardless of these values
+# (Appodeal.setTesting); the ids still have to be present.
+appodealAppKey=REPLACE_WITH_APPODEAL_APP_KEY
+inmobiPcode=REPLACE_WITH_INMOBI_PCODE

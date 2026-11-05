@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import io.raylytics.justmyweather.ads.AdsConsent
+import io.raylytics.justmyweather.ads.AdsRules
+import io.raylytics.justmyweather.ads.AppodealAds
+import io.raylytics.justmyweather.ads.InMobiConsentGateway
 import io.raylytics.justmyweather.ads.NoConsentGateway
 import io.raylytics.justmyweather.alerts.AlertNotifier
 import io.raylytics.justmyweather.alerts.AlertScheduling
@@ -22,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.Cache
 import java.io.File
 
@@ -86,14 +90,35 @@ class AppContainer private constructor(
             broadcaster = GadgetbridgeBroadcaster(appContext),
         )
 
+    // The ad and consent ids from app/ads.properties (via BuildConfig); blank
+    // or placeholder in a clone without the file, which then runs ad-free.
+    private val appodealAppKey = AdsRules.id(BuildConfig.APPODEAL_APP_KEY)
+    private val inmobiPcode = AdsRules.id(BuildConfig.INMOBI_PCODE)
+
+    // Appodeal mediation, started by the consent gate below (google-ads-exit
+    // Stage B). AdBanner draws from it.
+    val appodealAds = AppodealAds(appContext, appodealAppKey)
+
     // Whether ads may run at all is the consent platform's call (ads/ConsentGateway):
-    // it asks the user where the law requires it and says "not required"
-    // elsewhere. The ads SDK starts once, only after that — and never for an
-    // owner of Remove Ads, who has nothing to show. google-ads-exit: Google's
-    // UMP and Mobile Ads SDK are gone (Stage A) and the InMobi CMP and
-    // Appodeal have landed on iOS only (Stage B, iOS first), so here the
-    // gateway never allows ads and the start hook has nothing to start.
-    val adsConsent = AdsConsent(NoConsentGateway()) {}
+    // the InMobi CMP asks the user where the law requires it (the TCF regions'
+    // form, the US states' opt-out notice) and says "not required" elsewhere.
+    // The ads SDK starts once, only after that — and never for an owner of
+    // Remove Ads, who has nothing to show. Without ids there is no CMP and no
+    // SDK (NoConsentGateway never allows ads).
+    val adsConsent =
+        AdsConsent(
+            if (AdsRules.configured(appodealAppKey, inmobiPcode)) {
+                InMobiConsentGateway(appContext, inmobiPcode)
+            } else {
+                NoConsentGateway()
+            },
+        ) {
+            scope.launch {
+                if (!adsEntitlementRepository.adsRemoved.first()) {
+                    withContext(Dispatchers.Main) { appodealAds.start() }
+                }
+            }
+        }
 }
 
 class JustMyWeatherApp : Application() {

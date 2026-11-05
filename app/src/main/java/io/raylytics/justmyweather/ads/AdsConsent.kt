@@ -45,6 +45,13 @@ class AdsConsent(
     /** True where the user must be able to change their choice. */
     val privacyOptionsRequired: StateFlow<Boolean> = privacyOptions.asStateFlow()
 
+    init {
+        // A form that closes after its request settled (the user took longer
+        // than the offline timeout) may have allowed ads: re-read, and start
+        // the SDK then rather than on the next launch.
+        gateway.setOnChange { settle() }
+    }
+
     /**
      * Once per launch, from the first activity. A choice made on an earlier
      * launch applies at once ([settle] before the request), so a returning

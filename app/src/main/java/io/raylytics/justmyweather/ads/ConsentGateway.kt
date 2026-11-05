@@ -7,8 +7,9 @@ import android.app.Activity
  * same shape as billing/BillingGateway: a few plain answers, so the decisions
  * around them (AdsConsent) test on the JVM against a fake, and the CMP's
  * gateway is the only file that imports its SDK. Google's UMP gateway was
- * removed in the google-ads-exit epic (Stage A); until the CMP's gateway
- * lands (Stage B), NoConsentGateway stands in and never allows ads.
+ * removed in the google-ads-exit epic (Stage A); the InMobi CMP's gateway
+ * replaced it (Stage B, InMobiConsentGateway). NoConsentGateway stands in
+ * for a build without ad ids and never allows ads.
  */
 interface ConsentGateway {
     /** Whether ads may be requested now, from what the platform last said —
@@ -28,4 +29,11 @@ interface ConsentGateway {
 
     /** Reopen the platform's form so the user can change their choice. */
     fun showPrivacyOptions(activity: Activity, onDone: () -> Unit)
+
+    /** Call [listener] whenever the answer may have changed outside a
+     * request: a form that closed after its request had already settled (a
+     * first-launch form that outlived the offline timeout). AdsConsent
+     * re-reads the answer then, so ads can start without a relaunch. A
+     * gateway whose answer never changes on its own need not override it. */
+    fun setOnChange(listener: () -> Unit) {}
 }

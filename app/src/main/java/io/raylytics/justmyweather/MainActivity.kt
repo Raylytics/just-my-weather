@@ -167,7 +167,7 @@ class MainActivity : ComponentActivity() {
                 onBuyRemoveAds = { appSettingsViewModel.buyRemoveAds(this@MainActivity) },
                 onRateApp = { openStoreListing() },
                 version = "${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
-                adBanner = { AdBanner() },
+                adBanner = { AdBanner(container.appodealAds) },
                 support = supportHost,
                 // The bars sit on the app-painted background, and the user can
                 // force a mood against the system setting — so bar icon contrast

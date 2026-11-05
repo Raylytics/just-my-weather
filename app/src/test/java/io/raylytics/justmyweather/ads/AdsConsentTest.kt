@@ -28,9 +28,36 @@ class AdsConsentTest {
         }
 
         override fun showPrivacyOptions(activity: Activity, onDone: () -> Unit) = onDone()
+
+        var changed: () -> Unit = {}
+
+        override fun setOnChange(listener: () -> Unit) {
+            changed = listener
+        }
     }
 
     private val activity: Activity = mock()
+
+    @Test
+    fun `a form that closes after the request settled can still start ads`() {
+        // First launch, no network: the request settles on the offline
+        // timeout with no answer, then the form loads and the user accepts.
+        val gateway = FakeGateway(can = false, options = true)
+        var starts = 0
+        val consent = AdsConsent(gateway) { starts++ }
+        consent.gather(activity)
+        gateway.pending!!()
+        assertFalse(consent.canShowAds.value)
+        assertEquals(0, starts)
+
+        gateway.can = true
+        gateway.changed()
+        assertTrue(consent.canShowAds.value)
+        assertEquals(1, starts)
+
+        gateway.changed()
+        assertEquals(1, starts, "the SDK starts once per process")
+    }
 
     @Test
     fun `in a consent region nothing starts until the user has chosen`() {
