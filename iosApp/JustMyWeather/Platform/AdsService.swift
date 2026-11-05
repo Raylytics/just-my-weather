@@ -112,7 +112,9 @@ final class AdsService: NSObject, AdsBridge {
             // No network on a first launch: the CMP cannot answer, and the
             // rest of the launch sequence (the location prompt) must not wait
             // forever. Before an answer there are no ads, so settling early
-            // is safe; the CMP keeps loading and its answer applies next time.
+            // is safe; the CMP keeps loading, and its answer, when it comes,
+            // starts ads on this launch (the late-load branch of cmpDidLoad,
+            // or formClosed).
             let item = DispatchWorkItem { [weak self] in self?.settle() }
             timeout = item
             DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: item)
@@ -275,14 +277,24 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
     func cmpDidLoad(info: PingResponse) {
         log.info("cmp loaded: gdprApplies=\(String(describing: info.gdprApplies)) usRegulation=\(info.usRegulationApplies) display=\(info.displayStatus.rawValue) status=\(info.cmpStatus.rawValue)")
         let expected = formExpected(info)
-        // With a form to come the CMP has not answered yet; formClosed does.
-        if !expected { answered = true }
-        if phase == .settled, !formVisible, !expected {
-            // Loaded after the request settled on the offline timeout, with
-            // no form to come: this is the launch's answer.
-            startAdsIfAllowed { [weak self] in self?.notifyListeners() }
+        if phase == .settled {
+            // Loaded after the request settled on the offline timeout. With no
+            // form expected, the same grace as below (a re-consent form, which
+            // formExpected cannot see, would show by then): if none shows,
+            // this is the launch's answer and ads may start now. A form that
+            // does show records the answer when it closes (formClosed).
+            guard !formVisible, !expected else { return }
+            let item = DispatchWorkItem { [weak self] in
+                guard let self, !self.formVisible else { return }
+                self.answered = true
+                self.startAdsIfAllowed { [weak self] in self?.notifyListeners() }
+            }
+            grace = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: item)
             return
         }
+        // With a form to come the CMP has not answered yet; formClosed does.
+        if !expected { answered = true }
         guard phase == .inFlight, !formVisible else { return }
         if expected {
             timeout?.cancel()
