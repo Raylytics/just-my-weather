@@ -114,7 +114,8 @@ where no consent is required and you have not opted out; otherwise the
 networks serve non-personalized ads. Deleting your advertising ID, or turning
 off ad personalization, in your device settings tells the networks to serve
 non-personalized ads; resetting the ID only replaces it with a new one. To
-serve, measure and — where allowed — personalize that ad, the Appodeal SDK and the ad network SDKs built into the app may collect:
+serve, measure and — where allowed — personalize that ad, the Appodeal SDK and
+the ad network SDKs built into the app may collect:
 
 - your device's **advertising ID** (you can reset or delete it in your
   device's settings) and other device identifiers;
