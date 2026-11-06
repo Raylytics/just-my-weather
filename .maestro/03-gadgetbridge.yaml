@@ -19,6 +19,8 @@ tags:
     clearState: true
     permissions:
       all: allow
+# Answer the CMP notice a fresh install shows where ads are configured.
+- runFlow: subflows/consent.yaml
 
 - extendedWaitUntil:
     visible: "App Settings"

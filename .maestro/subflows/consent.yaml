@@ -1,0 +1,28 @@
+# Answer the consent platform on a fresh install (google-ads-exit Stage C,
+# 2026-11-06). Every flow runs this right after its clearState launchApp.
+#
+# A build with ad ids (app/ads.properties, iosApp/Config/Ads.xcconfig) runs
+# the InMobi CMP, which shows its notice on the first launch wherever a
+# regulation applies: from a US IP the opt-out notice ("ACCEPT ALL", then a
+# "choices saved" alert with "OK"); in the EEA/UK the TCF form. On iOS
+# Apple's tracking prompt follows once it closes. A build without ids (CI,
+# a clone) shows nothing, and this only costs the wait below.
+#
+# Waits for the notice itself, not "whichever comes first": on iOS the app
+# renders first and the CMP sheet arrives a moment later (seen in
+# open-frame's suite). Every step is optional.
+appId: io.raylytics.justmyweather
+---
+- extendedWaitUntil:
+    visible: 'ACCEPT ALL|Accept all'
+    timeout: 15000
+    optional: true
+- tapOn:
+    text: 'ACCEPT ALL|Accept all'
+    optional: true
+- tapOn:
+    text: 'OK'
+    optional: true
+- tapOn:
+    text: 'Ask App Not to Track'
+    optional: true

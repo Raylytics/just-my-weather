@@ -25,6 +25,8 @@ appId: io.raylytics.justmyweather
     clearState: true
     permissions:
       all: allow
+# Answer the CMP notice a fresh install shows where ads are configured.
+- runFlow: subflows/consent.yaml
 
 # Wait for the glance. Arrange mode is not offered until there is something to
 # arrange, so this also proves the grid rendered.
