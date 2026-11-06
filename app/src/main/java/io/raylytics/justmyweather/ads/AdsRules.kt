@@ -80,6 +80,34 @@ object AdsRules {
             else -> false
         }
 
+    /** What a non-visible CMP UI status means (Android, where the CMP's
+     * statuses arrive out of step with its screens). */
+    enum class HiddenStatus {
+        /** A form was up: it has closed. */
+        FORM_CLOSED,
+
+        /** Nothing was coming (a privacy-options request the CMP declined,
+         * or a load that expected no form): the CMP has answered. */
+        ANSWER,
+
+        /** A form was expected but none is up: the CMP may send this just
+         * before its notice appears, or because it decided no notice is
+         * needed here. Settle after a short grace unless a form appears. */
+        ANSWER_AFTER_GRACE,
+    }
+
+    fun hiddenStatus(
+        formVisible: Boolean,
+        privacyOptionsPending: Boolean,
+        loaded: Boolean,
+        formExpected: Boolean,
+    ): HiddenStatus =
+        when {
+            formVisible -> HiddenStatus.FORM_CLOSED
+            privacyOptionsPending || (loaded && !formExpected) -> HiddenStatus.ANSWER
+            else -> HiddenStatus.ANSWER_AFTER_GRACE
+        }
+
     /** A "Privacy choices" entry is owed wherever a form applies: the TCF
      * regions and the US states with an opt-out notice. */
     fun privacyOptionsRequired(

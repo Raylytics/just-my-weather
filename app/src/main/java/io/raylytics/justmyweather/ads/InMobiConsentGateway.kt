@@ -267,19 +267,33 @@ class InMobiConsentGateway(
     /** The request is settled the moment the CMP is not showing anything. */
     override fun onCMPUIStatusChanged(status: DisplayInfo) {
         Log.i(TAG, "cmp ui: display=${status.displayStatus} regulation=${status.regulationShown}")
-        // With a form up, formGone (also reached from the Activity's end)
-        // closes it once. A non-visible status with no form up is an answer
-        // only where nothing is coming: a privacy-options request the CMP
-        // declined to open, or a load that said no form ("no need to show the
-        // notice"). Where the load expects a form, it is ignored: the CMP may
-        // send it before the notice appears, and settling then would start
-        // Appodeal and the location prompt under the notice (roborev 7027,
-        // open-frame 7015).
-        when {
-            status.displayStatus == DisplayStatus.VISIBLE -> formShown()
-            formVisible -> formGone()
-            privacyOptionsWaiting.isNotEmpty() || (lastPing != null && !formExpectedAtLoad) -> formClosed()
-            else -> Log.i(TAG, "cmp ui: not visible before the expected form; waiting for it")
+        // What a non-visible status means is AdsRules.hiddenStatus: with a
+        // form up it closed (formGone, also reached from the Activity's end);
+        // where nothing was coming it is the answer; where a form was
+        // expected but none is up it may come just before the notice, or mean
+        // the CMP decided no notice is needed, so it answers after the load
+        // grace unless a form appears first (formShown cancels the grace)
+        // (roborev 7027, 7029; open-frame 7015, 7030).
+        if (status.displayStatus == DisplayStatus.VISIBLE) {
+            formShown()
+            return
+        }
+        val meaning =
+            AdsRules.hiddenStatus(
+                formVisible = formVisible,
+                privacyOptionsPending = privacyOptionsWaiting.isNotEmpty(),
+                loaded = lastPing != null,
+                formExpected = formExpectedAtLoad,
+            )
+        when (meaning) {
+            AdsRules.HiddenStatus.FORM_CLOSED -> formGone()
+            AdsRules.HiddenStatus.ANSWER -> formClosed()
+            AdsRules.HiddenStatus.ANSWER_AFTER_GRACE -> {
+                cancel(grace)
+                val r = Runnable { if (!formVisible) formClosed() }
+                grace = r
+                main.postDelayed(r, LOAD_GRACE_MS)
+            }
         }
     }
 

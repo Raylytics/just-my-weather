@@ -96,4 +96,37 @@ class AdsRulesTest {
         assertFalse(AdsRules.privacyOptionsRequired(true, null, false))
         assertFalse(AdsRules.privacyOptionsRequired(false, true, true), "unconfigured owes nothing")
     }
+
+    @Test
+    fun `a hidden status closes a form that was up`() {
+        assertEquals(AdsRules.HiddenStatus.FORM_CLOSED, AdsRules.hiddenStatus(true, false, true, true))
+    }
+
+    @Test
+    fun `a hidden status answers where nothing was coming`() {
+        assertEquals(
+            AdsRules.HiddenStatus.ANSWER,
+            AdsRules.hiddenStatus(false, false, true, false),
+            "relaunch: no need to show the notice",
+        )
+        assertEquals(
+            AdsRules.HiddenStatus.ANSWER,
+            AdsRules.hiddenStatus(false, true, true, true),
+            "a privacy-options request the CMP declined to open",
+        )
+    }
+
+    @Test
+    fun `a hidden status before an expected form waits a grace`() {
+        assertEquals(
+            AdsRules.HiddenStatus.ANSWER_AFTER_GRACE,
+            AdsRules.hiddenStatus(false, false, true, true),
+            "first US launch: may come just before the notice, or mean no notice here",
+        )
+        assertEquals(
+            AdsRules.HiddenStatus.ANSWER_AFTER_GRACE,
+            AdsRules.hiddenStatus(false, false, false, false),
+            "before the CMP has loaded nothing is known",
+        )
+    }
 }
