@@ -84,6 +84,9 @@ class InMobiConsentGateway(
     /** A CMP form is on screen. */
     private var formVisible = false
 
+    /** What the last load said: a form is still to come (AdsRules.formExpected). */
+    private var formExpectedAtLoad = false
+
     init {
         app.registerActivityLifecycleCallbacks(CmpActivityWatch())
     }
@@ -228,6 +231,7 @@ class InMobiConsentGateway(
                 tcString = p.getString(KEY_TC_STRING, null),
                 usNoticeShown = p.getBoolean(KEY_US_NOTICE_SHOWN, false),
             )
+        formExpectedAtLoad = expected
         if (formVisible) return
         if (phase == Phase.SETTLED) {
             // Loaded after the request settled on the offline timeout. With no
@@ -263,14 +267,19 @@ class InMobiConsentGateway(
     /** The request is settled the moment the CMP is not showing anything. */
     override fun onCMPUIStatusChanged(status: DisplayInfo) {
         Log.i(TAG, "cmp ui: display=${status.displayStatus} regulation=${status.regulationShown}")
-        // A non-visible status with no form up is an answer too ("no need to
-        // show the notice", or a privacy-options request the CMP declined to
-        // open); with a form up, formGone (also reached from the Activity's
-        // end) closes it once (open-frame roborev 7015).
+        // With a form up, formGone (also reached from the Activity's end)
+        // closes it once. A non-visible status with no form up is an answer
+        // only where nothing is coming: a privacy-options request the CMP
+        // declined to open, or a load that said no form ("no need to show the
+        // notice"). Where the load expects a form, it is ignored: the CMP may
+        // send it before the notice appears, and settling then would start
+        // Appodeal and the location prompt under the notice (roborev 7027,
+        // open-frame 7015).
         when {
             status.displayStatus == DisplayStatus.VISIBLE -> formShown()
             formVisible -> formGone()
-            else -> formClosed()
+            privacyOptionsWaiting.isNotEmpty() || (lastPing != null && !formExpectedAtLoad) -> formClosed()
+            else -> Log.i(TAG, "cmp ui: not visible before the expected form; waiting for it")
         }
     }
 
