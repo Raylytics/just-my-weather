@@ -52,6 +52,9 @@ final class AdsService: NSObject, AdsBridge {
     /// A choice was made on the form; polling for the form to leave the
     /// screen, since the US notice sends no dismissed status of its own.
     private var closeWatch: DispatchWorkItem?
+    /// When a choice landed on the form now up; the close watch's 60 s cap
+    /// counts from here, and only once there is a choice.
+    private var choiceAt: Date?
 
     /// The CMP has answered on this launch: loaded with no form to come, a
     /// form closed, or an error. Until then the stored IAB keys are an
@@ -347,27 +350,34 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
 
     /// A choice landed while a form was up. The TCF form reports its own
     /// dismissal; the US notice does not (its confirmation alert closes
-    /// quietly), so the SDK's ping is polled until the form has left the
-    /// screen, and then the tracking prompt can follow without stacking.
-    /// A minute after the choice the request settles regardless: the choice
-    /// is made, so nothing can stack on a form still being answered, and a
-    /// ping that never clears must not hold the launch sequence forever.
+    /// quietly), so the CMP's screens are polled (cmpOnScreen) until they
+    /// have left, and then the tracking prompt can follow without stacking;
+    /// the SDK's ping is not used, as it reads not-visible too early.
+    /// A minute after the CHOICE the request settles regardless: the choice
+    /// is made, so nothing can stack on a form still being answered, and
+    /// screens that never clear must not hold the launch sequence forever.
+    /// A watch started by a non-visible UI status with no choice yet has no
+    /// cap: the user may read the form as long as they like (open-frame
+    /// roborev 7024).
     private func choiceMade() {
-        guard formVisible, closeWatch == nil else { return }
-        watchForClose(since: Date())
+        guard formVisible else { return }
+        if choiceAt == nil { choiceAt = Date() }
+        if closeWatch == nil { watchForClose() }
     }
 
-    private func watchForClose(since choice: Date) {
+    private func watchForClose() {
         closeWatch = nil
         guard formVisible else { return }
-        let stillUp = ChoiceCmp.shared.ping().displayStatus == .visible
-        if stillUp, Date().timeIntervalSince(choice) < 60 {
-            let item = DispatchWorkItem { [weak self] in self?.watchForClose(since: choice) }
+        let stillUp = Self.cmpOnScreen()
+        let capped = choiceAt.map { Date().timeIntervalSince($0) >= 60 } ?? false
+        if stillUp, !capped {
+            let item = DispatchWorkItem { [weak self] in self?.watchForClose() }
             closeWatch = item
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
             return
         }
-        log.info("cmp form closed after a choice\(stillUp ? " (ping still says visible a minute later; settling anyway)" : "")")
+        log.info("cmp form closed\(stillUp ? " (its screens still up a minute after the choice; settling anyway)" : "")")
+        choiceAt = nil
         formVisible = false
         formClosed()
     }
@@ -389,15 +399,47 @@ extension AdsService: ChoiceCmpDelegate, CCPADelegate {
             timeout = nil
             grace?.cancel()
             grace = nil
-        case .hidden, .disabled, .dismissed:
+        default: // hidden, disabled, dismissed
+            // Trust it only once the CMP's screens are really gone: its status
+            // and its UI disagree (see cmpOnScreen); otherwise watch until
+            // they leave.
+            if formVisible, Self.cmpOnScreen() {
+                if closeWatch == nil { watchForClose() }
+                return
+            }
             formVisible = false
             closeWatch?.cancel()
             closeWatch = nil
-            formClosed()
-        @unknown default:
-            formVisible = false
+            choiceAt = nil
             formClosed()
         }
+    }
+
+    /// Whether any of the CMP's screens is on screen: a view controller from
+    /// the InMobiCMP module (MSPAViewController for the US notice,
+    /// MainPrivacyController for the TCF form, ...) anywhere in a visible
+    /// window's presentation chain or its children. Seen in open-frame on the
+    /// iOS 27 simulator 2026-11-05 (same SDK, same logic as here): after
+    /// Accept all, `ping().displayStatus` read not-visible while the US
+    /// notice and then its "choices saved" alert were still up, so Apple's
+    /// tracking prompt was stacked on the notice and Appodeal started before
+    /// the user had closed it.
+    static func cmpOnScreen() -> Bool {
+        func isCmp(_ vc: UIViewController) -> Bool {
+            if String(reflecting: type(of: vc)).hasPrefix("InMobiCMP.") { return true }
+            return vc.children.contains(where: isCmp)
+        }
+        for scene in UIApplication.shared.connectedScenes {
+            guard let windowScene = scene as? UIWindowScene else { continue }
+            for window in windowScene.windows where !window.isHidden {
+                var vc = window.rootViewController
+                while let current = vc {
+                    if isCmp(current) { return true }
+                    vc = current.presentedViewController
+                }
+            }
+        }
+        return false
     }
 
     /// An error is an answer too: no form will come. Ads stay off unless a

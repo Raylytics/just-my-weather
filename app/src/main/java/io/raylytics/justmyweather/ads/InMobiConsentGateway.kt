@@ -263,7 +263,15 @@ class InMobiConsentGateway(
     /** The request is settled the moment the CMP is not showing anything. */
     override fun onCMPUIStatusChanged(status: DisplayInfo) {
         Log.i(TAG, "cmp ui: display=${status.displayStatus} regulation=${status.regulationShown}")
-        if (status.displayStatus == DisplayStatus.VISIBLE) formShown() else formGone()
+        // A non-visible status with no form up is an answer too ("no need to
+        // show the notice", or a privacy-options request the CMP declined to
+        // open); with a form up, formGone (also reached from the Activity's
+        // end) closes it once (open-frame roborev 7015).
+        when {
+            status.displayStatus == DisplayStatus.VISIBLE -> formShown()
+            formVisible -> formGone()
+            else -> formClosed()
+        }
     }
 
     private fun formShown() {
