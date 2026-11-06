@@ -49,7 +49,8 @@ state may be someone else's WIP.
 ## What this app is
 
 **Just My Weather** is a minimalist, customizable weather app for Android and
-iPhone (the iOS app has not shipped yet; `docs/PARITY.md`). The
+iPhone (iOS builds are in TestFlight; the App Store release is pending
+review; `docs/PARITY.md`). The
 default is calm and sparse — one glance answers "what's it like right now." The
 power is letting users build their own view (which data points, order, density,
 look) and their own *personal* alerts (rule-based: "tell me when the overnight

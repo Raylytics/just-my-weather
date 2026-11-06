@@ -8,9 +8,11 @@ here.** A row says what each platform does, whether that is parity, and
 which bd issue owns any gap. A feature with no row has not been looked at
 on the other platform, so it is not done.
 
-Audited 2026-10-13 against branch `ios-port` at `3eb62ba`. iOS has not
-shipped a build yet, so "iOS" below means what the code does on the iOS 27
-simulator. It does not mean what users have.
+Audited 2026-10-13 against branch `ios-port` at `3eb62ba`. iOS had not
+shipped a build then, so "iOS" below means what the code does on the iOS 27
+simulator. It does not mean what users have. Since then iOS builds have gone
+to TestFlight and App Store review; the app is not released on the App Store
+yet (see "Last iOS build" below).
 
 Four parts:
 
