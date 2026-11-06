@@ -11,6 +11,8 @@ appId: io.raylytics.justmyweather
     clearState: true
     permissions:
       all: allow
+# Answer the CMP notice a fresh install shows where ads are configured.
+- runFlow: subflows/consent.yaml
 
 # Wait for the default glance to render. Wind is hidden, so its row label is
 # not shown yet.

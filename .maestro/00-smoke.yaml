@@ -12,6 +12,8 @@ appId: io.raylytics.justmyweather
     clearState: true
     permissions:
       all: allow
+# Answer the CMP notice a fresh install shows where ads are configured.
+- runFlow: subflows/consent.yaml
 
 # Wait for the real network fetch to land in the Ready state. The budget is
 # generous because the first load chains /points -> /stations -> /observations,

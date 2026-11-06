@@ -11,6 +11,8 @@ appId: io.raylytics.justmyweather
     clearState: true
     permissions:
       all: allow
+# Answer the CMP notice a fresh install shows where ads are configured.
+- runFlow: subflows/consent.yaml
 
 # Out of the box: the forecast shows, framed hourly.
 - extendedWaitUntil:
