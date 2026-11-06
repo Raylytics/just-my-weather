@@ -99,34 +99,39 @@ class AdsRulesTest {
 
     @Test
     fun `a hidden status closes a form that was up`() {
-        assertEquals(AdsRules.HiddenStatus.FORM_CLOSED, AdsRules.hiddenStatus(true, false, true, true))
+        assertEquals(AdsRules.HiddenStatus.FORM_CLOSED, AdsRules.hiddenStatus(true, false, true, true, false))
     }
 
     @Test
-    fun `a hidden status answers where nothing was coming`() {
+    fun `a hidden status answers where nothing was coming or none is shown`() {
         assertEquals(
             AdsRules.HiddenStatus.ANSWER,
-            AdsRules.hiddenStatus(false, false, true, false),
+            AdsRules.hiddenStatus(false, false, true, false, true),
             "relaunch: no need to show the notice",
         )
         assertEquals(
             AdsRules.HiddenStatus.ANSWER,
-            AdsRules.hiddenStatus(false, true, true, true),
+            AdsRules.hiddenStatus(false, true, true, true, false),
             "a privacy-options request the CMP declined to open",
+        )
+        assertEquals(
+            AdsRules.HiddenStatus.ANSWER,
+            AdsRules.hiddenStatus(false, false, true, true, true),
+            "form expected, but the CMP says it shows no regulation (a suppressed notice)",
         )
     }
 
     @Test
-    fun `a hidden status before an expected form waits a grace`() {
+    fun `a hidden status is never an answer before the load or ahead of an expected form`() {
         assertEquals(
-            AdsRules.HiddenStatus.ANSWER_AFTER_GRACE,
-            AdsRules.hiddenStatus(false, false, true, true),
-            "first US launch: may come just before the notice, or mean no notice here",
+            AdsRules.HiddenStatus.WAIT,
+            AdsRules.hiddenStatus(false, false, false, false, true),
+            "before the CMP has loaded nothing is known, whatever the status says",
         )
         assertEquals(
-            AdsRules.HiddenStatus.ANSWER_AFTER_GRACE,
-            AdsRules.hiddenStatus(false, false, false, false),
-            "before the CMP has loaded nothing is known",
+            AdsRules.HiddenStatus.WAIT,
+            AdsRules.hiddenStatus(false, false, true, true, false),
+            "first US launch: a status naming the regulation may come just before the notice",
         )
     }
 }

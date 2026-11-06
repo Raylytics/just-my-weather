@@ -86,26 +86,40 @@ object AdsRules {
         /** A form was up: it has closed. */
         FORM_CLOSED,
 
-        /** Nothing was coming (a privacy-options request the CMP declined,
-         * or a load that expected no form): the CMP has answered. */
+        /** The CMP has answered: nothing was coming, or it says it is
+         * showing no regulation's screen. */
         ANSWER,
 
-        /** A form was expected but none is up: the CMP may send this just
-         * before its notice appears, or because it decided no notice is
-         * needed here. Settle after a short grace unless a form appears. */
-        ANSWER_AFTER_GRACE,
+        /** Not an answer: before the CMP has loaded, or while the form it is
+         * expected to show may still be on its way. The CMP Activity watch,
+         * a later status, or the backstop decides. */
+        WAIT,
     }
 
+    /**
+     * Never an answer before the CMP has loaded on this launch (the stored
+     * keys are an earlier launch's and may be stale). Where a form is
+     * expected, only a status saying no regulation's screen is shown
+     * ([noRegulationShown], the CMP's `Regulations.NA`, as on a relaunch:
+     * "MSPA is applicable but no need to re-trigger the screen") answers;
+     * any other may come just before the notice, so it waits rather than
+     * letting ads and the location prompt start under it. Timers cannot
+     * tell a slow notice from a suppressed one; the CMP's own status can
+     * (roborev 7029, 7031, 7032).
+     */
     fun hiddenStatus(
         formVisible: Boolean,
         privacyOptionsPending: Boolean,
         loaded: Boolean,
         formExpected: Boolean,
+        noRegulationShown: Boolean,
     ): HiddenStatus =
         when {
             formVisible -> HiddenStatus.FORM_CLOSED
-            privacyOptionsPending || (loaded && !formExpected) -> HiddenStatus.ANSWER
-            else -> HiddenStatus.ANSWER_AFTER_GRACE
+            privacyOptionsPending -> HiddenStatus.ANSWER
+            !loaded -> HiddenStatus.WAIT
+            !formExpected || noRegulationShown -> HiddenStatus.ANSWER
+            else -> HiddenStatus.WAIT
         }
 
     /** A "Privacy choices" entry is owed wherever a form applies: the TCF

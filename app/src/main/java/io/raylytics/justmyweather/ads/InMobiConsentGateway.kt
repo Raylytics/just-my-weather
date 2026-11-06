@@ -20,6 +20,7 @@ import com.inmobi.cmp.model.ChoiceError
 import com.inmobi.cmp.model.DisplayInfo
 import com.inmobi.cmp.model.NonIABData
 import com.inmobi.cmp.model.PingReturn
+import com.inmobi.cmp.model.Regulations
 
 /**
  * The InMobi CMP (Choice) behind [ConsentGateway] — google-ads-exit Stage B,
@@ -232,6 +233,10 @@ class InMobiConsentGateway(
                 usNoticeShown = p.getBoolean(KEY_US_NOTICE_SHOWN, false),
             )
         formExpectedAtLoad = expected
+        // A grace armed before this load (none should be, but a stale one
+        // must never settle the request ahead of the form).
+        cancel(grace)
+        grace = null
         if (formVisible) return
         if (phase == Phase.SETTLED) {
             // Loaded after the request settled on the offline timeout. With no
@@ -269,11 +274,11 @@ class InMobiConsentGateway(
         Log.i(TAG, "cmp ui: display=${status.displayStatus} regulation=${status.regulationShown}")
         // What a non-visible status means is AdsRules.hiddenStatus: with a
         // form up it closed (formGone, also reached from the Activity's end);
-        // where nothing was coming it is the answer; where a form was
-        // expected but none is up it may come just before the notice, or mean
-        // the CMP decided no notice is needed, so it answers after the load
-        // grace unless a form appears first (formShown cancels the grace)
-        // (roborev 7027, 7029; open-frame 7015, 7030).
+        // it answers where nothing was coming or where the CMP says it shows
+        // no regulation's screen (a suppressed notice); before the load, or
+        // ahead of an expected form, it waits for the Activity watch, a later
+        // status, or the backstop (roborev 7027, 7029, 7032; open-frame 7015,
+        // 7030, 7031).
         if (status.displayStatus == DisplayStatus.VISIBLE) {
             formShown()
             return
@@ -284,16 +289,13 @@ class InMobiConsentGateway(
                 privacyOptionsPending = privacyOptionsWaiting.isNotEmpty(),
                 loaded = lastPing != null,
                 formExpected = formExpectedAtLoad,
+                noRegulationShown = status.regulationShown == Regulations.NA,
             )
         when (meaning) {
             AdsRules.HiddenStatus.FORM_CLOSED -> formGone()
             AdsRules.HiddenStatus.ANSWER -> formClosed()
-            AdsRules.HiddenStatus.ANSWER_AFTER_GRACE -> {
-                cancel(grace)
-                val r = Runnable { if (!formVisible) formClosed() }
-                grace = r
-                main.postDelayed(r, LOAD_GRACE_MS)
-            }
+            AdsRules.HiddenStatus.WAIT ->
+                Log.i(TAG, "cmp ui: not an answer yet (before load, or ahead of the expected form)")
         }
     }
 
