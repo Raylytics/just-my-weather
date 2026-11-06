@@ -1,6 +1,6 @@
 # Privacy Policy — Just My Weather
 
-_Last updated: 2026-10-13_
+_Last updated: 2026-11-06_
 
 Just My Weather is a free Android weather app published by Raylytics, LLC. It shows the weather for a place you choose, lets you build your
 own view of it, and sends you notifications for conditions you define. This
@@ -16,13 +16,15 @@ accounts and no backend server of its own, and the developer runs no
 analytics, telemetry, or automatic crash reporting (the ad library's own
 measurement is described under "Ads and purchases").
 
-The app is free and shows one banner ad, served by **Google AdMob**, at the
-bottom of the screen. AdMob receives standard advertising signals from your
-device to serve that ad (see "Ads and purchases"). A one-time $0.99 purchase
-removes the ad. In the United Kingdom, the European Economic Area and
-Switzerland the app asks first, using Google's consent form, and shows no ad
-until you have chosen; you can change your choice any time in App settings →
-Privacy choices.
+The app is free and shows one banner ad at the bottom of the screen, served
+through **Appodeal**, an ad mediation service that fills the space from
+several ad networks. Those networks receive standard advertising signals from
+your device to serve that ad (see "Ads and purchases"). A one-time $0.99
+purchase removes the ad. In the United Kingdom, the European Economic Area and
+Switzerland the app asks first, using a consent form from **InMobi's consent
+platform**, and shows no ad until you have chosen; in US states with a privacy
+law it shows an opt-out notice instead. You can change your choice any time in
+App settings → Privacy choices.
 
 Everything you set up — which modules show, how they are arranged, your theme,
 your saved places, your alert rules — stays on your phone (and in your own
@@ -30,13 +32,13 @@ Android backup, if you use it). If you turn on the Gadgetbridge hand-off, the
 current weather and that place's name can also reach your paired watch. The
 only data the app itself sends off your device is the latitude and longitude
 of the place you are viewing, or that your alerts watch, sent to public
-weather services so the app can fetch the forecast; separately, the ad
-library sends AdMob what it needs to show the banner (where one is shown);
-each time the app opens it asks Google's consent service whether your consent
+weather services so the app can fetch the forecast; separately, the ad library
+sends the ad networks what they need to show the banner (where one is shown);
+each time the app opens it asks InMobi's consent platform whether your consent
 is needed (see "Ads and purchases"), unless you have bought ad removal; and
-Google Play Billing handles the ad-removal purchase and its restore check. A bug report or idea you
-send from the app goes from your own email app, and you see every line of it
-before you send it.
+Google Play Billing handles the ad-removal purchase and its restore check. A
+bug report or idea you send from the app goes from your own email app, and you
+see every line of it before you send it.
 
 ## What the app accesses
 
@@ -61,10 +63,10 @@ format, the app works out which country you are in. It reads the country of
 the mobile network your phone is connected to (which needs no permission), or
 the country of your approximate location or of the place you are viewing,
 matched against the bundled place list, or your phone's language settings; you
-can also set your region yourself in App settings. Whether an ad may be shown does
-not depend on any of this: Google's consent service decides that (see "Ads and
-purchases"). All of this happens on your phone, and the country is not sent to
-the developer or to any weather or ad service.
+can also set your region yourself in App settings. Whether an ad may be shown
+does not depend on any of this: the consent platform decides that (see "Ads
+and purchases"). All of this happens on your phone, and the country is not
+sent to the developer or to any weather or ad service.
 
 ## Where your data goes
 
@@ -90,33 +92,46 @@ no advertising ID.
 ## Ads and purchases
 
 Unless you have bought ad removal, the app shows **one banner ad** at the
-bottom of the screen. Each time the app opens it asks **Google's consent
-service** (the User Messaging Platform) whether your consent is needed where
-you are; Google answers from the request (your IP address, as for any
-connection), and stores your answer on your device. Where consent is needed —
-the United Kingdom, the European Economic Area and Switzerland — the app shows
-Google's consent form and starts the ad SDK only after you have chosen; if you
-decline, Google may still show a limited ad that uses no cookies or advertising
-identifiers. You can change your choice any time in App settings → Privacy
-choices. It is served by **Google AdMob**, a Google service.
+bottom of the screen. Each time the app opens it asks **InMobi's consent
+platform** (the InMobi CMP, an IAB-registered consent management platform)
+whether your consent is needed where you are; InMobi answers from the request
+(your IP address, as for any connection), and stores your answer on your
+device in the industry-standard IAB format. Where consent is needed — the
+United Kingdom, the European Economic Area and Switzerland — the app shows
+InMobi's consent form and starts the ad SDK only after you have chosen; if you
+decline, no ad is requested. In US states with a privacy law the form is an
+opt-out notice instead, and you may opt out of the sale or sharing of your
+data and of targeted advertising. You can change your choice any time in App
+settings → Privacy choices.
+
+**Who serves the ad.** The ad is served through **Appodeal**, an ad mediation
+service: Appodeal asks several ad networks (AppLovin, Unity Ads, Vungle,
+Mintegral, InMobi, DT Exchange, BidMachine and myTarget) for an ad and shows
+the best offer.
 
 **Personalized ads.** Ads may be personalized where you have consented, or
-where no consent is required; otherwise Google serves non-personalized or
-limited ads. You can opt out of personalized ads on Android in your device
-settings (Google → Ads). To serve, measure and — where allowed — personalize
-that ad, the Google Mobile Ads SDK built into the app may collect:
+where no consent is required and you have not opted out; otherwise the
+networks serve non-personalized ads. You can reset or delete your advertising
+ID in your device settings; the networks treat that as a request for
+non-personalized ads. To serve, measure and — where allowed — personalize that
+ad, the Appodeal SDK and the ad network SDKs built into the app may collect:
 
 - your device's **advertising ID** (you can reset or delete it in your
   device's settings) and other device identifiers;
-- your **IP address**, from which an approximate location can be inferred;
+- your **IP address**, from which an approximate location can be inferred,
+  and, if you have given the app approximate location, that approximate
+  location (never precise location: the app has no permission for it);
 - **ad interactions** — whether an ad loaded, was shown, or was tapped;
-- **diagnostic information** about the SDK and how ads perform.
+- **diagnostic and performance information** about the SDKs and how ads
+  perform, including crash logs, your device model, and its memory and storage.
 
-That data goes to Google, not to the developer, and Google's processing is
-governed by the [Google Privacy Policy](https://policies.google.com/privacy)
-and [how Google uses information from apps that use its services](https://policies.google.com/technologies/partner-sites).
-The ad is never given your saved places, your alert rules, or the weather
-you are looking at.
+That data goes to Appodeal and the ad network that serves the ad, not to the
+developer. Their processing is governed by the [Appodeal Privacy
+Policy](https://www.appodeal.com/privacy-policy) and each network's own
+policy, listed in the consent form's partner list; the consent platform's own
+processing is governed by the [InMobi Privacy
+Policy](https://www.inmobi.com/privacy-policy). The ad is never given your
+saved places, your alert rules, or the weather you are looking at.
 
 **Remove ads ($0.99, one-time).** The purchase is handled by **Google Play
 Billing**; the developer never sees your payment details. The app keeps only a
@@ -124,7 +139,9 @@ note on your device that ads are removed, and checks Google Play to restore the
 purchase on a new device signed in to the same Google account. Once ads are
 removed, the app stops requesting ads.
 
-All of the app's network traffic uses HTTPS.
+The app's own requests — the weather services and Google Play — use HTTPS. The
+ad SDKs fetch their creatives and talk to their networks themselves; the app
+does not choose how they connect.
 
 ## What stays on your phone
 
@@ -133,8 +150,9 @@ The app stores the following on your device, in its private app storage:
 - your view configuration (modules, sizes, order, labels, density, theme);
 - your saved places and the last location the app used;
 - your alert rules, whether each has fired, and your quiet-hours setting;
-- whether you have bought ad removal, and your choice in Google's consent form
-  (stored by Google's consent SDK on your device);
+- whether you have bought ad removal, and your choice in the consent form
+  (stored by InMobi's consent SDK on your device, in the IAB format the ad
+  networks read);
 - your region and unit settings, and the country the app last worked out;
 - a short-lived cache of the most recent weather so the app opens instantly;
 - a small cache of up to 32 recently looked-up approximate areas (coordinates
@@ -145,9 +163,9 @@ The app stores the following on your device, in its private app storage:
 Clearing the app's data in Android settings, or uninstalling the app, deletes
 all of it. If you use Android's device backup, Android may include all of the
 app's stored data — your settings (including your region and your choice in
-Google's consent form), saved places, last position, the
-country the app last worked out, and the area cache — in your Google account backup, under your control; the developer has
-no access to that backup.
+the consent form), saved places, last position, the country the app last
+worked out, and the area cache — in your Google account backup, under your
+control; the developer has no access to that backup.
 
 ## Notifications
 
@@ -198,8 +216,8 @@ same address.
   ask you first).
 - **Internet and network state** — to fetch forecasts from the services above,
   and to load the banner ad where one is shown.
-- **Advertising ID** — added by the Google Mobile Ads SDK, so AdMob can use
-  the advertising ID as described under "Ads and purchases".
+- **Advertising ID** — added by the ad SDKs, so the ad networks can use the
+  advertising ID as described under "Ads and purchases".
 - **Google Play billing** — to offer and restore the one-time ad-removal
   purchase.
 - **Run at startup, wake lock, and foreground service** — added by Android's
@@ -213,14 +231,16 @@ same address.
 - No personalized ads without a choice: ads are personalized only where you
   consented or no consent is required (see "Ads and purchases").
 - No analytics, telemetry, or automatic crash reporting run by the developer.
-  The AdMob SDK's own ad measurement and diagnostics are described under
-  "Ads and purchases".
+  The ad SDKs' own ad measurement and diagnostics are described under "Ads and
+  purchases".
 - No selling of personal information.
 - No precise location. The positions the app keeps are the ones listed above;
   they leave your phone only as forecast coordinates sent to the weather
   services described here, or inside your own Android backup if you use it;
-  never to the developer. (AdMob may infer an approximate location from your
-  IP address, as any website can.)
+  never to the developer. (The ad networks and the consent platform may infer
+  an approximate location from your IP address, as any website can, and the ad
+  SDKs may read the approximate location you allowed the app; see "Ads and
+  purchases".)
 
 ## Children
 
