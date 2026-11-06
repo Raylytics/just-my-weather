@@ -74,6 +74,10 @@ jobs:
         run: >-
           ./gradlew :app:testDebugUnitTest :shared:testAndroidHostTest
           :app:assembleDebugAndroidTest --no-daemon --stacktrace
+      # Android Lint (VC Standard §8): errors fail the job; warnings are
+      # reported only. Debug variant, matching the ktlint hook.
+      - name: Android Lint
+        run: ./gradlew :app:lintDebug --no-daemon --stacktrace
       - name: Upload unit-test report on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
