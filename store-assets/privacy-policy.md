@@ -111,16 +111,20 @@ the best offer.
 
 **Personalized ads.** Ads may be personalized where you have consented, or
 where no consent is required and you have not opted out; otherwise the
-networks serve non-personalized ads. You can reset or delete your advertising
-ID in your device settings; the networks treat that as a request for
-non-personalized ads. To serve, measure and — where allowed — personalize that
-ad, the Appodeal SDK and the ad network SDKs built into the app may collect:
+networks serve non-personalized ads. Deleting your advertising ID, or turning
+off ad personalization, in your device settings tells the networks to serve
+non-personalized ads; resetting the ID only replaces it with a new one. To
+serve, measure and — where allowed — personalize that ad, the Appodeal SDK and the ad network SDKs built into the app may collect:
 
 - your device's **advertising ID** (you can reset or delete it in your
   device's settings) and other device identifiers;
 - your **IP address**, from which an approximate location can be inferred,
   and, if you have given the app approximate location, that approximate
   location (never precise location: the app has no permission for it);
+- **ad signals from Android** — on devices that support Android's Privacy
+  Sandbox, unless you have turned it off in your device settings, interest
+  topics the device has assigned and ad-attribution measurement; and how the
+  app was installed (the Google Play install referrer);
 - **ad interactions** — whether an ad loaded, was shown, or was tapped;
 - **diagnostic and performance information** about the SDKs and how ads
   perform, including crash logs, your device model, and its memory and storage.
@@ -216,8 +220,12 @@ same address.
   ask you first).
 - **Internet and network state** — to fetch forecasts from the services above,
   and to load the banner ad where one is shown.
-- **Advertising ID** — added by the ad SDKs, so the ad networks can use the
-  advertising ID as described under "Ads and purchases".
+- **Advertising ID, ad topics and ad attribution** — added by the ad SDKs, so
+  the ad networks can use the advertising ID and Android's Privacy Sandbox
+  topics and attribution as described under "Ads and purchases".
+- **Wi-Fi state, install referrer, Play licensing check, vibration, and an
+  Amazon anti-fraud attestation** — also added by the ad SDKs for serving and
+  verifying ads; the app's own code uses none of them.
 - **Google Play billing** — to offer and restore the one-time ad-removal
   purchase.
 - **Run at startup, wake lock, and foreground service** — added by Android's
@@ -229,7 +237,8 @@ same address.
 
 - No accounts or sign-in.
 - No personalized ads without a choice: ads are personalized only where you
-  consented or no consent is required (see "Ads and purchases").
+  consented, or where no consent is required and you have not opted out (see
+  "Ads and purchases").
 - No analytics, telemetry, or automatic crash reporting run by the developer.
   The ad SDKs' own ad measurement and diagnostics are described under "Ads and
   purchases".
