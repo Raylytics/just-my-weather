@@ -13,6 +13,8 @@ appId: io.raylytics.justmyweather
     clearState: true
     permissions:
       all: allow
+# Answer the CMP notice a fresh install shows where ads are configured.
+- runFlow: subflows/consent.yaml
 
 # Wait on "Refresh", which exists only on the glance. NOT "Alerts": that string
 # is both the home button AND this screen's own title, so waiting on it can
@@ -36,17 +38,20 @@ appId: io.raylytics.justmyweather
     text: "Allow"
     optional: true
 
-# The default window, shown on the row itself.
-- assertVisible: "Deliver silently 22:00–07:00"
-
-# Open the picker and choose a different window that still wraps midnight.
 # Bring the row up first: on a shorter screen, or under iOS's notice about
-# background checks, it starts at the bottom edge where a tap misses.
+# background checks, it starts at or below the bottom edge, where the
+# assertion cannot see it and a tap misses (seen on the iOS 27 simulator,
+# 2026-11-06).
 - scrollUntilVisible:
     element:
       id: "quietWindow"
     direction: DOWN
     centerElement: true
+
+# The default window, shown on the row itself.
+- assertVisible: "Deliver silently 22:00–07:00"
+
+# Open the picker and choose a different window that still wraps midnight.
 - tapOn:
     id: "quietWindow"
 - assertVisible: "Starts"
@@ -87,4 +92,10 @@ appId: io.raylytics.justmyweather
 - tapOn:
     text: "Allow"
     optional: true
+# The row starts below the fold on iPhone again; bring it up.
+- scrollUntilVisible:
+    element:
+      id: "quietWindow"
+    direction: DOWN
+    centerElement: true
 - assertVisible: "Deliver silently 23:00–06:00"
