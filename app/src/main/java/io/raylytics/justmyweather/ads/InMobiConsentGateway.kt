@@ -88,6 +88,10 @@ class InMobiConsentGateway(
     /** What the last load said: a form is still to come (AdsRules.formExpected). */
     private var formExpectedAtLoad = false
 
+    /** A "no regulation shown" status arrived before the load; the load
+     * re-reads it (roborev 7033). */
+    private var hiddenNoRegulationBeforeLoad = false
+
     init {
         app.registerActivityLifecycleCallbacks(CmpActivityWatch())
     }
@@ -237,6 +241,21 @@ class InMobiConsentGateway(
         // must never settle the request ahead of the form).
         cancel(grace)
         grace = null
+        // A "no regulation shown" status that came before this load is the
+        // answer if the rule says so now that the load is known (a suppressed
+        // notice), rather than leaving the request at the backstop.
+        val earlyNoRegulation = hiddenNoRegulationBeforeLoad
+        hiddenNoRegulationBeforeLoad = false
+        if (earlyNoRegulation &&
+            !formVisible &&
+            phase == Phase.IN_FLIGHT &&
+            AdsRules.hiddenStatus(false, privacyOptionsWaiting.isNotEmpty(), true, expected, true) ==
+            AdsRules.HiddenStatus.ANSWER
+        ) {
+            Log.i(TAG, "cmp loaded after a no-regulation status; answered")
+            formClosed()
+            return
+        }
         if (formVisible) return
         if (phase == Phase.SETTLED) {
             // Loaded after the request settled on the offline timeout. With no
@@ -294,8 +313,10 @@ class InMobiConsentGateway(
         when (meaning) {
             AdsRules.HiddenStatus.FORM_CLOSED -> formGone()
             AdsRules.HiddenStatus.ANSWER -> formClosed()
-            AdsRules.HiddenStatus.WAIT ->
+            AdsRules.HiddenStatus.WAIT -> {
+                if (lastPing == null && status.regulationShown == Regulations.NA) hiddenNoRegulationBeforeLoad = true
                 Log.i(TAG, "cmp ui: not an answer yet (before load, or ahead of the expected form)")
+            }
         }
     }
 
