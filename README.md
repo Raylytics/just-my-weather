@@ -106,13 +106,15 @@ the per-cut log stays in [docs/RELEASES.md](docs/RELEASES.md).
 
 ## Data & privacy
 
-Weather comes from the public US National Weather Service API — no key, no
-account, US coverage. Location is **coarse** and optional (the platform location
-provider, not Google Play Services). You can also pick and save places by name:
-tap the place name on the glance to search a list of ~32,000 US towns and
-cities **bundled in the app**, or enter coordinates for somewhere unlisted. The
-search does no network call and needs no geocoding key — the list is public
--domain US Census Gazetteer data, rebuildable with `scripts/build-gazetteer.sh`.
+Weather comes from the public US National Weather Service API in its coverage
+area and from MET Norway everywhere else — no key, no account. Location is
+**coarse** and optional (the platform location provider, not Google Play
+Services). You can also pick and save places by name: tap the place name on the
+glance to search a list of about 60,000 towns and cities worldwide **bundled in
+the app**, or enter coordinates for somewhere unlisted. The search does no
+network call and needs no geocoding key — the list is the public-domain US
+Census Gazetteer for the US and its territories plus GeoNames abroad (see
+[NOTICE](NOTICE)), rebuildable with `scripts/build-gazetteer.sh`.
 A chosen place is what the background alert poll watches too. Personal alerts
 are evaluated and delivered on-device.
 
