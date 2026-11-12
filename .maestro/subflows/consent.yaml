@@ -40,11 +40,12 @@ appId: io.raylytics.justmyweather
       - tapOn:
           text: 'OK'
           optional: true
-      # Apple's tracking prompt follows the notice, on iOS only.
-      - runFlow:
-          when:
-            platform: iOS
-          commands:
-            - tapOn:
-                text: 'Ask App Not to Track'
-                optional: true
+# Apple's tracking prompt, iOS only, and not tied to the notice: where no
+# regulation applies the CMP settles without one and the prompt still comes.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: 'Ask App Not to Track'
+          optional: true
