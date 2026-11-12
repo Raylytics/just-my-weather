@@ -87,6 +87,13 @@ class ObservationFillTest {
     }
 
     @Test
+    fun `a measured 0 from another station never sits beside a borrowed rain`() {
+        val showering = obs(conditions = "Light Rain")
+        val gaugedDry = obs(precipitationIn = 0.0)
+        assertNull(ObservationFill.fill(backyard, listOf(showering, gaugedDry)).precipitationIn)
+    }
+
+    @Test
     fun `a complete reading has no gaps to fill`() {
         assertTrue(ObservationFill.hasGaps(backyard))
         assertFalse(ObservationFill.hasGaps(paloAlto.copy(precipitationIn = 0.0)))

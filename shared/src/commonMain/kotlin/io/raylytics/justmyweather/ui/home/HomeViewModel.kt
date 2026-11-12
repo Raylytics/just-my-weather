@@ -540,13 +540,10 @@ class HomeViewModel(
     /** Customize's preview of the vs. yesterday module, switched on or not:
      * load its comparison, which the glance loads only while it shows. */
     fun previewVsYesterday() {
-        viewModelScope.launch {
-            val location = currentLocation()
-            // Already loaded for this place (the glance shows it, or an
-            // earlier look did): nothing to fetch.
-            if (vsYesterday.value != null && vsYesterdayKey == PointCacheKey.of(location)) return@launch
-            loadVsYesterday(location)
-        }
+        // Loaded fresh on every open: with the module hidden nothing else
+        // keeps it current across midnight or the measured day settling, and
+        // one forecast fetch per look is cheap next to a stale comparison.
+        viewModelScope.launch { loadVsYesterday(currentLocation()) }
     }
 
     /**

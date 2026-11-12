@@ -51,9 +51,10 @@ object ObservationFill {
         // the nearest station has no temperature are both borrowed, from the
         // same station.
         val warmth = if (primary.temperatureF != null) primary else usable.firstOrNull { it.temperatureF != null }
-        // Likewise "dry" is only believed from the station whose sky is shown
-        // (or the nearest one): another station's clear hour says nothing
-        // about rain this one's description reports.
+        // Likewise precipitation, and "dry", are only believed from the
+        // station whose sky is shown (or the nearest one): another station's
+        // gauge or clear hour says nothing about rain this one's description
+        // reports.
         val sky = if (primary.conditions != null) primary else usable.firstOrNull { it.conditions != null }
         val filled =
             primary.copy(
@@ -66,7 +67,9 @@ object ObservationFill {
                 dewpointF = primary.dewpointF ?: first { it.dewpointF },
                 windMph = primary.windMph ?: first { it.windMph },
                 windDirectionDegrees = primary.windDirectionDegrees ?: first { it.windDirectionDegrees },
-                precipitationIn = primary.precipitationIn ?: first { it.precipitationIn },
+                // Rain, measured or inferred, comes from the same station as
+                // the sky it sits beside, never a third one's gauge.
+                precipitationIn = primary.precipitationIn ?: sky?.precipitationIn,
             )
         val dry = primary.reportsNoWeather || sky?.reportsNoWeather == true
         return filled.copy(precipitationIn = filled.precipitationIn ?: if (dry) 0.0 else null)
