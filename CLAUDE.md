@@ -170,8 +170,9 @@ Android Auto Backup is on (`allowBackup`), so a phone restored from backup
 also hands an older settings file to a newer app. That is the same
 problem, and the same gate covers it.
 
-Known gaps (just-my-weather-rtu): the fixtures date from 0.3.1, so the
-fields 0.4.0 and 0.4.1 added are covered only by codec tests; Android
+The fixtures come from 0.3.1 and from 0.4.1 (added for 0.5.0; they cover
+the fields 0.4.0 and 0.4.1 added, and `0.4.1-02-alert-rule` is the one
+holding a real alert rule). Known gaps (just-my-weather-rtu): Android
 widget configs have no fixture; the upgrade check is manual.
 
 ## Release confirmation gate (agents)

@@ -30,11 +30,14 @@ import java.io.File
  * The fixtures under resources/prefs are real `settings.preferences_pb` files
  * pulled from an emulator running the pre-port build (main at 0.3.1), each
  * after one Maestro flow that leaves its kind of state behind: a shown field
- * and a theme (01), an alert rule (02), quiet hours (04), the safety opt-in
+ * and a theme (01), the alerts screen's settings (02; its rule list is
+ * empty, as the flow removes its rule), quiet hours (04), the safety opt-in
  * (05), a saved place (08) — plus the caches every launch writes. The
  * `0.4.1-` fixtures came the same way from production 0.4.1 (v0.4.1, debug
  * build) for the 0.5.0 cut: the glance layout with humidity, dew point and
- * visibility in it, an alert rule, and a saved place with its country.
+ * visibility in it (01), the alerts screen's settings (02), a saved place
+ * with its country (08), and `0.4.1-02-alert-rule`, the only fixture holding
+ * a real alert rule: 02-alerts stopped before it removes the rule it made.
  *
  * If this fails, an upgrade would lose or rewrite someone's settings. Don't
  * re-capture the fixtures to make it pass: they are the old app's output, and
@@ -66,7 +69,7 @@ class PreferencesCompatibilityTest {
     @ValueSource(
         strings = [
             "01-customize", "02-alerts", "04-quiet-hours", "05-safety-alerts", "08-places",
-            "0.4.1-01-customize", "0.4.1-02-alerts", "0.4.1-08-places",
+            "0.4.1-01-customize", "0.4.1-02-alerts", "0.4.1-02-alert-rule", "0.4.1-08-places",
         ],
     )
     fun `the file re-serialises to the same bytes`(name: String) =
@@ -81,7 +84,7 @@ class PreferencesCompatibilityTest {
     @ValueSource(
         strings = [
             "01-customize", "02-alerts", "04-quiet-hours", "05-safety-alerts", "08-places",
-            "0.4.1-01-customize", "0.4.1-02-alerts", "0.4.1-08-places",
+            "0.4.1-01-customize", "0.4.1-02-alerts", "0.4.1-02-alert-rule", "0.4.1-08-places",
         ],
     )
     fun `every stored value decodes and re-encodes unchanged`(name: String) =
