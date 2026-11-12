@@ -30,12 +30,21 @@ appId: io.raylytics.justmyweather
       visible: 'Sign in to Apple Account'
     commands:
       - tapOn: 'Cancel'
-- tapOn:
-    text: 'ACCEPT ALL|Accept all'
-    optional: true
-- tapOn:
-    text: 'OK'
-    optional: true
-- tapOn:
-    text: 'Ask App Not to Track'
-    optional: true
+# Only when the notice is up: an optional tap still searches before it
+# skips, so a build without ids (CI) would pay for each one on every flow.
+- runFlow:
+    when:
+      visible: 'ACCEPT ALL|Accept all'
+    commands:
+      - tapOn: 'ACCEPT ALL|Accept all'
+      - tapOn:
+          text: 'OK'
+          optional: true
+      # Apple's tracking prompt follows the notice, on iOS only.
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                text: 'Ask App Not to Track'
+                optional: true
