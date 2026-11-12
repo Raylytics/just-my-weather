@@ -101,10 +101,14 @@ build 4 went to App Review 2026-11-04).
 - A distinct Restore purchases row (iOS App Review).
 - The collapse caret shares the label line.
 
-### Before the cut
-- Settings gate rule 4: this release adds persisted state (`day_ranges`,
-  the `vs_yesterday` module key), so add a fixture from the current
-  production build (0.4.1) first.
+### Settings gate
+- Rule 4: fixtures `0.4.1-01-customize`, `0.4.1-02-alerts` and
+  `0.4.1-08-places` from production 0.4.1 (v0.4.1 debug build, API 35
+  emulator, that build's own Maestro flows) are in
+  PreferencesCompatibilityTest (just-my-weather-5tr).
+- Rule 6, 2026-11-12: 0.4.1 with a saved place, then 0.5.0 installed over it
+  with `adb install -r`. The `saved_places` value read back byte for byte,
+  the glance opened on the same place, and What's new 0.5.0 showed.
 
 ## 0.4.1 — versionCode 12, Play internal 2026-10-18
 
