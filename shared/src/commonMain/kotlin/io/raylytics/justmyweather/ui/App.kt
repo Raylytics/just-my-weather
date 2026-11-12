@@ -194,6 +194,7 @@ fun App(
                 config = config,
                 weather = homeState as? HomeUiState.Ready,
                 onPreviewForecast = homeViewModel::previewForecast,
+                onPreviewVsYesterday = homeViewModel::previewVsYesterday,
                 onToggle = customizeViewModel::toggle,
                 onRelabel = customizeViewModel::relabel,
                 onResize = customizeViewModel::resize,

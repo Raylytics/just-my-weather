@@ -86,6 +86,7 @@ class NwsClient(
                     ?: Units.toFahrenheit(props.windChill?.value, props.windChill?.unitCode ?: ""),
             dewpointF = Units.toFahrenheit(props.dewpoint?.value, props.dewpoint?.unitCode ?: ""),
             visibilityMi = Units.toMiles(props.visibility?.value, props.visibility?.unitCode ?: ""),
+            reportsNoWeather = !props.textDescription.isNullOrBlank() && props.presentWeather?.isEmpty() == true,
         )
     }
 
@@ -176,11 +177,13 @@ class NwsClient(
         }
     }
 
-    private suspend fun firstStation(lat: Double, lon: Double): String {
-        val body = getJson<NwsStationsResponse>("/points/$lat,$lon/stations")
-        return body.features.firstOrNull()?.properties?.stationIdentifier
-            ?: error("no observation stations near $lat,$lon")
-    }
+    private suspend fun firstStation(lat: Double, lon: Double): String =
+        nearbyStations(lat, lon).firstOrNull() ?: error("no observation stations near $lat,$lon")
+
+    /** The observation stations NWS lists for a point, nearest first. */
+    suspend fun nearbyStations(lat: Double, lon: Double): List<String> =
+        getJson<NwsStationsResponse>("/points/$lat,$lon/stations").features
+            .mapNotNull { it.properties?.stationIdentifier?.takeIf(String::isNotBlank) }
 
     /** City/state from the /points block, or null when NWS omits it (offshore
      * points, lat/lon outside CONUS). */

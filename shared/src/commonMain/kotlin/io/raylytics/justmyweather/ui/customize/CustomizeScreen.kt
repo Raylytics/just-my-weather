@@ -116,6 +116,7 @@ fun CustomizeScreen(
     /** The forecast preview needs a framing's data the glance may not have
      * fetched (the grid hidden, or the other framing). */
     onPreviewForecast: (ForecastMode) -> Unit,
+    onPreviewVsYesterday: () -> Unit,
     onToggle: (ModuleKey) -> Unit,
     onRelabel: (ModuleKey, String?) -> Unit,
     onResize: (ModuleKey, ModuleSize) -> Unit,
@@ -189,6 +190,7 @@ fun CustomizeScreen(
                                     config = config,
                                     weather = weather,
                                     onPreviewForecast = onPreviewForecast,
+                                    onPreviewVsYesterday = onPreviewVsYesterday,
                                     on = previewing[setting.module] == true,
                                     onSet = { previewing[setting.module] = it },
                                 )
@@ -586,6 +588,7 @@ private fun ModulePreviewPane(
     config: ViewConfig,
     weather: HomeUiState.Ready?,
     onPreviewForecast: (ForecastMode) -> Unit,
+    onPreviewVsYesterday: () -> Unit,
     on: Boolean,
     onSet: (Boolean) -> Unit,
 ) {
@@ -614,13 +617,14 @@ private fun ModulePreviewPane(
     }
     var mode by remember(config.defaultForecastMode) { mutableStateOf(config.defaultForecastMode) }
     if (module == ModuleKey.Forecast) LaunchedEffect(mode) { onPreviewForecast(mode) }
+    if (module == ModuleKey.VsYesterday) LaunchedEffect(Unit) { onPreviewVsYesterday() }
     val value =
         config.renderModule(
             module = module,
             snapshot = weather.snapshot,
             sunDays = weather.previewSunDays,
             zone = config.displayZone(weather.zone),
-            forecast = weather.forecastData(mode),
+            forecast = weather.forecastData(mode).copy(vsYesterday = weather.previewVsYesterday),
             conventions = LocalConventions.current,
         ) ?: return
     val description = stringResource(Res.string.customize_preview_module, value.label)

@@ -232,6 +232,7 @@ class HomeViewModel(
                         zone = times.zone ?: zone(),
                         expanded = open,
                         vsYesterday = if (config.shows(ModuleKey.VsYesterday)) comparison else null,
+                        previewVsYesterday = comparison,
                     )
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)
@@ -518,11 +519,18 @@ class HomeViewModel(
         viewModelScope.launch { configRepository.update(transform) }
     }
 
+    /** Customize's preview of the vs. yesterday module, switched on or not:
+     * load its comparison, which the glance loads only while it shows. */
+    fun previewVsYesterday() {
+        viewModelScope.launch { loadVsYesterday(currentLocation()) }
+    }
+
     /**
      * Customize's forecast preview wants [mode]'s data: fetch what is missing,
      * whether or not the grid is on the glance and without touching the
      * glance's framing. Nothing is fetched while no preview asks.
      */
+
     fun previewForecast(mode: ForecastMode) {
         viewModelScope.launch {
             val config = configRepository.config.first()

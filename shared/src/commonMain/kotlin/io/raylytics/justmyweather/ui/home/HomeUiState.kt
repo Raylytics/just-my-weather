@@ -93,6 +93,9 @@ sealed interface HomeUiState {
         /** Today's forecast range against yesterday's, while the vs.
          * yesterday module is shown and its data has loaded. */
         val vsYesterday: DayComparison? = null,
+        /** The comparison whether or not the module is on the glance, for
+         * Customize's preview ([HomeViewModel.previewVsYesterday] loads it). */
+        val previewVsYesterday: DayComparison? = null,
     ) : HomeUiState
 
     /** Network or NWS failure, with a short plain-language message. */

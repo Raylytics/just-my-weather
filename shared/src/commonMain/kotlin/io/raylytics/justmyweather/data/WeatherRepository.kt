@@ -3,11 +3,16 @@ package io.raylytics.justmyweather.data
 import io.raylytics.justmyweather.data.metno.ExtendedDay
 import io.raylytics.justmyweather.data.metno.MetNoClient
 import io.raylytics.justmyweather.data.nws.ActiveAlert
+import io.raylytics.justmyweather.data.nws.CurrentObservation
 import io.raylytics.justmyweather.data.nws.DailyPeriod
 import io.raylytics.justmyweather.data.nws.ForecastPoint
 import io.raylytics.justmyweather.data.nws.NwsClient
 import io.raylytics.justmyweather.data.nws.NwsHttpException
+import io.raylytics.justmyweather.data.nws.ObservationFill
 import io.raylytics.justmyweather.data.places.Place
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.DatePeriod
@@ -17,6 +22,11 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlin.time.Clock
 import kotlin.time.Instant
+
+/** How many stations behind the nearest one may fill its gaps: enough to
+ * reach an airport past a backyard station or two, few enough that a
+ * reading costs at most two more requests. */
+private const val MAX_BACKUP_STATIONS = 2
 
 /** A place to show weather for: a coordinate plus a human label. */
 data class WeatherLocation(
@@ -104,7 +114,8 @@ class WeatherRepository(
             when (val resolved = resolve(location)) {
                 is ResolvedPoint.Nws -> {
                     val point = resolved.point
-                    val obs = nws.getObservation(point.observationStationId)
+                    val station = point.observationStationId
+                    val obs = withBackups(location, station, nws.getObservation(station))
                     // A GPS fix arrives without a name; reuse the city/state the
                     // point lookup already carried rather than fetching /points
                     // again.
@@ -341,6 +352,40 @@ class WeatherRepository(
             val noSuchPoint = e.status == 404 && !e.path.endsWith("/stations") && "InvalidPoint" in e.body
             if (noSuchPoint) ResolvedPoint.OutsideNws else throw e
         }
+
+    /** The stations NWS lists near each place, nearest first, for filling a
+     * reading's gaps. Kept for the session only: the list barely changes,
+     * and it is asked again after a restart rather than persisted. */
+    private val nearby = mutableMapOf<String, List<String>>()
+    private val nearbyMutex = Mutex()
+
+    /**
+     * [primary], the nearest station's reading, with its gaps filled from
+     * the next two stations ([ObservationFill]). Best effort: a station list
+     * or backup reading that fails only leaves that gap as it was.
+     */
+    private suspend fun withBackups(
+        location: WeatherLocation,
+        primaryId: String,
+        primary: CurrentObservation,
+    ): CurrentObservation {
+        if (!ObservationFill.hasGaps(primary)) return ObservationFill.fill(primary, emptyList())
+        val key = PointCacheKey.of(location)
+        val stations =
+            nearbyMutex.withLock { nearby[key] }
+                ?: runCatching { nws.nearbyStations(location.latitude, location.longitude) }.getOrNull()
+                    ?.also { list -> nearbyMutex.withLock { nearby[key] = list } }
+                ?: emptyList()
+        // Side by side: each is a round trip the glance is waiting on.
+        val backups =
+            coroutineScope {
+                stations.filter { it != primaryId }.take(MAX_BACKUP_STATIONS)
+                    .map { id -> async { runCatching { nws.getObservation(id) }.getOrNull() } }
+                    .awaitAll()
+                    .filterNotNull()
+            }
+        return ObservationFill.fill(primary, backups)
+    }
 
     private suspend fun nearestTo(location: WeatherLocation): Place? =
         runCatching { nearest(location.latitude, location.longitude) }.getOrNull()

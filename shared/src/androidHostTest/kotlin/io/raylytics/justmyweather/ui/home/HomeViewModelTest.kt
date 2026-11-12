@@ -679,6 +679,17 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `Customize's preview loads the comparison with the module still hidden`() = runTest(dispatcher) {
+        val h = harness(dayHistory = recordedHistory())
+        advanceUntilIdle()
+        assertNull(h.vm.ready().previewVsYesterday, "nothing loaded for a hidden module")
+        h.vm.previewVsYesterday()
+        advanceUntilIdle()
+        assertEquals(DayRange(LocalDate(2026, 7, 31), 81.0, 70.0), h.vm.ready().previewVsYesterday?.today)
+        assertNull(h.vm.ready().vsYesterday, "the glance still does not show it")
+    }
+
+    @Test
     fun `a refresh of the same place keeps the comparison on screen`() = runTest(dispatcher) {
         val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
         advanceUntilIdle()

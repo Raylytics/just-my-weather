@@ -56,6 +56,10 @@ data class CurrentObservation(
     val dewpointF: Double? = null,
     /** How far one can see, in statute miles; null when not reported. */
     val visibilityMi: Double? = null,
+    /** The station describes the sky and reports nothing falling: a full
+     * weather station on a dry hour, which is when NWS leaves the hour's
+     * precipitation out rather than writing 0. */
+    val reportsNoWeather: Boolean = false,
 )
 
 /**

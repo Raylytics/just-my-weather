@@ -161,6 +161,14 @@ dropped "Today" (just-my-weather-292); decide before production.
   so it fills in from the second day. Hidden from widget pickers
   (just-my-weather-ala).
 
+### Fixed
+- The glance fills what the nearest station does not report (a backyard
+  station has no sky description, visibility or rain gauge) from the next
+  two stations NWS lists, read at the same time; a full station's dry hour
+  is 0 in of rain, and with no heat index or wind chill it feels like the
+  air temperature (just-my-weather-rvl). Customize's previews show these
+  values too, and vs. yesterday's preview loads while the module is hidden.
+
 ### Fixed (from 0.4.2)
 - A distinct Restore purchases row (iOS App Review).
 - The collapse caret shares the label line.

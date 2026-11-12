@@ -2,6 +2,7 @@ package io.raylytics.justmyweather.data.nws
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 /**
  * Raw NWS wire shapes for kotlinx.serialization. These mirror the JSON the API
@@ -103,6 +104,10 @@ data class NwsObservationResponse(
         val dewpoint: NwsValue? = null,
         /** `wmoUnit:m`; the glance reads it in miles or kilometres. */
         val visibility: NwsValue? = null,
+        /** What is falling or obscuring, one entry per phenomenon; an empty
+         * list from a station that describes the sky means nothing is. Only
+         * its emptiness is read, so the entries stay unparsed. */
+        val presentWeather: List<JsonElement>? = null,
     )
 }
 

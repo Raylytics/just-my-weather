@@ -165,6 +165,29 @@ class NwsClientTest {
     }
 
     @Test
+    fun `a station that describes the sky with nothing falling reports no weather`() = runTest {
+        fun body(extra: String) =
+            """{"properties":{"timestamp":"2026-11-12T16:00:00+00:00","textDescription":"Clear"$extra}}"""
+        val (client, _) =
+            client(
+                HttpResult(200, body(""","presentWeather":[]"""), null),
+                HttpResult(200, body(""","presentWeather":[{"weather":"rain"}]"""), null),
+                HttpResult(200, body(""), null),
+            )
+        assertTrue(client.getObservation("KNUQ").reportsNoWeather)
+        assertFalse(client.getObservation("KNUQ").reportsNoWeather, "rain is weather")
+        assertFalse(client.getObservation("AW020").reportsNoWeather, "no list, no claim")
+    }
+
+    @Test
+    fun `nearbyStations lists the point's stations nearest first`() = runTest {
+        val body = """{"features":[{"properties":{"stationIdentifier":"AW020"}},{"properties":{}},
+            {"properties":{"stationIdentifier":"KNUQ"}}]}"""
+        val (client, _) = client(HttpResult(200, body, null))
+        assertEquals(listOf("AW020", "KNUQ"), client.nearbyStations(37.42, -122.08))
+    }
+
+    @Test
     fun `getActiveAlertsAt queries by point, not by forecast zone`() = runTest {
         // Storm-based warnings (tornado, severe thunderstorm, flash flood) are
         // issued against county zones/polygons, not the forecast zone, so a
