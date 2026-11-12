@@ -128,7 +128,21 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
-## 0.5.0 — versionCode 13, Play internal 2026-11-12
+## 0.5.0 — versionCode 14, Play internal 2026-11-12 (supersedes 13)
+
+versionCode 14 cut from cac2b21 with Evan's go-ahead, internal track only.
+Over 13: vs. yesterday from station observations with a detail sheet and
+the evening high-so-far fallback, gaps filled from nearby stations, the
+aligned table, the roborev fixes, and the Appodeal Android merge (cac2b21)
+from the google-ads-exit session. Gate on cac2b21: Maestro 12/12 on
+Pixel_7_API_35 (first pass, no retry) with instrumented tests, verify.sh
+603 tests, Android Lint clean. Not pushed, so CI has not run. Evan's
+Stage C phone checks (just-my-weather-b6p.3) run on this build. The
+What's new / release text about the ad change still needs his approval
+before production.
+
+### versionCode 13 (superseded)
+
 
 Opened 2026-11-11. Absorbs 0.4.2, which never reached Play (iOS 0.4.2
 build 4 went to App Review 2026-11-04). Cut from b79c8b6

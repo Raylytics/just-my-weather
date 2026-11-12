@@ -55,7 +55,7 @@ android {
         // versionCode is bumped per upload by scripts/android/bump-version-code.sh;
         // versionName is the release (CLAUDE.md "Versioning"). 0.2.0 is the first
         // Play build: everything since the v0.1.x sideloads.
-        versionCode = 13
+        versionCode = 14
         versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
