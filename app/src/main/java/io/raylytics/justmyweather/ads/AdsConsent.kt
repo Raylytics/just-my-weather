@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.lang.ref.WeakReference
 
 /**
- * Whether ads may run, and the one moment the ads SDK starts. Google's
- * consent SDK decides (see [ConsentGateway]); this keeps its answer where the
+ * Whether ads may run, and the one moment the ads SDK starts. The consent
+ * platform decides (see [ConsentGateway]); this keeps its answer where the
  * UI can watch it and makes sure the SDK is started once, and only after
- * Google has said ads may be requested — never before consent where consent
- * is required.
+ * the platform has said ads may be requested — never before consent where
+ * consent is required.
  *
  * [startAds] is the app's hook to initialise the ads SDK (it also skips an
  * owner of Remove Ads). It runs at most once per process.
@@ -48,15 +48,16 @@ class AdsConsent(
     /**
      * Once per launch, from the first activity. A choice made on an earlier
      * launch applies at once ([settle] before the request), so a returning
-     * user's banner doesn't wait on the network; then Google is asked again,
-     * since what applies can change (the user travelled, the rules moved).
+     * user's banner doesn't wait on the network; then the platform is asked
+     * again, since what applies can change (the user travelled, the rules
+     * moved).
      * [then] runs once that has settled — form shown and dismissed, no form
      * needed, or an error — so a first launch's other prompts can wait.
      */
     fun gather(activity: Activity, then: () -> Unit = {}) {
         settle()
-        // Once per PROCESS (roborev 5436), but never "done" before Google has
-        // answered (roborev 5439): an activity recreated by a rotation while
+        // Once per PROCESS (roborev 5436), but never "done" before the
+        // platform has answered (roborev 5439): an activity recreated by a rotation while
         // the request is in flight waits with the others, so its location
         // prompt can't jump ahead of the consent form.
         when (request) {
@@ -85,8 +86,8 @@ class AdsConsent(
             if (mine != generation) return@update // superseded by a newer ask
             settle()
             // The form's activity was destroyed under it (a rotation with the
-            // form up): UMP answers "Activity is destroyed" and no choice was
-            // made — seen on the emulator. That is not settled; go back to
+            // form up): the SDK answers with an error and no choice was made —
+            // seen on the emulator with UMP. That is not settled; go back to
             // IDLE so the recreated activity asks again and shows the form.
             if (!canShow.value && activity.isDestroyed) {
                 request = Request.IDLE

@@ -49,7 +49,8 @@ state may be someone else's WIP.
 ## What this app is
 
 **Just My Weather** is a minimalist, customizable weather app for Android and
-iPhone (the iOS app has not shipped yet; `docs/PARITY.md`). The
+iPhone (iOS builds are in TestFlight; the app is not released on the App
+Store yet; `docs/PARITY.md`). The
 default is calm and sparse — one glance answers "what's it like right now." The
 power is letting users build their own view (which data points, order, density,
 look) and their own *personal* alerts (rule-based: "tell me when the overnight
@@ -74,9 +75,14 @@ scripts/android/release-internal.sh # cut + upload a Play internal build (needs 
 
 iOS commands are under "iOS app" below.
 
-The pre-commit hook runs `:app:testDebugUnitTest :shared:testAndroidHostTest
-:app:ktlintCheck :shared:ktlintCheck` on any Kotlin/resource change (see "The pre-commit gate" below for how it is wired
-under bd's `core.hooksPath`). Bypass with `--no-verify` only in emergencies.
+Two hook layers run on commit: the project gate (`scripts/hooks/pre-commit`:
+`:app:testDebugUnitTest :shared:testAndroidHostTest :app:ktlintCheck
+:shared:ktlintCheck` on any Kotlin/resource change; see "The pre-commit gate"
+below for how it is wired under bd's `core.hooksPath`) and the standard's
+pre-commit hooks (`.pre-commit-config.yaml`: ktlint, gitleaks, whitespace,
+Conventional Commit subject, no AI bylines; installed with `pre-commit install
+--hook-type pre-commit --hook-type commit-msg`). Never `--no-verify` (see
+"Version control").
 
 ## Commit cadence
 
@@ -101,16 +107,19 @@ commands from its session-close protocol; don't unset it. (Adopted
 
 `scripts/hooks/pre-commit` is the tracked gate (unit tests + ktlint +
 instrumented-test compile on any staged `.kt/.kts/.xml/.pro/.properties`;
-docs-only commits skip it). **bd sets `core.hooksPath` to `.beads/hooks`**, so
-git never reads `.git/hooks/` — the old symlink there ran nothing. The gate is
-therefore *called* from `.beads/hooks/pre-commit` (present locally but untracked since 2026-10-20, when `.beads/` was gitignored; a fresh clone gets the gate from `scripts/hooks/install.sh`), in a
-`PROJECT GATE` block above bd's own markers (bd regenerates only what sits
-between its markers). `scripts/hooks/install.sh` verifies that wiring, or
-installs the symlink on a clone that has no `core.hooksPath`.
+docs-only commits skip it). Since 2026-10-28 the clone runs two layers from
+`.git/hooks`: pre-commit's runner (`pre-commit install --hook-type pre-commit
+--hook-type commit-msg`, hooks from `.pre-commit-config.yaml`) calls the gate
+first through `.git/hooks/pre-commit.legacy`, then runs its own hooks.
+`scripts/hooks/install.sh` verifies or installs that wiring. bd's
+`core.hooksPath=.beads/hooks` is no longer set in Evan's clone (it pointed at
+an empty directory, so nothing ran); if `bd hooks install` is run again it
+must install into `.git/hooks` beside pre-commit, not re-point hooksPath.
 
 - The hook runs against the **working tree**, not the staged snapshot: stage
   everything you intend to ship, or stash the noise first.
-- Bypass in emergencies only: `git commit --no-verify`.
+- No bypass: `--no-verify` is prohibited (see "Version control"). If the gate
+  is wrong, fix the gate.
 - Not in the hook: Maestro flows (CI's `ui` job) and anything needing a
   device.
 
@@ -203,7 +212,10 @@ See `docs/PLAY_STORE.md` for the bootstrap, console quirks, and signing;
   version they *will be promoted as* — bump `versionName` first, then let
   `versionCode` tick underneath it. A `versionCode` bump alone is not a
   substitute when behaviour changed.
-- Log every cut (versionCode, date, track) in `docs/RELEASES.md`.
+- Log every cut (versionCode, date, track) in `docs/RELEASES.md`. The
+  user-facing changelog (`CHANGELOG.md`) is generated from the Conventional
+  Commits by `scripts/release.sh` (git-cliff); do not hand-edit it beyond a
+  one-line summary per release.
 
 ### Release procedure (day-to-day)
 
@@ -215,7 +227,7 @@ scripts/android/preflight-play.sh                  # auth + permissions, no side
 # Cut: refuses a dirty tree, runs scripts/verify.sh, bumps versionCode,
 # builds a SIGNED AAB, uploads to the internal track (no Play review).
 scripts/android/release-internal.sh --notes "What testers will see"
-git commit app/build.gradle.kts -m "release: versionCode N to internal"
+git commit app/build.gradle.kts -m "chore(release): versionCode N to internal"
 
 # Promote the tested build (a track move, not a re-upload):
 scripts/android/promote-play.sh [--rollout 0.2]
@@ -269,8 +281,12 @@ scripts/ios/release-testflight.sh   # release rehearsal; see docs/APP_STORE.md
   committing.
 - iOS is gated locally only (plan decision 7). CI runs the Android jobs and
   skips the shared module's iOS targets.
-- Debug builds always use Google's sample AdMob ids. Signing, AdMob ids and
-  releases: `docs/APP_STORE.md`.
+- Ad and consent ids live in `iosApp/Config/Ads.xcconfig` (gitignored; copy
+  `Ads.xcconfig.example`): the Appodeal app key and the InMobi CMP p-code.
+  Blank means the app builds ad-free; `archive.sh` refuses to cut that way.
+  The InMobi CMP framework is fetched by `scripts/ios/fetch-inmobi-cmp.sh`
+  (the release scripts call it; run it once before a plain xcodegen/Xcode
+  build on a fresh clone). Signing and releases: `docs/APP_STORE.md`.
 
 ## App Store Releases
 
@@ -655,7 +671,17 @@ platform difference:
   object the UI depends on — wire shapes never leak past the repository.
 - **`ads/`** (app) + **`billing/`** — the banner and the purchase that removes it.
   `AdBanner` is the only composable that draws an ad (one, at the foot of the
-  glance; personalization follows the user's consent, per `AdPolicy`);
+  glance); `ConsentGateway` is the seam to the consent platform and
+  `AdsConsent` the gate that starts the ad SDK once consent allows.
+  **google-ads-exit:** Google Mobile Ads and UMP were removed in Stage A
+  (`raylytics/docs/ad-migration/RUNBOOK.md`); Stage B puts Appodeal
+  mediation (on Appodeal's own network accounts) behind the InMobi CMP. iOS
+  has it (`AdsService.swift`); on Android `NoConsentGateway` still never
+  allows ads and `AdBanner` draws nothing until its half lands.
+  `scripts/check-no-google-ads.sh` (pre-commit and CI) refuses anything
+  that needs the AdMob account coming back, and any direct use of Google's
+  User Messaging Platform (Appodeal pulls it in transitively; nothing may
+  declare, import or call it).
   `RemoveAdsManager` keeps the on-device entitlement in step with Play behind
   the `BillingGateway` seam.
   See `docs/architecture.md`.
@@ -670,7 +696,7 @@ platform difference:
   registry; `RegionResolver` picks the region (manual choice > phone network
   > last fix > place shown > language settings; the iPhone's order is in
   docs/REGIONS.md "On iOS"). It drives units, dates
-  and clock. Whether ads may run is Google's UMP consent SDK's call
+  and clock. Whether ads may run is the consent platform's call
   (`ads/AdsConsent`), not the region's. **docs/REGIONS.md** has how it works and the
   step-by-step for adding, opening, pausing or removing a region. Never
   change the Play Console country list or App Store Connect's availability
@@ -749,7 +775,7 @@ on iOS": check `scripts/release-drift.sh`.
 **Every credential an agent uses lives in 1Password.** API keys, tokens, DSNs, OAuth client secrets, webhook URLs, signing keys: if Claude Code, a cron job, an MCP server, or CI needs it, 1Password is the source of truth, and anything else (a local `.env`, SSM, GitHub Secrets, a server-side env file) is a derived copy seeded from it. This applies to the credentials this repo already uses, not only to new ones.
 
 - **Reference, don't copy.** Tracked files carry env var *names* and `op://<vault>/<item>/<field>` references, never values. Load at run time with `op run --env-file=op.env -- <cmd>` (an `op.env` of `op://` lines, gitignored) or `op read "op://..."` piped straight into the consumer. This repo's release scripts read `key=value` properties files instead (`app/keystore.properties`, `iosApp/team.properties`, repo-root `play.properties`, each with a tracked `.example`); those files are the derived copies here, and env vars override them.
-- **Name items `<repo>-<service>`** (for example `mc-epn`), one item per service, fields named after the env vars. Use the 1Password account that owns the work (personal `my.1password.com`, VisionWrights, or Newtack) and pass `--account` when more than one is signed in.
+- **Name items `<repo>-<service>`** (for example `mc-epn`), one item per service, fields named after the env vars. Use the 1Password account that owns the work (personal `my.1password.com` for this repo) and pass `--account` when more than one is signed in.
 - **A literal `.env` is debt, not a pattern.** It must be gitignored and `chmod 600`, and the inventory below marks it as pending migration. Move the values into 1Password the next time you touch them. Key *files* (`app/release.keystore`, `AuthKey_*.p8`, `play-service-account.json`) belong in 1Password as document attachments of the item that uses them; `docs/PLAY_STORE.md`'s "back up in the password manager" means that item.
 - **Never print a secret.** Prove a key works by calling the API (`scripts/android/preflight-play.sh` does exactly that for Play). Don't `cat` env files, echo variables, or paste values into transcripts, commit messages, or this file.
 - **Found a literal secret in a tracked file or in history?** Stop and tell the owner. It needs rotating and purging, and that is their call.
@@ -763,7 +789,7 @@ on iOS": check `scripts/release-drift.sh`.
 | `IOS_ASC_KEY_ID`, `IOS_ASC_ISSUER_ID`, `IOS_ASC_KEY_PATH` (`ascKeyId` / `ascIssuerId` / `ascKeyPath`) | `scripts/ios/*`: TestFlight upload, profile creation (ASC API) | gitignored `iosApp/team.properties`, literal values; `.p8` in `~/.appstoreconnect/private_keys/` outside the repo (migrate) | `jmw-asc` (to create; if it is open-frame's key, share `open-frame-asc`) |
 | `PLAY_SERVICE_ACCOUNT` (`serviceAccountJsonPath`) | `scripts/android/upload-play.sh`, `promote-play.sh`, `preflight-play.sh`, `play-countries.sh` | path in gitignored repo-root `play.properties`; JSON key at repo-root `play-service-account.json`, gitignored (migrate) | `jmw-play` (to create; if it is open-frame's service account, share `open-frame-play`) |
 
-Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, the AdMob ids in gitignored `app/admob.properties` (`appId`, `bannerUnitId`), `local.properties` (SDK path). NWS and MET Norway need no key.
+Not secrets, stay where they are: `IOS_TEAM_ID` (`teamID`), Play `track` / `packageName`, `local.properties` (SDK path). Ad network and CMP ids (the Appodeal app key, the InMobi CMP p-code) live in a gitignored xcconfig on iOS (`iosApp/Config/Ads.xcconfig`, example committed) and, once the Android half of google-ads-exit Stage B lands, a gitignored properties file with a committed example, as AdMob's was. NWS and MET Norway need no key.
 
 <!-- BEGIN WYK CONVENTIONS v:1 -->
 ## wyk — planning & handoff over bd
@@ -796,3 +822,14 @@ convention looks broken, or the workflow rubs wrong, file a bd issue (with
 an owner) and fix or hand it off — don't route around it silently.
 Friction with wyk is product data; surfacing it is the job.
 <!-- END WYK CONVENTIONS -->
+
+## Version control
+
+This repo follows the Raylytics Version Control Standard, tier 1, stack android. Source: STANDARD.md in the `raylytics` repo (2026-10-27); cite its section in a commit body when a rule decides something.
+
+- Branch from `main` as `type/short-kebab`. Every change lands as a squash-merged PR with CI green; the PR title is the Conventional Commit subject. Agent work always goes through a PR.
+- Commits follow Conventional Commits 1.0: `type(scope): subject`, subject at most 72 characters, imperative, no trailing period, then a body that says why. Types: feat, fix, perf, refactor, style, docs, test, build, ci, chore, revert. Scopes here: android, ios, shared, ui, alerts, glance, forecast, gazetteer, whatsnew, store, ci, deps, release, docs, vc. Release-script commits use `chore(release): ...` (the old `release: ...` form is not a Conventional Commit type).
+- Never add `Co-Authored-By`, `Generated with`, or any AI byline; the commit-msg hook refuses them. Never use `--no-verify`. Never force-push `main`.
+- Secrets never enter the tree; `.env.example` lists the variables; gitleaks runs in pre-commit and CI.
+- Commands: `pre-commit install --hook-type pre-commit --hook-type commit-msg` once; lint `./gradlew :app:ktlintCheck :shared:ktlintCheck`; test `./gradlew :app:testDebugUnitTest :shared:testAndroidHostTest` (`scripts/verify.sh` is the whole JVM gate); release `scripts/release.sh X.Y.Z` (bumps `VERSION`, which `scripts/sync-version.sh` copies into `versionName` and iOS `MARKETING_VERSION`, bumps `versionCode`, regenerates CHANGELOG.md with git-cliff, tags `vX.Y.Z`; store uploads stay with `scripts/android/release-internal.sh` and `scripts/ios/release-testflight.sh`, after the tag).
+- Do not commit `.claude/settings.local.json`, `QUEUE.md`, `HANDOFF*`, `.beads/`, scratch notes or session logs.

@@ -42,10 +42,14 @@ interface StoreBridge {
 /** How a purchase sheet ended. */
 enum class StorePurchase { PURCHASED, PENDING, CANCELLED, FAILED }
 
-/** Google Mobile Ads + UMP + App Tracking Transparency (Platform/AdsService.swift). */
+/** The ads consent gate, the banner and App Tracking Transparency
+ * (Platform/AdsService.swift): the InMobi CMP decides, Apple's prompt
+ * follows where ads may run, then Appodeal mediation serves the banner
+ * (google-ads-exit Stage B). */
 interface AdsBridge {
-    /** Once per launch: UMP's consent request (and its form where the law
-     * asks), then Apple's tracking prompt where allowed; [done] once settled. */
+    /** Once per launch: the consent platform's request (and its form where
+     * the law asks), then Apple's tracking prompt where allowed; [done] once
+     * settled. */
     fun gather(host: UIViewController, done: () -> Unit)
 
     fun canRequestAds(): Boolean

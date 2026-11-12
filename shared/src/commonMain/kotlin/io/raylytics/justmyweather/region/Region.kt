@@ -8,7 +8,7 @@ import io.raylytics.justmyweather.view.Conventions
  * supported-locations page use ("GB", not "UK"). Everything the app adapts
  * per place-in-the-world hangs off one of these — units, date order, the
  * clock — so switching region switches all of them at once. (Whether an ad
- * may run is not a region matter: Google's consent SDK decides, ads/AdsConsent.) How the app decides which region it is in, and how to add
+ * may run is not a region matter: the consent platform decides, ads/AdsConsent.) How the app decides which region it is in, and how to add
  * one, is docs/REGIONS.md.
  */
 data class Region(

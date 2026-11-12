@@ -43,8 +43,7 @@ class SunTimesTableTest {
         val days =
             listOf(
                 SunDay(today, at(today, 6, 52), at(today, 20, 28)),
-                today.plus(1, DateTimeUnit.DAY).let {
-                        tomorrow ->
+                today.plus(1, DateTimeUnit.DAY).let { tomorrow ->
                     SunDay(tomorrow, at(tomorrow, 6, 53), at(tomorrow, 20, 27))
                 },
             )

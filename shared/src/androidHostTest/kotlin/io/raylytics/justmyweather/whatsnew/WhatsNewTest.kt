@@ -67,6 +67,7 @@ class WhatsNewTest {
         assertEquals(versions.toSet().size, versions.size)
         assertTrue(ReleaseNotes.all.all { it.highlights.isNotEmpty() })
         assertTrue(AppVersion(0, 4, 1) in versions)
+        assertTrue(AppVersion(0, 4, 2) in versions)
         assertTrue(AppVersion(0, 5, 0) in versions)
     }
 }

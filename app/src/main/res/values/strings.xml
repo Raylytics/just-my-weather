@@ -1,14 +1,17 @@
-<resources>
-    <string name="app_name">Just My Weather</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- values-en-rUS overrides one regional value (widget_preview_value, in
+         Fahrenheit); it is not a translation, so English strings fall back
+         here and MissingTranslation is ignored for the two widget texts. -->
+    <string name="app_name" translatable="false">Just My Weather</string>
 
     <!-- Support inbox for in-app feedback / bug reports (Raylytics standard). -->
-    <string name="support_email">dev@raylytics.io</string>
+    <string name="support_email" translatable="false">dev@raylytics.io</string>
 
     <!-- Home screen widget: the picker's name and description, and the
          Android 12+ layout preview's sample content. -->
-    <string name="widget_label">Just My Weather</string>
-    <string name="widget_description">One tile of your glance: a reading, the sun, or the forecast, set up the way you like.</string>
-    <string name="widget_preview_label">Temperature</string>
+    <string name="widget_label" translatable="false">Just My Weather</string>
+    <string name="widget_description" tools:ignore="MissingTranslation">One tile of your glance: a reading, the sun, or the forecast, set up the way you like.</string>
+    <string name="widget_preview_label" tools:ignore="MissingTranslation">Temperature</string>
     <!-- The picker preview is inflated in the launcher's process, where the
          app's region can't be read, so the device locale stands in for it:
          22° reads as an ordinary day in Celsius; US locales override to the

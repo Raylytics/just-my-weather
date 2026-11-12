@@ -1,6 +1,8 @@
 # Just My Weather
 
 [![CI](https://github.com/jimbottle/just-my-weather/actions/workflows/ci.yml/badge.svg)](https://github.com/jimbottle/just-my-weather/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/jimbottle/just-my-weather)](https://github.com/jimbottle/just-my-weather/releases/latest)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **[Get it on Google Play](https://play.google.com/store/apps/details?id=io.raylytics.justmyweather)** — live since 2026-10-05 (0.2.0). Free, with one banner ad; a one-time purchase removes it. US weather (NWS).
 
@@ -65,8 +67,12 @@ Requires **JDK 17+** and the **Android SDK**. Point Gradle at your SDK:
 echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties   # adjust path
 ./gradlew :app:assembleDebug          # build
 ./gradlew :app:testDebugUnitTest      # run unit tests
-scripts/hooks/install.sh              # optional: install the pre-commit gate
+scripts/hooks/install.sh              # the project gate (test + ktlint)
+pre-commit install --hook-type pre-commit --hook-type commit-msg   # the standard hooks
 ```
+
+Tool versions are pinned in `.tool-versions` (JDK), the Gradle wrapper, and
+`gradle/libs.versions.toml`; `.github/workflows/ci.yml` reads the same values.
 
 Testing builds ship through Google Play's internal testing track (see
 [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md)); the GitHub releases were the
@@ -87,15 +93,28 @@ workflow, **[docs/architecture.md](docs/architecture.md)** for the map, and
 **[docs/extending.md](docs/extending.md)** for step-by-step recipes for the
 common extension points.
 
+## Releasing
+
+`scripts/release.sh X.Y.Z` on a clean, green `main` bumps `VERSION` (synced
+into Android's `versionName` and iOS's `MARKETING_VERSION`), bumps
+`versionCode`, prepends the release to [CHANGELOG.md](CHANGELOG.md) from the
+commits with git-cliff, and pushes a signed tag; the `release` workflow creates
+the GitHub Release. Store uploads run after the tag with
+`scripts/android/release-internal.sh` and `scripts/ios/release-testflight.sh`
+([docs/PLAY_STORE.md](docs/PLAY_STORE.md), [docs/APP_STORE.md](docs/APP_STORE.md));
+the per-cut log stays in [docs/RELEASES.md](docs/RELEASES.md).
+
 ## Data & privacy
 
-Weather comes from the public US National Weather Service API — no key, no
-account, US coverage. Location is **coarse** and optional (the platform location
-provider, not Google Play Services). You can also pick and save places by name:
-tap the place name on the glance to search a list of ~32,000 US towns and
-cities **bundled in the app**, or enter coordinates for somewhere unlisted. The
-search does no network call and needs no geocoding key — the list is public
--domain US Census Gazetteer data, rebuildable with `scripts/build-gazetteer.sh`.
+Weather comes from the public US National Weather Service API in its coverage
+area and from MET Norway everywhere else — no key, no account. Location is
+**coarse** and optional (the platform location provider, not Google Play
+Services). You can also pick and save places by name: tap the place name on the
+glance to search a list of about 60,000 towns and cities worldwide **bundled in
+the app**, or enter coordinates for somewhere unlisted. The search does no
+network call and needs no geocoding key — the list is the public-domain US
+Census Gazetteer for the US and its territories plus GeoNames abroad (see
+[NOTICE](NOTICE)), rebuildable with `scripts/build-gazetteer.sh`.
 A chosen place is what the background alert poll watches too. Personal alerts
 are evaluated and delivered on-device.
 

@@ -39,7 +39,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         Self.platform.storeService.start()
         Self.platform.locationService.onFirstFix = { Self.app.locationGranted() }
-        Self.platform.locationService.start()
+        // A first launch's location prompt waits for the consent flow
+        // (ComposeView), so it never lands on top of the consent form. Once
+        // answered, location starts here as before, background launches
+        // included (the alert check wants a fix and never shows a scene).
+        if !Self.platform.locationService.wouldPrompt { Self.platform.locationService.start() }
         Self.app.start()
         return true
     }
@@ -58,8 +62,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let controller = AppDelegate.app.mainViewController()
-        // Consent prompts present over the first screen, once it is up.
-        DispatchQueue.main.async { AppDelegate.app.gatherConsent(host: controller) }
+        // Consent prompts present over the first screen, once it is up; the
+        // app's own location prompt follows once they have settled, as on
+        // Android. (The CMP's US notice page asks WebKit for geolocation
+        // itself, which surfaces the same system prompt over the form on a
+        // first launch; that one is InMobi's, not ours, and once answered
+        // the deferred start() below has nothing left to ask.)
+        DispatchQueue.main.async {
+            AppDelegate.app.gatherConsent(host: controller) {
+                // start() is idempotent: this is the first call on a first
+                // launch (whether or not the CMP's own request already got
+                // the answer), a no-op when launch started it.
+                DispatchQueue.main.async { AppDelegate.platform.locationService.start() }
+            }
+        }
         return controller
     }
 

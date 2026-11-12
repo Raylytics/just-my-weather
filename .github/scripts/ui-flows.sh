@@ -70,6 +70,29 @@ done
 # put that failure back.
 adb -s "$SERIAL" shell settings put global hide_error_dialogs 1
 
+# The setting stops NEW error dialogs but leaves one that is already on screen
+# (verified on API 35: with an ANR dialog up, flipping the setting kept it
+# focused; the CLOSE_SYSTEM_DIALOGS broadcast below removed it). The launcher
+# can ANR during or right after boot, before this script runs, and that
+# leftover dialog sat over the app and failed all ten flows on every attempt
+# (2026-11-09, just-my-weather-m46). So close any such dialog now and again
+# right before each Maestro pass, and say so, so the evidence survives.
+dismiss_error_dialogs() {
+  # Capture, then match: no early-exit grep on a live pipeline (see the
+  # pipefail note further down).
+  local windows focus
+  windows=$(adb -s "$SERIAL" shell dumpsys window 2>/dev/null || true)
+  focus=$(printf '%s\n' "$windows" | grep mCurrentFocus | tr -d '\r' || true)
+  case "$focus" in
+    *"Application Not Responding"*|*"Application Error"*)
+      echo "::warning::closing a system error dialog left on screen ($1): ${focus#*u0 }"
+      adb -s "$SERIAL" shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null
+      sleep 2
+      ;;
+  esac
+}
+dismiss_error_dialogs "after boot"
+
 # Instrumented Compose tests, on the emulator that is already booted — no
 # second boot, which is why they live here rather than in the JVM gate.
 #
@@ -149,10 +172,12 @@ rm -f "$RETRY_MARKER"
 # surfaces only as "assertion timed out" — the shape this check exists to
 # explain. The status is re-applied at the end of the script.
 MAESTRO_RC=0
+dismiss_error_dialogs "before the first pass"
 if ! maestro --device "$SERIAL" test .maestro/; then
   echo "::warning::first Maestro pass failed — retrying once"
   : > "$RETRY_MARKER"
   echo "wrote retry marker: $RETRY_MARKER"
+  dismiss_error_dialogs "before the retry"
   maestro --device "$SERIAL" test .maestro/ || MAESTRO_RC=$?
 fi
 

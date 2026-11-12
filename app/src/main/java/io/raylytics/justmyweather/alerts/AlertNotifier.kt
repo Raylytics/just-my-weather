@@ -60,7 +60,7 @@ class AlertNotifier(
                 .setAutoCancel(true)
                 .build()
         // Stable id per rule so a re-fire updates rather than stacks.
-        NotificationManagerCompat.from(context).notify(rule.id.hashCode(), notification)
+        post(rule.id.hashCode(), notification)
     }
 
     /**
@@ -96,7 +96,24 @@ class AlertNotifier(
                 .setAutoCancel(true)
                 .build()
         // Stable id per alert so an update replaces rather than stacks.
-        NotificationManagerCompat.from(context).notify(alert.id.hashCode(), notification)
+        post(alert.id.hashCode(), notification)
+    }
+
+    /**
+     * Callers check [hasPermission] first, but the user can revoke
+     * POST_NOTIFICATIONS between that check and this call; notify() then
+     * throws SecurityException. A revoked permission means "don't notify",
+     * so the alert is dropped rather than crashing the background worker.
+     */
+    private fun post(
+        id: Int,
+        notification: android.app.Notification,
+    ) {
+        try {
+            NotificationManagerCompat.from(context).notify(id, notification)
+        } catch (_: SecurityException) {
+            // Permission revoked after the check: nothing to deliver to.
+        }
     }
 
     private fun hasPermission(): Boolean =

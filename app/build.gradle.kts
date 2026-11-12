@@ -3,7 +3,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jlleitschuh.gradle.ktlint")
@@ -20,36 +19,12 @@ val keystoreProperties =
         }
     }
 
-// AdMob ids. A debug build always serves Google's SAMPLE ids (labelled test
-// ads that earn nothing — clicking one's own live ads gets an AdMob account
-// suspended), so only release reads app/admob.properties (gitignored; see
-// admob.properties.example and just-my-weather-1zp). Absent, release falls
-// back to the samples with a warning so a contributor's bundleRelease still
-// assembles; scripts/android/release-internal.sh refuses to upload samples.
-val admobPropertiesFile = rootProject.file("app/admob.properties")
-val admobProperties =
-    Properties().apply {
-        if (admobPropertiesFile.exists()) {
-            load(FileInputStream(admobPropertiesFile))
-        }
-    }
-val admobSampleAppId = "ca-app-pub-3940256099942544~3347511713"
-val admobSampleBannerId = "ca-app-pub-3940256099942544/9214589741"
-val admobAppId = admobProperties.getProperty("appId") ?: admobSampleAppId
-val admobBannerId = admobProperties.getProperty("bannerUnitId") ?: admobSampleBannerId
-if (!admobPropertiesFile.exists()) {
-    logger.warn(
-        "app/admob.properties missing: release will serve AdMob SAMPLE ads " +
-            "(fine for internal testing, never for production)",
-    )
-}
-
 android {
     namespace = "io.raylytics.justmyweather"
     // Google Play has required new apps and updates to target API 36 since
     // 2026-08-31; the internal track is not exempt. AGP 8.13 is the matching
     // toolchain (8.7 only warned at 36).
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "io.raylytics.justmyweather"
@@ -69,18 +44,6 @@ android {
         // en-rUS carries only the widget picker's Fahrenheit sample
         // (values-en-rUS); without it listed, "en" alone strips it.
         resourceConfigurations += listOf("en", "en-rUS")
-
-        // The Google Mobile Ads SDK reads its app id from the manifest; the
-        // banner unit reaches AdBanner through BuildConfig. Debug pins both to
-        // the samples (AdPolicy.bannerUnitId re-checks the unit at runtime).
-        manifestPlaceholders["admobAppId"] = admobSampleAppId
-        buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobSampleBannerId\"")
-
-        // Debug-only: pretend to be in the EEA (or not) so the consent form can
-        // be checked on an emulator anywhere — `./gradlew assembleDebug
-        // -PumpGeography=eea`. Ignored by release builds (ads/UmpConsentGateway).
-        val umpGeography = (project.findProperty("umpGeography") as String?).orEmpty()
-        buildConfigField("String", "UMP_DEBUG_GEOGRAPHY", "\"$umpGeography\"")
     }
 
     signingConfigs {
@@ -97,8 +60,6 @@ android {
             isMinifyEnabled = false
         }
         release {
-            manifestPlaceholders["admobAppId"] = admobAppId
-            buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobBannerId\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -135,8 +96,9 @@ android {
     }
 }
 
-// Kotlin 2.3 (bumped 2026-10-03 for the Google Mobile Ads and Play Billing
-// SDKs, whose metadata 2.1 could not read) retired the kotlinOptions DSL.
+// Kotlin 2.3 (bumped 2026-10-03 for the Play Billing SDK and the since-removed
+// Google Mobile Ads SDK, whose metadata 2.1 could not read) retired the
+// kotlinOptions DSL.
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -147,13 +109,13 @@ kotlin {
 
 dependencies {
     implementation(project(":shared"))
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.19.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.activity:activity-compose:1.9.3")
 
-    val composeBom = platform("androidx.compose:compose-bom:2026.05.01")
+    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui")
@@ -163,20 +125,20 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 
     // Weather data layer: NWS over HTTP, JSON wire shapes parsed with
     // kotlinx.serialization. No proprietary SDKs — keeps the app
     // open-source-friendly (e.g. F-Droid) and the data path legible.
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("com.squareup.okhttp3:okhttp:5.5.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
 
     // Persistence for the user's view config, theme, location, and alert
     // rules. DataStore over SharedPreferences for the flow-based reads.
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.datastore:datastore-preferences:1.3.0")
 
     // Background polling for personal alerts, and the widgets' refresh.
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     // Home screen widgets. Glance is Compose-flavoured RemoteViews: the same
     // Row/Column/Text vocabulary, drawn by the launcher. It pulls a Compose
@@ -184,29 +146,26 @@ dependencies {
     // libraries tolerate within a minor version.
     implementation("androidx.glance:glance-appwidget:1.2.0")
 
-    // The one banner ad and the purchase that removes it (Evan, 2026-10-03).
-    // Both are Google services the Play build cannot avoid; they stay behind
-    // ads/ and billing/ so a build without them (F-Droid, say) would drop two
-    // packages and one call site. Play requires Billing Library 8+ for new
-    // apps since 2026-08-31.
-    implementation("com.google.android.gms:play-services-ads:25.5.0")
-    // Google's certified consent platform (UMP), which decides whether ads may
-    // run at all — it asks the user where the law requires it (EEA, UK,
-    // Switzerland) and answers "not required" elsewhere (Evan, 2026-10-07).
-    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
+    // The purchase that removes the one banner ad (Evan, 2026-10-03). It stays
+    // behind billing/ so a build without it (F-Droid, say) would drop one
+    // package and one call site. Play requires Billing Library 8+ for new apps
+    // since 2026-08-31. The ad SDK itself lives behind ads/: Google Mobile Ads
+    // and its consent platform (UMP) were removed in the google-ads-exit epic
+    // (Stage A); Appodeal behind the InMobi CMP lands in the Android half of Stage B.
     implementation("com.android.billingclient:billing-ktx:9.1.0")
-    // The ads SDK pulls in a pre-1.3 androidx.fragment, and release lint
+    // Google's ads SDK pulled in a pre-1.3 androidx.fragment, and release lint
     // (lintVitalRelease) refuses an app that registers for activity results
-    // on one (InvalidFragmentVersionForActivityResult). Pinned so the
-    // resolved version is one that calls super.onRequestPermissionsResult.
-    implementation("androidx.fragment:fragment:1.8.5")
+    // on one (InvalidFragmentVersionForActivityResult). The pin stays so the
+    // next ad SDK cannot drag the floor back down.
+    implementation("androidx.fragment:fragment:1.9.1")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.3")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.11.3")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.3")
-    testImplementation("org.mockito:mockito-core:5.14.2")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:6.1.3")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
+    testImplementation("org.mockito:mockito-core:5.24.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

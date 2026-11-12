@@ -30,6 +30,9 @@ xcodegen_generate
 # it (Team.xcconfig, the includes, and nothing in project.yml shadowing them).
 require_team_configured
 
+# And the ad and consent ids: a Release archive is a store build.
+require_ads_configured
+
 # Clean the archive dir.
 echo "==> Cleaning $ARCHIVE_PATH" >&2
 rm -rf "$ARCHIVE_PATH"
@@ -80,4 +83,7 @@ if [ ! -d "$ARCHIVE_PATH" ]; then
 Run xcodebuild archive without the grep filter to see full output."
 fi
 
+# Appodeal's frameworks ship Info.plist values App Store Connect rejects;
+# repair and re-sign them in the archive so the export carries the fix.
+bash "$SCRIPT_DIR/fix-framework-plists.sh" "$ARCHIVE_PATH/Products/Applications/$SCHEME.app"
 echo "==> Archive ready: $ARCHIVE_PATH" >&2

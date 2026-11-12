@@ -5,6 +5,8 @@ import io.raylytics.justmyweather.resources.whats_new_0_4_1_modules_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_modules_title
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_units_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_units_title
+import io.raylytics.justmyweather.resources.whats_new_0_4_2_caret_body
+import io.raylytics.justmyweather.resources.whats_new_0_4_2_caret_title
 import io.raylytics.justmyweather.resources.whats_new_0_4_2_restore_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_2_restore_title
 import io.raylytics.justmyweather.resources.whats_new_0_5_0_preview_body
@@ -40,11 +42,11 @@ data class ReleaseNote(val version: AppVersion, val highlights: List<Highlight>)
 object ReleaseNotes {
     val all: List<ReleaseNote> =
         listOf(
-            // 0.5.0 absorbed 0.4.2, which never reached Play. Its Restore
-            // purchases row (the one App Review asked for) rides here beside
-            // the two new features; the caret fix is in docs/RELEASES.md.
-            // Those strings keep their 0_4_2 names: resource names are not
-            // persisted state.
+            // Two entries, not one: iOS shipped 0.4.2 (App Review asked for
+            // the Restore purchases row), Android never did. WhatsNew shows
+            // every release newer than the one a user last saw, so an Android
+            // user coming from 0.4.1 reads both, and an iPhone already on
+            // 0.4.2 is not told about Restore purchases twice.
             ReleaseNote(
                 AppVersion(0, 5, 0),
                 listOf(
@@ -54,7 +56,13 @@ object ReleaseNotes {
                         HighlightAction.CUSTOMIZE,
                     ),
                     Highlight(Res.string.whats_new_0_5_0_yesterday_title, Res.string.whats_new_0_5_0_yesterday_body),
+                ),
+            ),
+            ReleaseNote(
+                AppVersion(0, 4, 2),
+                listOf(
                     Highlight(Res.string.whats_new_0_4_2_restore_title, Res.string.whats_new_0_4_2_restore_body),
+                    Highlight(Res.string.whats_new_0_4_2_caret_title, Res.string.whats_new_0_4_2_caret_body),
                 ),
             ),
             ReleaseNote(
