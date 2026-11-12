@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.raylytics.justmyweather.alerts.SafetyAlerts
 import io.raylytics.justmyweather.data.DayComparison
+import io.raylytics.justmyweather.data.DayRange
 import io.raylytics.justmyweather.data.DayRangeHistory
 import io.raylytics.justmyweather.data.PointCacheKey
 import io.raylytics.justmyweather.data.SunDay
@@ -39,11 +40,18 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import okio.IOException
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
+
+/** How long after midnight yesterday counts as finished: hourly reports
+ * post near :53 and can reach the API minutes later, so a day measured just
+ * after midnight could lack its last hour, and a measured day is kept. */
+private val MEASURED_DAY_SETTLE = 2.hours
 
 /** The sun rows are computed to the setting's ceiling, not its value: the
  * calculation is pure and cheap, and the render trims to what the user asked
@@ -276,16 +284,7 @@ class HomeViewModel(
                 val placeZone = placeTimes.value.zone ?: zone()
                 val today = clock().toLocalDateTime(placeZone).date
                 val ranges = runCatching { repository.loadDayRanges(location, placeZone) }.getOrDefault(emptyList())
-                // Yesterday as the station measured it, when there is a
-                // station and it covered the day; otherwise the record's own
-                // forecast for yesterday stands in. Fetched once per day.
-                val yesterday = today.minus(DatePeriod(days = 1))
-                val observed =
-                    if (runCatching { history.hasObserved(key, yesterday) }.getOrDefault(false)) {
-                        null
-                    } else {
-                        runCatching { repository.loadObservedDay(location, yesterday, placeZone) }.getOrNull()
-                    }
+                val observed = measuredYesterday(history, key, location)
                 val comparison = runCatching {
                     history.record(key, ranges + listOfNotNull(observed), today)
                 }.getOrNull()
@@ -294,6 +293,25 @@ class HomeViewModel(
                 ensureActive()
                 vsYesterday.value = comparison
             }
+    }
+
+    /**
+     * Yesterday as the place's station measured it, or null to let the
+     * record's own forecast for yesterday stand in. A measured day is kept
+     * for good and never corrected, so it is only taken when it can be
+     * right: cut in the place's OWN zone (from NWS or the place, never the
+     * device's fallback, which would cut another calendar day), and once
+     * the day has had [MEASURED_DAY_SETTLE] to post its last hour's reports.
+     * Fetched once per day.
+     */
+    private suspend fun measuredYesterday(history: DayRangeHistory, key: String, location: WeatherLocation): DayRange? {
+        val zone = runCatching { repository.cachedZone(location) }.getOrNull()?.let(::parseZone) ?: return null
+        val now = clock()
+        val today = now.toLocalDateTime(zone).date
+        if (now < today.atStartOfDayIn(zone) + MEASURED_DAY_SETTLE) return null
+        val yesterday = today.minus(DatePeriod(days = 1))
+        if (runCatching { history.hasObserved(key, yesterday) }.getOrDefault(false)) return null
+        return runCatching { repository.loadObservedDay(location, yesterday, zone) }.getOrNull()
     }
 
     /**

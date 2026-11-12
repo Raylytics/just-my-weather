@@ -663,6 +663,43 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `no measured day is recorded while the place's own zone is unknown`() = runTest(dispatcher) {
+        // No zone from NWS and none on the place: the device's zone would cut
+        // the wrong calendar day, and a measured day is never corrected.
+        val h =
+            harness(
+                config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday),
+                points = POINTS_NO_ZONE,
+                zone = { TimeZone.of("Pacific/Honolulu") },
+                dayHistory = todayOnlyHistory(),
+            )
+        h.transport.observedRange = YESTERDAY_OBSERVED
+        h.vm.refresh()
+        advanceUntilIdle()
+        assertEquals(0, h.transport.observedRangeFetches)
+    }
+
+    @Test
+    fun `yesterday is not measured until its last reports have had time to arrive`() = runTest(dispatcher) {
+        // 1am in New York: the 11pm report may not be in the API yet.
+        var now = Instant.parse("2026-07-31T05:00:00Z")
+        val h =
+            harness(
+                config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday),
+                clock = { now },
+                dayHistory = todayOnlyHistory(),
+            )
+        h.transport.observedRange = YESTERDAY_OBSERVED
+        h.vm.refresh()
+        advanceUntilIdle()
+        assertEquals(0, h.transport.observedRangeFetches, "too early")
+        now = Instant.parse("2026-07-31T07:00:00Z")
+        h.vm.refresh()
+        advanceUntilIdle()
+        assertEquals(DayRange(LocalDate(2026, 7, 30), 86.0, 68.0, observed = true), h.vm.ready().vsYesterday?.yesterday)
+    }
+
+    @Test
     fun `with no measurement the record's own yesterday stands in`() = runTest(dispatcher) {
         val failing = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
         failing.transport.failObservedRange = true
