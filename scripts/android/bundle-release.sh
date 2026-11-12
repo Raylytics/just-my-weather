@@ -18,6 +18,10 @@ store_file="${store_file:-release.keystore}"
 case "$store_file" in /*) KEYSTORE_PATH="$store_file" ;; *) KEYSTORE_PATH="$PROJECT_ROOT/app/$store_file" ;; esac
 [ -f "$KEYSTORE_PATH" ] || die "upload keystore not found at $KEYSTORE_PATH (storeFile in keystore.properties is relative to app/)."
 
+# A store bundle without the ad ids would run ad-free; refuse it here too, so
+# a direct bundle-release.sh + upload-play.sh path can't skip the check.
+require_ads_configured
+
 echo "==> Bundling signed release AAB (versionName $(read_version_name), versionCode $(read_version_code))" >&2
 ( cd "$PROJECT_ROOT" && ./gradlew :app:bundleRelease )
 [ -f "$AAB_PATH" ] || die "bundle failed: $AAB_PATH was not produced"

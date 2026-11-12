@@ -12,11 +12,17 @@ import org.mockito.kotlin.whenever
  * starts exactly once — never before that answer. */
 class AdsConsentTest {
     /** Answers the way a CMP gateway does; [settleWith] is what the next update says. */
-    private class FakeGateway(var can: Boolean = false, var options: Boolean = false) : ConsentGateway {
+    private class FakeGateway(
+        var can: Boolean = false,
+        var options: Boolean = false,
+        var stored: Boolean? = null,
+    ) : ConsentGateway {
         var settleWith: (() -> Unit)? = null
         var pending: (() -> Unit)? = null
 
         override fun canRequestAds() = can
+
+        override fun storedAnswerAllowsAds() = stored ?: can
 
         override fun privacyOptionsRequired() = options
 
@@ -28,9 +34,36 @@ class AdsConsentTest {
         }
 
         override fun showPrivacyOptions(activity: Activity, onDone: () -> Unit) = onDone()
+
+        var changed: () -> Unit = {}
+
+        override fun setOnChange(listener: () -> Unit) {
+            changed = listener
+        }
     }
 
     private val activity: Activity = mock()
+
+    @Test
+    fun `a form that closes after the request settled can still start ads`() {
+        // First launch, no network: the request settles on the offline
+        // timeout with no answer, then the form loads and the user accepts.
+        val gateway = FakeGateway(can = false, options = true)
+        var starts = 0
+        val consent = AdsConsent(gateway) { starts++ }
+        consent.gather(activity)
+        gateway.pending!!()
+        assertFalse(consent.canShowAds.value)
+        assertEquals(0, starts)
+
+        gateway.can = true
+        gateway.changed()
+        assertTrue(consent.canShowAds.value)
+        assertEquals(1, starts)
+
+        gateway.changed()
+        assertEquals(1, starts, "the SDK starts once per process")
+    }
 
     @Test
     fun `in a consent region nothing starts until the user has chosen`() {
@@ -49,19 +82,51 @@ class AdsConsentTest {
     }
 
     @Test
-    fun `where no consent is needed ads start once, and a returning user's choice applies at once`() {
+    fun `a returning user's stored choice shows the slot, but the SDK waits for this launch's answer`() {
         val gateway = FakeGateway(can = true)
         var starts = 0
         val consent = AdsConsent(gateway) { starts++ }
         consent.gather(activity)
-        // The platform's last answer (persisted) applies before the network replies.
+        // The platform's last answer (persisted) is read before the network
+        // replies, so the slot is there; the SDK is not started on it.
         assertTrue(consent.canShowAds.value)
-        assertEquals(1, starts)
+        assertEquals(0, starts, "no SDK before the platform has answered on this launch")
         gateway.pending!!()
+        assertEquals(1, starts)
         consent.gather(activity)
         gateway.pending!!()
         assertEquals(1, starts, "never started twice")
         assertFalse(consent.privacyOptionsRequired.value)
+    }
+
+    @Test
+    fun `a stored yes that the platform withdraws on this launch never starts the SDK`() {
+        val gateway = FakeGateway(can = true)
+        var starts = 0
+        val consent = AdsConsent(gateway) { starts++ }
+        consent.gather(activity)
+        gateway.settleWith = { gateway.can = false } // consent expired; the form is owed
+        gateway.pending!!()
+        assertFalse(consent.canShowAds.value)
+        assertEquals(0, starts)
+    }
+
+    @Test
+    fun `the slot follows the stored answer before the platform has answered, the SDK does not`() {
+        // InMobi before it loads: no answer this launch, a stored yes on file.
+        val gateway = FakeGateway(can = false, stored = true)
+        var starts = 0
+        val consent = AdsConsent(gateway) { starts++ }
+        consent.gather(activity)
+        assertTrue(consent.canShowAds.value, "slot reserved from the stored answer")
+        assertEquals(0, starts)
+        gateway.pending!!() // the offline timeout: still no answer
+        assertTrue(consent.canShowAds.value, "the slot does not collapse on a timeout settle")
+        assertEquals(0, starts, "a timeout settle starts nothing")
+        gateway.can = true
+        gateway.changed() // the CMP loads late and allows ads
+        assertTrue(consent.canShowAds.value)
+        assertEquals(1, starts)
     }
 
     @Test

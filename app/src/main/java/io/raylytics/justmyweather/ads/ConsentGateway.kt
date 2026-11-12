@@ -7,14 +7,22 @@ import android.app.Activity
  * same shape as billing/BillingGateway: a few plain answers, so the decisions
  * around them (AdsConsent) test on the JVM against a fake, and the CMP's
  * gateway is the only file that imports its SDK. Google's UMP gateway was
- * removed in the google-ads-exit epic (Stage A); until the CMP's gateway
- * lands (Stage B), NoConsentGateway stands in and never allows ads.
+ * removed in the google-ads-exit epic (Stage A); the InMobi CMP's gateway
+ * replaced it (Stage B, InMobiConsentGateway). NoConsentGateway stands in
+ * for a build without ad ids and never allows ads.
  */
 interface ConsentGateway {
     /** Whether ads may be requested now, from what the platform last said —
      * persisted by it across launches, so a returning user's choice holds
      * from the first frame. False until it has said so at least once. */
     fun canRequestAds(): Boolean
+
+    /** What the platform stored on an earlier launch, read without waiting
+     * for this launch's answer: it only reserves the banner's slot early, so
+     * the glance does not shift when the answer lands. Never starts the SDK
+     * ([canRequestAds] decides that). Defaults to [canRequestAds] for a
+     * gateway with no such distinction. */
+    fun storedAnswerAllowsAds(): Boolean = canRequestAds()
 
     /** Whether the user must be offered a way to change their choice (a
      * "Privacy choices" entry): true where a consent form applies. */
@@ -28,4 +36,11 @@ interface ConsentGateway {
 
     /** Reopen the platform's form so the user can change their choice. */
     fun showPrivacyOptions(activity: Activity, onDone: () -> Unit)
+
+    /** Call [listener] whenever the answer may have changed outside a
+     * request: a form that closed after its request had already settled (a
+     * first-launch form that outlived the offline timeout). AdsConsent
+     * re-reads the answer then, so ads can start without a relaunch. A
+     * gateway whose answer never changes on its own need not override it. */
+    fun setOnChange(listener: () -> Unit) {}
 }

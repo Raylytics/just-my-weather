@@ -10,9 +10,9 @@
 # Afterwards: commit the versionCode bump and log the cut in docs/RELEASES.md.
 # Only --notes and --status are accepted; anything else (a different track,
 # an explicit AAB) contradicts the intent of this script — run upload-play.sh
-# directly. The AdMob id check that lived here went with Google Mobile Ads
-# (google-ads-exit Stage A); Stage B adds the equivalent check for blank or
-# placeholder Appodeal and InMobi CMP ids. Before the app's first production release Play accepts only
+# directly. It refuses blank or placeholder Appodeal and InMobi CMP ids
+# (require_ads_configured; google-ads-exit Stage B, replacing the AdMob id
+# check Stage A removed). Before the app's first production release Play accepts only
 # draft releases, so until launch run this with `--status draft` and roll
 # the draft out from the console (docs/PLAY_STORE.md).
 #
@@ -38,6 +38,7 @@ cd "$PROJECT_ROOT"
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   die "working tree has uncommitted changes; commit (or stash) first so the cut is a known commit."
 fi
+require_ads_configured
 # The Maestro flows are not run here (they need an emulator); CI's ui job
 # covers the commit being released. Check it is green before cutting.
 scripts/verify.sh

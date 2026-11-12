@@ -207,9 +207,9 @@ iOS. The shared UI sees only `canShowAds` and `privacyOptionsRequired`.
 **google-ads-exit (2026-11):** Google's UMP and the Google Mobile Ads SDK
 were removed in Stage A. Stage B puts the **InMobi CMP** (IAB CMP 10,
 `raylytics-763`) and **Appodeal mediation** (`raylytics-0cz`) behind the
-seams: iOS has them in `AdsService.swift`; on Android `NoConsentGateway`
-still answers "no" until its half lands, so no Android ad runs and no form
-is shown there. Nothing ships until both halves pass Stage C
+seams: iOS in `AdsService.swift`, Android in `ads/InMobiConsentGateway`
+and `ads/AppodealAds` (a build without ids falls back to
+`NoConsentGateway`, which answers "no"). Nothing ships until both halves pass Stage C
 (`raylytics/docs/ad-migration/RUNBOOK.md`). The rules the integration keeps:
 
 - Every launch, MainActivity (on iOS, `AdsService.swift`) asks the CMP
@@ -294,7 +294,7 @@ first. The detail is in `localization/PLAN.md`.
 ## Files at a glance
 
 - `region/Region.kt`: what a region is (`Region`, `PlayStatus`).
-- `ads/AdsConsent.kt`, `ads/ConsentGateway.kt` (app): whether ads may run (the consent platform; `NoConsentGateway` until the Android half of google-ads-exit Stage B). iOS: `iosApp/JustMyWeather/Platform/AdsService.swift` (InMobi CMP, then ATT, then Appodeal).
+- `ads/AdsConsent.kt`, `ads/ConsentGateway.kt` (app): whether ads may run (the InMobi CMP through `InMobiConsentGateway`; `NoConsentGateway` in a build without ad ids). iOS: `iosApp/JustMyWeather/Platform/AdsService.swift` (InMobi CMP, then ATT, then Appodeal).
 - `region/Regions.kt`: **the registry**, plus derived conventions for every country.
 - `region/RegionResolver.kt`: the decision order, the user's settings, and the clues.
 - `region/RegionRepository.kt`, `AndroidRegionSignals.kt` (app), `IosRegionSignals.kt` (iosMain): gathering and remembering clues.

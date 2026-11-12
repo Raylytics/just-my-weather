@@ -37,6 +37,12 @@ appId: io.raylytics.justmyweather
       visible: 'ACCEPT ALL|Accept all'
     commands:
       - tapOn: 'ACCEPT ALL|Accept all'
+      # The "choices saved" alert can arrive after an immediate OK tap has
+      # already given up (open-frame 1.5.4 gate, 2026-11-10); wait for it.
+      - extendedWaitUntil:
+          visible: 'Your privacy choices have been saved.*'
+          timeout: 15000
+          optional: true
       - tapOn:
           text: 'OK'
           optional: true

@@ -57,6 +57,16 @@ UMP=(
   'com\.google\.android\.ump'
   'import UserMessagingPlatform'
   '<UserMessagingPlatform/'
+  # Appodeal's own consent manager (Stack Consent Manager): it rides on UMP
+  # and an AdMob account, and the InMobi CMP is the one consent platform
+  # here, so nothing may declare, import or call it either; its module still
+  # arrives inside Appodeal's core (Android 'com.appodeal.ads:consent',
+  # iOS StackConsentManager), which only a lockfile may name. Same tier as
+  # open-frame's guardrail (google-ads-exit Stage B).
+  'com\.appodeal\.consent'
+  'com\.appodeal\.ads:consent'
+  'StackConsentManager'
+  'Appodeal\.(setNonPersonalized|requestConsentInfoUpdate|showConsentForm(IfNeeded)?|showPrivacyOptionsForm|revokeConsent|consentStatus)\b'
 )
 EXCLUDE='^(docs/|\.beads/|\.roborev/|\.roborev\.toml$|CHANGELOG\.md$|node_modules/|Pods/|build/|iosApp/build/|scripts/check-no-google-ads\.sh$|localization/)'
 LOCKFILE='(^|/)(Podfile\.lock|Package\.resolved|[^/]*\.lockfile)$'
@@ -123,6 +133,10 @@ self_test() {
   printf '  - Google-Mobile-Ads-SDK (12.0.0)\n' > "$tmp/ads/Podfile.lock"
   printf "pod 'GoogleUserMessagingPlatform'\n" > "$tmp/Podfile"
   printf 'import UserMessagingPlatform\n' > "$tmp/Consent.swift"
+  printf 'import com.appodeal.consent.ConsentManager\n' > "$tmp/AppodealConsent.kt"
+  printf 'Appodeal.setNonPersonalized(true)\n' > "$tmp/NonPersonalized.kt"
+  mkdir "$tmp/stack"
+  printf '  - StackConsentManager (4.1.0)\n' > "$tmp/stack/Podfile.lock"
   local ok=1
   scan_files "$tmp/allowed.kts" >/dev/null || { echo "self-test FAILED: the ads-identifier module must pass" >&2; ok=0; }
   scan_files "$tmp/allowed-pkg.txt" >/dev/null || { echo "self-test FAILED: the ads.identifier package must pass" >&2; ok=0; }
@@ -139,6 +153,9 @@ self_test() {
   if scan_files "$tmp/gradle.lockfile" >/dev/null; then echo "self-test FAILED: play-services-ads in a Gradle lockfile must still be caught" >&2; ok=0; fi
   if scan_files "$tmp/Podfile" >/dev/null; then echo "self-test FAILED: UMP declared in a Podfile must be caught" >&2; ok=0; fi
   if scan_files "$tmp/Consent.swift" >/dev/null; then echo "self-test FAILED: a UMP import must be caught" >&2; ok=0; fi
+  if scan_files "$tmp/AppodealConsent.kt" >/dev/null; then echo "self-test FAILED: an Appodeal consent-manager import must be caught" >&2; ok=0; fi
+  if scan_files "$tmp/NonPersonalized.kt" >/dev/null; then echo "self-test FAILED: Appodeal.setNonPersonalized must be caught" >&2; ok=0; fi
+  scan_files "$tmp/stack/Podfile.lock" >/dev/null || { echo "self-test FAILED: StackConsentManager in a lockfile must pass" >&2; ok=0; }
   rm -rf "$tmp"
   [ "$ok" = 1 ]
 }
