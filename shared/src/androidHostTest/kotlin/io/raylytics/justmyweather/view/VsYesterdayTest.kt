@@ -21,7 +21,7 @@ class VsYesterdayTest {
         // 68°F = 20°C and 63°F = 17.2 -> 17°C: the change reads 3, not 2.8.
         val c = DayComparison(DayRange(today, 68.0, 41.0), DayRange(yesterday, 63.0, 41.4))
         val celsius = Conventions.US.copy(units = Conventions.US.units.copy(temperature = TemperatureUnit.CELSIUS))
-        assertEquals("High 20° ↑3°\nLow 5° same", VsYesterday.format(c, celsius))
+        assertEquals("High 20° ↑3°\nLow 5° 0°", VsYesterday.format(c, celsius))
     }
 
     @Test

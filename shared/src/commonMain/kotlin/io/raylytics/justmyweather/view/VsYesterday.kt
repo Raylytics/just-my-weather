@@ -15,7 +15,7 @@ import kotlin.math.roundToInt
  * converted to the user's unit and rounded first — so the arithmetic on
  * screen always checks out (68 against 63 reads 5, never a rounded 4.6), and
  * a difference in °C is a °C difference without a separate delta conversion.
- * "Same" is written out rather than as ↑0°. A side with no value reads "—".
+ * No change reads a plain 0°, with no arrow. A side with no value reads "—".
  */
 object VsYesterday {
     fun format(comparison: DayComparison?, conventions: Conventions): String {
@@ -36,7 +36,7 @@ object VsYesterday {
     private fun difference(change: Int?): String =
         when {
             change == null -> "—"
-            change == 0 -> "same"
+            change == 0 -> "0°"
             change > 0 -> "↑$change°"
             else -> "↓${abs(change)}°"
         }
