@@ -285,14 +285,32 @@ class HomeViewModel(
                 val today = clock().toLocalDateTime(placeZone).date
                 val ranges = runCatching { repository.loadDayRanges(location, placeZone) }.getOrDefault(emptyList())
                 val observed = measuredYesterday(history, key, location)
-                val comparison = runCatching {
-                    history.record(key, ranges + listOfNotNull(observed), today)
-                }.getOrNull()
+                val recorded = runCatching { history.record(key, ranges + listOfNotNull(observed), today) }.getOrNull()
+                val comparison = recorded?.let { withHighSoFar(it, location) }
                 // runCatching also swallows the cancellation a newer load
                 // sends; a cut-short load must publish nothing, not its null.
                 ensureActive()
                 vsYesterday.value = comparison
             }
+    }
+
+    /**
+     * [comparison] with today's high filled from what the station has
+     * measured so far, when the forecast has none: by the evening NWS lists
+     * "Tonight" but no "Today", and a day first seen then has no forecast
+     * high at all. Only in the place's own zone, for the same reason as
+     * [measuredYesterday]; kept in memory, never recorded, since the day is
+     * not over. Best effort: anything missing leaves the dash.
+     */
+    private suspend fun withHighSoFar(comparison: DayComparison, location: WeatherLocation): DayComparison {
+        if (comparison.today.highF != null) return comparison
+        val zone = runCatching { repository.cachedZone(location) }.getOrNull()?.let(::parseZone) ?: return comparison
+        val now = clock()
+        if (now.toLocalDateTime(zone).date != comparison.today.date) return comparison
+        val high =
+            runCatching { repository.loadHighSoFar(location, comparison.today.date, zone, now) }.getOrNull()
+                ?: return comparison
+        return comparison.copy(today = comparison.today.copy(highF = high), todayHighSoFar = true)
     }
 
     /**

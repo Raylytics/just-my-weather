@@ -646,6 +646,7 @@ class HomeViewModelTest {
         h.vm.refresh()
         advanceUntilIdle()
         assertEquals(DayRange(LocalDate(2026, 7, 30), 86.0, 68.0, observed = true), h.vm.ready().vsYesterday?.yesterday)
+        assertFalse(h.vm.ready().vsYesterday!!.todayHighSoFar, "the forecast had a high; nothing borrowed")
     }
 
     @Test
@@ -724,6 +725,30 @@ class HomeViewModelTest {
         advanceUntilIdle()
         assertEquals(DayRange(LocalDate(2026, 7, 31), 81.0, 70.0), h.vm.ready().previewVsYesterday?.today)
         assertNull(h.vm.ready().vsYesterday, "the glance still does not show it")
+    }
+
+    @Test
+    fun `with no forecast high for today, it is the warmest the station has measured so far`() = runTest(dispatcher) {
+        // As if first opened in the evening: the record has tonight's low
+        // but no high for today.
+        val history = DayRangeHistory(FakePreferencesDataStore())
+        history.record(
+            PointCacheKey.of(WeatherLocation.DEFAULT),
+            listOf(DayRange(LocalDate(2026, 7, 31), lowF = 70.0)),
+            LocalDate(2026, 7, 31),
+        )
+        val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = history)
+        // Two reports so far today (6am and 7am in New York); now is 8:05am.
+        h.transport.observedRange =
+            """{"features":[
+                {"properties":{"timestamp":"2026-07-31T10:00:00Z","temperature":{"value":28.0,"unitCode":"wmoUnit:degC"}}},
+                {"properties":{"timestamp":"2026-07-31T11:00:00Z","temperature":{"value":30.0,"unitCode":"wmoUnit:degC"}}}
+            ]}"""
+        h.vm.refresh()
+        advanceUntilIdle()
+        val compared = h.vm.ready().vsYesterday!!
+        assertEquals(86.0, compared.today.highF!!, 0.01)
+        assertTrue(compared.todayHighSoFar)
     }
 
     @Test

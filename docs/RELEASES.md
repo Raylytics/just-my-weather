@@ -145,8 +145,8 @@ Restore purchases row in App Settings; the collapse caret no longer
 overlaps wide values. No banner ad on Android in this build while the ad
 network change finishes."
 
-Known: vs. yesterday reads "High —" when a day was first seen after NWS
-dropped "Today" (just-my-weather-292); decide before production.
+Known (fixed after this cut): vs. yesterday read "High —" when a day was
+first seen after NWS dropped "Today" (just-my-weather-292).
 
 ### Added
 - Customize: a Preview switch in each module's fold draws the module as the
@@ -158,8 +158,11 @@ dropped "Today" (just-my-weather-292); decide before production.
   hours), fetched once and kept in the app's record (new store `day_ranges`,
   in PreferencesCompatibilityTest's codec map). Abroad, or without a usable
   station day, it is the forecast the record kept while yesterday was ahead,
-  so it fills in from the second day. Hidden from widget pickers
-  (just-my-weather-ala).
+  so it fills in from the second day. When the forecast no longer lists
+  today (the evening), today's high is the warmest the station has
+  measured so far (just-my-weather-292). Drawn as aligned columns; a tap
+  opens a sheet saying which side was forecast and which measured
+  (just-my-weather-61q). Hidden from widget pickers (just-my-weather-ala).
 
 ### Fixed
 - The glance fills what the nearest station does not report (a backyard

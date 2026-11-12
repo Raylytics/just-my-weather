@@ -1,5 +1,7 @@
 package io.raylytics.justmyweather.view
 
+import io.raylytics.justmyweather.data.DayComparison
+import io.raylytics.justmyweather.data.DayRange
 import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.nws.DailyPeriod
@@ -45,18 +47,73 @@ object Details {
      * readings are the context the number was taken in, and "Temperature 93°"
      * alone is what the tile already said.
      */
-    fun ofModule(module: ModuleValue, snapshot: WeatherSnapshot, zone: TimeZone, conventions: Conventions): Detail? =
-        when (val content = module.content) {
-            // Vs. yesterday is drawn as a reading but is not one: the
-            // station's observation is not what it compares, so it opens
-            // nothing (yet).
-            is ModuleContent.Reading ->
-                if (module.module == ModuleKey.VsYesterday) null else ofObservation(module, snapshot, zone, conventions)
-            is ModuleContent.Sun -> ofSun(module.label, content.days, content.zone, conventions)
-            // Only vs. yesterday draws as a table, and it opens nothing (yet).
-            is ModuleContent.Table -> null
-            is ModuleContent.Forecast -> null
+    fun ofModule(
+        module: ModuleValue,
+        snapshot: WeatherSnapshot,
+        zone: TimeZone,
+        conventions: Conventions,
+        /** The vs. yesterday module's comparison, which its tile only shows
+         * the formatted face of. */
+        comparison: DayComparison? = null,
+    ): Detail? =
+        // Vs. yesterday is not an observation reading: it opens its own
+        // comparison, whatever it is drawn as.
+        if (module.module == ModuleKey.VsYesterday) {
+            ofVsYesterday(module.label, comparison, conventions)
+        } else {
+            when (val content = module.content) {
+                is ModuleContent.Reading -> ofObservation(module, snapshot, zone, conventions)
+                is ModuleContent.Sun -> ofSun(module.label, content.days, content.zone, conventions)
+                is ModuleContent.Table -> null
+                is ModuleContent.Forecast -> null
+            }
         }
+
+    /**
+     * Each side of the comparison with where it came from, and the change.
+     * The tile can only fit the numbers; the sheet says which are forecast
+     * and which were measured, since that decides how far to trust them.
+     */
+    fun ofVsYesterday(label: String, comparison: DayComparison?, conventions: Conventions): Detail {
+        val today = comparison?.today
+        val yesterday = comparison?.yesterday
+        val changes = VsYesterday.rows(comparison, conventions)
+
+        fun source(range: DayRange?, soFar: Boolean = false): String =
+            when {
+                range == null -> ""
+                range.observed -> " · measured"
+                soFar -> " · measured so far"
+                else -> " · forecast"
+            }
+        return Detail(
+            title = label,
+            subtitle =
+                if (today == null) {
+                    "Not available yet"
+                } else {
+                    "${today.date.format(conventions.monthDay)} against " +
+                        (yesterday?.date?.format(conventions.monthDay) ?: "the day before")
+                },
+            rows =
+                listOf(
+                    DetailRow(
+                        "High today${source(today, soFar = comparison?.todayHighSoFar == true)}",
+                        conventions.degrees(today?.highF),
+                    ),
+                    DetailRow("High yesterday${source(yesterday)}", conventions.degrees(yesterday?.highF)),
+                    DetailRow("High change", changes?.getOrNull(0)?.getOrNull(2)?.ifEmpty { "—" } ?: "—"),
+                    DetailRow("Low today${source(today)}", conventions.degrees(today?.lowF)),
+                    DetailRow("Low yesterday${source(yesterday)}", conventions.degrees(yesterday?.lowF)),
+                    DetailRow("Low change", changes?.getOrNull(1)?.getOrNull(2)?.ifEmpty { "—" } ?: "—"),
+                ),
+            body =
+                "Today is the National Weather Service forecast for this place; once the forecast no longer " +
+                    "lists today, its high is the warmest the nearest station has measured so far. Yesterday " +
+                    "is what that station measured, or, where it has no record, the forecast the app kept " +
+                    "for it. Outside the US yesterday is always the kept forecast.",
+        )
+    }
 
     private fun ofObservation(
         module: ModuleValue,

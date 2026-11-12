@@ -40,7 +40,13 @@ data class DayRange(
 }
 
 /** Today's range beside yesterday's, as the module draws them. */
-data class DayComparison(val today: DayRange, val yesterday: DayRange?)
+data class DayComparison(
+    val today: DayRange,
+    val yesterday: DayRange?,
+    /** Today's high is the warmest the station has measured so far, not a
+     * forecast: by the evening NWS lists no "Today" to take one from. */
+    val todayHighSoFar: Boolean = false,
+)
 
 object DayRanges {
     /**

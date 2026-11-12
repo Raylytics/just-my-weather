@@ -446,7 +446,9 @@ private fun NowContent(
                 // A module's detail needs the observation its value came
                 // from, which lives here and not on the tile.
                 onOpenModule = onOpenDetail?.let { open ->
-                    { module -> Details.ofModule(module, snapshot, observedZone, conventions)?.let(open) }
+                    { module ->
+                        Details.ofModule(module, snapshot, observedZone, conventions, forecast.vsYesterday)?.let(open)
+                    }
                 },
                 onOpenDetail = onOpenDetail,
                 onSetExpanded = onSetExpanded,

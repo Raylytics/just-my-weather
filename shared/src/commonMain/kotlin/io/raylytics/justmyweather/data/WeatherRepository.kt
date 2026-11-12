@@ -291,6 +291,20 @@ class WeatherRepository(
         return DayRanges.fromObservations(readings, date, zone)
     }
 
+    /**
+     * The warmest the place's station has measured on [date] up to [now], in
+     * [zone]'s calendar: today's high once the forecast has stopped giving
+     * one (NWS drops "Today" in the evening). Null abroad or with no reports.
+     */
+    suspend fun loadHighSoFar(location: WeatherLocation, date: LocalDate, zone: TimeZone, now: Instant): Double? {
+        val resolved = resolve(location) as? ResolvedPoint.Nws ?: return null
+        val start = date.atStartOfDayIn(zone)
+        if (now <= start) return null
+        return nws.getObservedTemperatures(resolved.point.observationStationId, start, now).maxOfOrNull {
+            it.temperatureF
+        }
+    }
+
     /** MET Norway's daily forecast for [location], or empty with no extended
      * source configured. The caller decides which of these days NWS already
      * covers. The days are cut in the place's calendar, which the (cached)

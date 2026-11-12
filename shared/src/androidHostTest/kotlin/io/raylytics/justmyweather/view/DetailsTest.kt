@@ -1,5 +1,7 @@
 package io.raylytics.justmyweather.view
 
+import io.raylytics.justmyweather.data.DayComparison
+import io.raylytics.justmyweather.data.DayRange
 import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.nws.DailyPeriod
@@ -178,5 +180,33 @@ class DetailsTest {
         assertEquals("Calm", Conventions.US.wind(0.4, "SW"))
         assertEquals("12 mph", Conventions.US.wind(12.4, null))
         assertEquals("12 mph SW", Conventions.US.wind(12.4, "SW"))
+    }
+
+    @Test
+    fun `vs yesterday opens its comparison, saying which side was measured`() {
+        val comparison =
+            DayComparison(
+                today = DayRange(LocalDate(2026, 11, 12), 73.0, 55.0),
+                yesterday = DayRange(LocalDate(2026, 11, 11), 73.0, 49.0, observed = true),
+            )
+        val detail = Details.ofVsYesterday("Vs. yesterday", comparison, Conventions.US)
+        assertEquals("Nov 12 against Nov 11", detail.subtitle)
+        assertEquals(
+            listOf(
+                DetailRow("High today · forecast", "73°"),
+                DetailRow("High yesterday · measured", "73°"),
+                DetailRow("High change", "0°"),
+                DetailRow("Low today · forecast", "55°"),
+                DetailRow("Low yesterday · measured", "49°"),
+                DetailRow("Low change", "↑6°"),
+            ),
+            detail.rows,
+        )
+        val evening = comparison.copy(today = comparison.today.copy(highF = 70.0), todayHighSoFar = true)
+        assertEquals(
+            DetailRow("High today · measured so far", "70°"),
+            Details.ofVsYesterday("Vs. yesterday", evening, Conventions.US).rows.first(),
+        )
+        assertEquals("Not available yet", Details.ofVsYesterday("Vs. yesterday", null, Conventions.US).subtitle)
     }
 }
