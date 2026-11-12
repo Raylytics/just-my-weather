@@ -44,14 +44,17 @@ internal fun TableModuleContent(rows: List<List<String>>, text: String) {
         // What the table measures at the ceiling size: each column as wide as
         // its widest cell, plus the gaps. Text width scales with font size,
         // so one measurement says how far to shrink.
-        val gaps = with(density) { (COLUMN_GAP * (columns - 1)).toPx() }
+        // Gaps as the Row will place them (each rounded to whole px).
+        val gaps = with(density) { COLUMN_GAP.roundToPx() * (columns - 1).toFloat() }
         val naturalWidth =
             (0 until columns).sumOf { column ->
                 rows.maxOf { row -> measurer.measure(row.getOrElse(column) { "" }, ceiling).size.width }.toDouble()
             }.toFloat() + gaps
         var scale = 1f
-        if (constraints.hasBoundedWidth && naturalWidth > constraints.maxWidth) {
-            scale = (constraints.maxWidth - gaps) / (naturalWidth - gaps)
+        if (constraints.hasBoundedWidth && naturalWidth > constraints.maxWidth - WIDTH_SLACK_PX) {
+            // A little slack: each cell rounds its width up again at the
+            // smaller size, and the last column gets only what is left.
+            scale = (constraints.maxWidth - gaps - WIDTH_SLACK_PX) / (naturalWidth - gaps)
         }
         if (constraints.hasBoundedHeight) {
             // A row is one line at LINE_HEIGHT of the font size.
@@ -73,6 +76,9 @@ internal fun TableModuleContent(rows: List<List<String>>, text: String) {
                             text = row.getOrElse(column) { "" },
                             style = style,
                             maxLines = 1,
+                            // A rounding overflow trims a pixel at the edge
+                            // rather than wrapping off the last glyph.
+                            softWrap = false,
                             textAlign = if (name) TextAlign.Start else TextAlign.End,
                             color = if (name) nameColor else valueColor,
                         )
@@ -88,3 +94,6 @@ internal fun TableModuleContent(rows: List<List<String>>, text: String) {
 private const val LINE_HEIGHT = 1.2f
 
 private val COLUMN_GAP = 12.dp
+
+/** Pixels kept free when the width sets the size, for per-cell rounding. */
+private const val WIDTH_SLACK_PX = 3f
