@@ -24,6 +24,7 @@ import io.raylytics.justmyweather.view.ModuleKey
 import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.SunDays
 import io.raylytics.justmyweather.view.ViewConfig
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -130,6 +131,8 @@ class HomeViewModel(
     /** Today's forecast range against yesterday's, for the vs. yesterday
      * module; fetched only while that module is on the grid. */
     private val vsYesterday = MutableStateFlow<DayComparison?>(null)
+    private var vsYesterdayKey: String? = null
+    private var vsYesterdayJob: Job? = null
 
     // One fetch per framing at a time; re-entering a mode whose data already
     // arrived is a no-op, so chip-hopping never stampedes the API. Declared
@@ -202,6 +205,8 @@ class HomeViewModel(
                                     ForecastMode.DAILY -> forecasts.dailyError
                                 }
                             },
+                        hourlyError = forecasts.hourlyError,
+                        dailyError = forecasts.dailyError,
                         safetyAlerts = alerts,
                         refreshError = load.error,
                         // Gated here rather than in the composable so the
@@ -209,6 +214,7 @@ class HomeViewModel(
                         // Gated on the module being on the grid, not on a
                         // separate switch: the sun module IS the switch now.
                         sunDays = if (config.shows(ModuleKey.Sun)) times.sunDays else emptyList(),
+                        previewSunDays = times.sunDays,
                         // One value for both the rows above and the forecast
                         // below, so they cannot disagree. Deliberately NOT the
                         // snapshot's zone: during a place switch the snapshot
@@ -247,12 +253,22 @@ class HomeViewModel(
      * what the record already holds for today, and failing that the module
      * shows a dash — never an error over the glance.
      */
-    private suspend fun loadVsYesterday(location: WeatherLocation) {
+    private fun loadVsYesterday(location: WeatherLocation) {
         val history = dayHistory ?: return
-        val placeZone = placeTimes.value.zone ?: zone()
-        val today = clock().toLocalDateTime(placeZone).date
-        val ranges = runCatching { repository.loadDayRanges(location, placeZone) }.getOrDefault(emptyList())
-        vsYesterday.value = runCatching { history.record(PointCacheKey.of(location), ranges, today) }.getOrNull()
+        val key = PointCacheKey.of(location)
+        // Only a new place blanks the module: refreshing the same one keeps
+        // the comparison on screen until its replacement lands, rather than
+        // flashing a dash for a round trip. Only the newest load publishes.
+        if (key != vsYesterdayKey) vsYesterday.value = null
+        vsYesterdayKey = key
+        vsYesterdayJob?.cancel()
+        vsYesterdayJob =
+            viewModelScope.launch {
+                val placeZone = placeTimes.value.zone ?: zone()
+                val today = clock().toLocalDateTime(placeZone).date
+                val ranges = runCatching { repository.loadDayRanges(location, placeZone) }.getOrDefault(emptyList())
+                vsYesterday.value = runCatching { history.record(key, ranges, today) }.getOrNull()
+            }
     }
 
     /**
@@ -376,9 +392,6 @@ class HomeViewModel(
                 runCatching { SafetyAlerts.filter(repository.loadActiveAlerts(location)) }
                     .getOrDefault(emptyList())
             ensureForecast(forecast.value)
-            // A refresh may be a new place or a new day: either way the
-            // comparison on screen is no longer the one to show.
-            vsYesterday.value = null
             if (configRepository.config.first().shows(ModuleKey.VsYesterday)) loadVsYesterday(location)
         }
     }
@@ -479,6 +492,18 @@ class HomeViewModel(
      */
     private fun editConfig(transform: (ViewConfig) -> ViewConfig) {
         viewModelScope.launch { configRepository.update(transform) }
+    }
+
+    /**
+     * Customize's forecast preview wants [mode]'s data: fetch what is missing,
+     * whether or not the grid is on the glance and without touching the
+     * glance's framing. Nothing is fetched while no preview asks.
+     */
+    fun previewForecast(mode: ForecastMode) {
+        viewModelScope.launch {
+            val config = configRepository.config.first()
+            ensureForecast(ForecastChoice(shown = true, mode, extended = config.dailyDays > DailyDays.NWS_REACH))
+        }
     }
 
     /** The mode collector in `init` triggers the fetch on every mode change.

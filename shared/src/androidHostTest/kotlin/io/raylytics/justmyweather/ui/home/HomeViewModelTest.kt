@@ -4,8 +4,12 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import io.raylytics.justmyweather.data.CachedSnapshot
+import io.raylytics.justmyweather.data.DayComparison
+import io.raylytics.justmyweather.data.DayRange
+import io.raylytics.justmyweather.data.DayRangeHistory
 import io.raylytics.justmyweather.data.InMemoryLastLocationStore
 import io.raylytics.justmyweather.data.InMemorySnapshotCache
+import io.raylytics.justmyweather.data.PointCacheKey
 import io.raylytics.justmyweather.data.SnapshotCache
 import io.raylytics.justmyweather.data.ViewConfigRepository
 import io.raylytics.justmyweather.data.WeatherLocation
@@ -174,6 +178,7 @@ class HomeViewModelTest {
         // keep reading its variable, not a copy taken at construction.
         clock: () -> Instant = { NOW },
         zone: () -> TimeZone = { TimeZone.of("America/New_York") },
+        dayHistory: DayRangeHistory? = null,
     ): Harness {
         val transport = RoutingTransport(points)
         val configStore = FakePreferencesDataStore()
@@ -200,6 +205,7 @@ class HomeViewModelTest {
                 onSnapshotLoaded = onSnapshotLoaded,
                 clock = clock,
                 zone = zone,
+                dayHistory = dayHistory,
             )
         backgroundScope.launch { vm.state.collect {} }
         return Harness(transport, vm, configStore, configRepository)
@@ -585,6 +591,73 @@ class HomeViewModelTest {
         val on = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.Sun))
         advanceUntilIdle()
         assertTrue(on.vm.ready().sunDays.isNotEmpty(), "switched on, the glance carries them")
+    }
+
+    /** A record already holding NOW's day and the day before, at the
+     * default location — as if the app had been opened yesterday. */
+    private suspend fun recordedHistory(): DayRangeHistory {
+        val history = DayRangeHistory(FakePreferencesDataStore())
+        val key = PointCacheKey.of(WeatherLocation.DEFAULT)
+        history.record(key, listOf(DayRange(LocalDate(2026, 7, 30), 84.0, 66.0)), LocalDate(2026, 7, 30))
+        history.record(key, listOf(DayRange(LocalDate(2026, 7, 31), 81.0, 70.0)), LocalDate(2026, 7, 30))
+        return history
+    }
+
+    @Test
+    fun `vs yesterday is published once its module is switched on, and only then`() = runTest(dispatcher) {
+        val h = harness(dayHistory = recordedHistory())
+        advanceUntilIdle()
+        assertNull(h.vm.ready().vsYesterday, "hidden: nothing")
+        h.configRepository.update { it.toggle(ModuleKey.VsYesterday) }
+        advanceUntilIdle()
+        assertEquals(
+            DayComparison(DayRange(LocalDate(2026, 7, 31), 81.0, 70.0), DayRange(LocalDate(2026, 7, 30), 84.0, 66.0)),
+            h.vm.ready().vsYesterday,
+        )
+    }
+
+    @Test
+    fun `a refresh of the same place keeps the comparison on screen`() = runTest(dispatcher) {
+        val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
+        advanceUntilIdle()
+        val shown = h.vm.ready().vsYesterday
+        assertTrue(shown != null)
+        val seen = mutableListOf<DayComparison?>()
+        backgroundScope.launch { h.vm.state.collect { (it as? HomeUiState.Ready)?.let { r -> seen += r.vsYesterday } } }
+        h.vm.refresh()
+        advanceUntilIdle()
+        assertTrue(seen.none { it == null }, "never blanked: $seen")
+        assertEquals(shown, h.vm.ready().vsYesterday)
+    }
+
+    @Test
+    fun `a hidden sun module still has rows for Customize's preview`() = runTest(dispatcher) {
+        val h = harness()
+        advanceUntilIdle()
+        assertTrue(h.vm.ready().sunDays.isEmpty(), "the glance does not carry them")
+        assertTrue(h.vm.ready().previewSunDays.isNotEmpty(), "the preview does")
+    }
+
+    @Test
+    fun `a forecast preview fetches its framing even with the grid hidden`() = runTest(dispatcher) {
+        val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.Forecast))
+        advanceUntilIdle()
+        assertEquals(0, h.transport.dailyFetches, "hidden: nothing fetched for the glance")
+        h.vm.previewForecast(ForecastMode.DAILY)
+        advanceUntilIdle()
+        assertEquals(1, h.transport.dailyFetches)
+        assertTrue(h.vm.ready().daily != null, "the preview's framing has its days")
+    }
+
+    @Test
+    fun `each framing's failure is its own, for a preview in the other framing`() = runTest(dispatcher) {
+        val h = harness()
+        h.transport.failDaily = true
+        advanceUntilIdle()
+        h.vm.previewForecast(ForecastMode.DAILY)
+        advanceUntilIdle()
+        assertTrue(h.vm.ready().dailyError != null)
+        assertEquals(null, h.vm.ready().hourlyError, "the glance's hourly loaded fine")
     }
 
     @Test

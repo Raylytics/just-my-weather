@@ -113,6 +113,9 @@ fun CustomizeScreen(
     /** The glance's latest weather, which the module previews draw with;
      * null until a reading has loaded. */
     weather: HomeUiState.Ready?,
+    /** The forecast preview needs a framing's data the glance may not have
+     * fetched (the grid hidden, or the other framing). */
+    onPreviewForecast: (ForecastMode) -> Unit,
     onToggle: (ModuleKey) -> Unit,
     onRelabel: (ModuleKey, String?) -> Unit,
     onResize: (ModuleKey, ModuleSize) -> Unit,
@@ -185,6 +188,7 @@ fun CustomizeScreen(
                                     module = setting.module,
                                     config = config,
                                     weather = weather,
+                                    onPreviewForecast = onPreviewForecast,
                                     on = previewing[setting.module] == true,
                                     onSet = { previewing[setting.module] = it },
                                 )
@@ -581,6 +585,7 @@ private fun ModulePreviewPane(
     module: ModuleKey,
     config: ViewConfig,
     weather: HomeUiState.Ready?,
+    onPreviewForecast: (ForecastMode) -> Unit,
     on: Boolean,
     onSet: (Boolean) -> Unit,
 ) {
@@ -608,11 +613,12 @@ private fun ModulePreviewPane(
         return
     }
     var mode by remember(config.defaultForecastMode) { mutableStateOf(config.defaultForecastMode) }
+    if (module == ModuleKey.Forecast) LaunchedEffect(mode) { onPreviewForecast(mode) }
     val value =
         config.renderModule(
             module = module,
             snapshot = weather.snapshot,
-            sunDays = weather.sunDays,
+            sunDays = weather.previewSunDays,
             zone = config.displayZone(weather.zone),
             forecast = weather.forecastData(mode),
             conventions = LocalConventions.current,

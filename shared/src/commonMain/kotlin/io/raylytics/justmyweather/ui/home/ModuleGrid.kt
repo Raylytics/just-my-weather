@@ -736,6 +736,9 @@ private fun ModuleTile(
     onOpenDetail: ((Detail) -> Unit)?,
     onSetExpanded: (ModuleKey, Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    /** False for a picture of the tile (Customize's preview): it is offered
+     * no move, resize or fold actions, since none of them would act. */
+    interactive: Boolean = true,
 ) {
     // The screen-reader actions' names, read here because the semantics block
     // below is not composable.
@@ -809,6 +812,7 @@ private fun ModuleTile(
                     stateDescription = if (module.collapsed) a11y.collapsed else size.label
                     customActions =
                         buildList {
+                            if (!interactive) return@buildList
                             // The tap, for a user who cannot tap: offered
                             // only when the tap itself would do something.
                             // The forecast's hours and days are their own
@@ -1085,6 +1089,7 @@ fun ModulePreview(
             onOpenDetail = null,
             onSetExpanded = { _, _ -> },
             modifier = tileModifier,
+            interactive = false,
         )
     }
 }

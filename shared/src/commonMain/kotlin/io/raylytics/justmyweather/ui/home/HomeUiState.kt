@@ -62,6 +62,13 @@ sealed interface HomeUiState {
          * be null: above the Arctic circle the sun may not rise for months.
          */
         val sunDays: List<SunDay> = emptyList(),
+        /** The sun rows whether or not the module is on the glance, for
+         * Customize's preview of a module not yet switched on. */
+        val previewSunDays: List<SunDay> = emptyList(),
+        /** Each framing's own failure, so a preview in the other framing
+         * never shows this framing's message. */
+        val hourlyError: String? = null,
+        val dailyError: String? = null,
         /**
          * The CURRENT place's zone, from the NWS point lookup, falling back to
          * the device's when unknown. A saved place can be hours away, and

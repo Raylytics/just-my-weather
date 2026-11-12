@@ -28,7 +28,11 @@ fun HomeUiState.Ready.forecastData(mode: ForecastMode = forecastMode): ForecastD
         mode = mode,
         hours = hourly,
         periods = daily,
-        error = forecastError,
+        error =
+            when (mode) {
+                ForecastMode.HOURLY -> hourlyError
+                ForecastMode.DAILY -> dailyError
+            },
         placeZone = zone,
         extended = extendedDaily,
         vsYesterday = vsYesterday,

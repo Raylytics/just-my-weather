@@ -8,15 +8,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 
 /**
  * The app's own record of each day's forecast high and low, per place — the
  * "yesterday" of the vs. yesterday module, which no free source serves after
  * the fact, in NWS territory or out of it.
  *
- * Small on purpose: only the last few days are kept (yesterday is all the
- * module reads; the spare day absorbs a zone change), and only the most
- * recently seen places. A place the app did not look at yesterday has no
+ * The days AHEAD are kept too, not only the past ones, because a fetch does
+ * not always say anything about today: abroad, MET Norway's daily fold drops
+ * today once the morning has gone, and by the evening NWS lists "Tonight"
+ * but no "Today". A day recorded while it was still ahead is still there
+ * when it comes round. Small all the same: a few days back (yesterday, and a
+ * spare for a zone change), a forecast's worth ahead, and only the most
+ * recently seen places. A place the app never saw before yesterday has no
  * yesterday, and the module says so with a dash.
  */
 class DayRangeHistory(
@@ -48,15 +53,19 @@ class DayRangeHistory(
         /** Days before today kept: yesterday, and one spare. */
         private const val KEEP_DAYS_BEFORE = 2
 
+        /** Days after today kept: as far as either source forecasts. */
+        private const val KEEP_DAYS_AFTER = 9
+
         private const val MAX_PLACES = 16
 
         /** Pure: the stored [days] updated by [fresh], trimmed to the days the
-         * module can use (from [KEEP_DAYS_BEFORE] ago through today). */
+         * module can use, now or once they come round. */
         fun merge(days: List<DayRange>, fresh: List<DayRange>, today: LocalDate): List<DayRange> {
             val byDate = days.associateBy { it.date }.toMutableMap()
             for (range in fresh) byDate[range.date] = byDate[range.date]?.updatedBy(range) ?: range
             val earliest = today.minus(DatePeriod(days = KEEP_DAYS_BEFORE))
-            return byDate.values.filter { it.date in earliest..today }.sortedBy { it.date }
+            val latest = today.plus(DatePeriod(days = KEEP_DAYS_AFTER))
+            return byDate.values.filter { it.date in earliest..latest }.sortedBy { it.date }
         }
 
         /** Pure: today's range beside yesterday's, from a place's [days]. */

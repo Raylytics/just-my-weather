@@ -193,6 +193,7 @@ fun App(
             CustomizeScreen(
                 config = config,
                 weather = homeState as? HomeUiState.Ready,
+                onPreviewForecast = homeViewModel::previewForecast,
                 onToggle = customizeViewModel::toggle,
                 onRelabel = customizeViewModel::relabel,
                 onResize = customizeViewModel::resize,

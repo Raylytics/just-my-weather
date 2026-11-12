@@ -66,15 +66,28 @@ class DayRangeTest {
     }
 
     @Test
-    fun `the record keeps yesterday and a spare, and compares today with yesterday`() {
+    fun `the record keeps yesterday, a spare and the days ahead, and compares today with yesterday`() {
         val stored = listOf(DayRange(LocalDate(2026, 11, 8), 50.0, 30.0), DayRange(nov10, 63.0, 44.0))
         val merged = DayRangeHistory.merge(stored, listOf(DayRange(nov11, 68.0, 41.0), DayRange(nov12, 55.0)), nov11)
-        assertEquals(listOf(nov10, nov11), merged.map { it.date })
+        assertEquals(listOf(nov10, nov11, nov12), merged.map { it.date })
         assertEquals(
             DayComparison(DayRange(nov11, 68.0, 41.0), DayRange(nov10, 63.0, 44.0)),
             DayRangeHistory.compare(merged, nov11),
         )
-        assertNull(DayRangeHistory.compare(merged, nov12))
+        assertNull(DayRangeHistory.compare(merged, LocalDate(2026, 11, 13)))
+    }
+
+    @Test
+    fun `a fetch that no longer covers today still compares, from the day it was recorded ahead`(
+        @TempDir dir: File,
+    ) = runTest {
+        // Abroad: MET's fold drops today after the morning, so a midday fetch
+        // starts at tomorrow. Today was recorded yesterday, as a day ahead.
+        val file = File(dir, "p.preferences_pb")
+        val history = DayRangeHistory(PreferenceDataStoreFactory.createWithPath(produceFile = { file.toOkioPath() }))
+        history.record("59.91,10.75", listOf(DayRange(nov10, 50.0, 40.0), DayRange(nov11, 47.0, 38.0)), nov10)
+        val midday = history.record("59.91,10.75", listOf(DayRange(nov12, 45.0, 36.0)), nov11)
+        assertEquals(DayComparison(DayRange(nov11, 47.0, 38.0), DayRange(nov10, 50.0, 40.0)), midday)
     }
 
     @Test
