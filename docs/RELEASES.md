@@ -44,6 +44,15 @@ A version that reaches both stores gets an entry in each.
 
 # iOS (App Store)
 
+## 0.5.0 — build 5, TestFlight 2026-11-12
+
+Delivery b4769e9a-1875-40c4-b715-bb986462a784, cut from f928095 with Evan's
+go-ahead. Over build 4 (0.4.2) it adds the Customize preview and the vs.
+yesterday module; What's new lists 0.5.0 alone for a user already on 0.4.2.
+Gates: `:shared:allTests`, StoreKit XCTests 17/17 (second run after boot,
+as documented), Maestro on JMW iPhone (iOS 27) 10/11 with 07-forecast a
+missed toggle tap that passed 2/2 alone.
+
 ## 0.4.2 — build 4, App Store Connect 2026-11-04
 
 Cut from cf2b5f7 on `main` with Evan's go-ahead ("upload build 4"), by
@@ -119,10 +128,25 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
-## 0.5.0 — unreleased (in progress on `release/0.5.0`)
+## 0.5.0 — versionCode 13, Play internal 2026-11-12
 
 Opened 2026-11-11. Absorbs 0.4.2, which never reached Play (iOS 0.4.2
-build 4 went to App Review 2026-11-04).
+build 4 went to App Review 2026-11-04). Cut from b79c8b6
+on `release/0.5.0` with Evan's go-ahead ("get into test tracks"), after
+origin/main was merged in (826ef26), so it carries main's ad work:
+google-ads-exit Stage A, so no banner on Android in this build. Not
+pushed, so CI's `ui` job has not seen it; the same suite ran locally
+instead: Android 12/12 flows + instrumented tests (Pixel_7_API_35), unit
+tests 556, Android Lint clean.
+
+Tester notes: "0.5.0 test build: a live Preview of each module in
+Customize; a new Vs. yesterday module (fills in from the second day); a
+Restore purchases row in App Settings; the collapse caret no longer
+overlaps wide values. No banner ad on Android in this build while the ad
+network change finishes."
+
+Known: vs. yesterday reads "High —" when a day was first seen after NWS
+dropped "Today" (just-my-weather-292); decide before production.
 
 ### Added
 - Customize: a Preview switch in each module's fold draws the module as the
