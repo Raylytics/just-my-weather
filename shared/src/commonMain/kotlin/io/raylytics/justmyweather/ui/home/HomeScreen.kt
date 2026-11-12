@@ -67,7 +67,6 @@ import io.raylytics.justmyweather.view.ModuleKey
 import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.ReadingHeading
 import io.raylytics.justmyweather.view.RenderedView
-import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.ViewConfig
 import io.raylytics.justmyweather.view.render
 import kotlinx.coroutines.delay
@@ -231,11 +230,7 @@ private fun GlanceView(
     // Which clock every time on this screen reads in. The place's zone still
     // decides the sun rows' calendar days; this only decides how the instants
     // are shown.
-    val displayZone =
-        when (config.timesIn) {
-            TimesIn.DEVICE -> TimeZone.currentSystemDefault()
-            TimesIn.PLACE -> state.zone
-        }
+    val displayZone = config.displayZone(state.zone)
     // The reading's own timestamp is the exception: see TimesIn.observedZone.
     val observedZone = config.timesIn.observedZone(snapshot, place = state.zone)
     Column(
@@ -299,15 +294,7 @@ private fun GlanceView(
             sunDays = state.sunDays,
             zone = displayZone,
             observedZone = observedZone,
-            forecast =
-                ForecastData(
-                    mode = state.forecastMode,
-                    hours = state.hourly,
-                    periods = state.daily,
-                    error = state.forecastError,
-                    placeZone = state.zone,
-                    extended = state.extendedDaily,
-                ),
+            forecast = state.forecastData(),
             arranging = arranging,
             onStartArranging = onStartArranging,
             onStopArranging = onDoneArranging,

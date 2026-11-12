@@ -1,0 +1,63 @@
+# Module preview: inside a module's fold in Customize, the Preview switch
+# draws that module as the glance would, with the live weather, and it
+# follows each edit as it is made.
+#
+# Wind ships hidden, so this also shows a module can be previewed before it
+# is switched on. The preview carries a description naming the module's
+# label, which is how a rename is seen to reach it.
+appId: io.raylytics.justmyweather
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+
+# The preview needs a reading: wait for the glance to have one.
+- extendedWaitUntil:
+    visible: "Customize"
+    timeout: 60000
+- tapOn: "Customize"
+- assertVisible: "Customize view"
+- scrollUntilVisible:
+    element:
+      id: "field_wind"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "field_wind"
+
+# Off until asked for: a fold opens to its settings, not to a picture.
+- scrollUntilVisible:
+    element:
+      id: "previewToggle_wind"
+    direction: DOWN
+    timeout: 10000
+- assertNotVisible:
+    id: "preview_wind"
+- tapOn:
+    id: "previewToggle_wind"
+- extendedWaitUntil:
+    visible:
+      id: "preview_wind"
+    timeout: 10000
+- assertVisible: "Preview of Wind as the glance draws it"
+
+# A rename reaches the preview once typing pauses (the name is debounced).
+- tapOn:
+    id: "name_wind"
+- inputText: "Breeze"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Preview of Breeze as the glance draws it"
+    timeout: 5000
+
+# Switching it off takes the picture away again.
+- scrollUntilVisible:
+    element:
+      id: "previewToggle_wind"
+    direction: UP
+    timeout: 10000
+- tapOn:
+    id: "previewToggle_wind"
+- assertNotVisible:
+    id: "preview_wind"

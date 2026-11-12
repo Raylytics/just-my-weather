@@ -1047,3 +1047,44 @@ private class TileActionLabels(
     val taller: String,
     val shorter: String,
 )
+
+/**
+ * One module drawn alone, by the same tile the glance draws it with, at its
+ * footprint on the same four-column lattice: Customize's preview of the
+ * module whose settings are open. A half-width module previews at half the
+ * width, as it would sit on the canvas.
+ *
+ * Not editable — no arranging, no detail sheet. The forecast's framing chips
+ * still work ([onSetForecastMode]), since flipping them is part of seeing
+ * what the module draws.
+ */
+@Composable
+fun ModulePreview(
+    module: ModuleValue,
+    spec: DensitySpec,
+    onSetForecastMode: (ForecastMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    CellGrid(
+        items = listOf(module),
+        size = { it.size },
+        gap = spec.moduleGap,
+        cellAspect = spec.cellAspect,
+        modifier = modifier,
+    ) { item, _, tileModifier ->
+        ModuleTile(
+            module = item,
+            arranging = false,
+            spec = spec,
+            index = 0,
+            lastIndex = 0,
+            onMove = { _, _ -> },
+            onResize = { _, _ -> },
+            onSetForecastMode = onSetForecastMode,
+            onOpenModule = null,
+            onOpenDetail = null,
+            onSetExpanded = { _, _ -> },
+            modifier = tileModifier,
+        )
+    }
+}

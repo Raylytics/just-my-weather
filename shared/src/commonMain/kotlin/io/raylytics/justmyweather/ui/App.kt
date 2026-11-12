@@ -32,6 +32,7 @@ import io.raylytics.justmyweather.ui.alerts.AlertsViewModel
 import io.raylytics.justmyweather.ui.customize.CustomizeScreen
 import io.raylytics.justmyweather.ui.customize.CustomizeViewModel
 import io.raylytics.justmyweather.ui.home.HomeScreen
+import io.raylytics.justmyweather.ui.home.HomeUiState
 import io.raylytics.justmyweather.ui.home.HomeViewModel
 import io.raylytics.justmyweather.ui.home.SUN_TICK
 import io.raylytics.justmyweather.ui.places.PlacesScreen
@@ -188,8 +189,10 @@ fun App(
             // System back returns to the glance rather than exiting the app.
             BackHandler { screen = Screen.HOME }
             val config by customizeViewModel.config.collectAsStateWithLifecycle()
+            val homeState by homeViewModel.state.collectAsStateWithLifecycle()
             CustomizeScreen(
                 config = config,
+                weather = homeState as? HomeUiState.Ready,
                 onToggle = customizeViewModel::toggle,
                 onRelabel = customizeViewModel::relabel,
                 onResize = customizeViewModel::resize,

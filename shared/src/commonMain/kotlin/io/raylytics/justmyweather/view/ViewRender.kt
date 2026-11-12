@@ -138,36 +138,67 @@ fun ViewConfig.render(
     RenderedView(
         visible.map { setting ->
             val collapsed = setting.collapsible && setting.module !in expanded
-            ModuleValue(
-                module = setting.module,
-                label = setting.label,
-                size = if (collapsed) ModuleSize.CELL else setting.size,
-                collapsible = setting.collapsible,
-                collapsed = collapsed,
-                content =
-                    when (val module = setting.module) {
-                        is ModuleKey.Reading ->
-                            ModuleContent.Reading(module.field.format(snapshot, conventions) ?: "—")
-                        // The rows were computed to the horizon (SunDays.MAX);
-                        // the user's setting says how many of them the tile
-                        // draws, so changing it never recomputes anything.
-                        ModuleKey.Sun -> ModuleContent.Sun(sunDays.take(this.sunDays), zone)
-                        ModuleKey.Forecast ->
-                            ModuleContent.Forecast(
-                                hours = forecast.hours,
-                                periods = forecast.periods,
-                                error = forecast.error,
-                                mode = forecast.mode,
-                                dailyStyle = dailyStyle,
-                                hourlyHours = hourlyHours,
-                                dailyDays = dailyDays,
-                                elements = forecastElements,
-                                layout = forecastTileLayout,
-                                zone = zone,
-                                placeZone = forecast.placeZone,
-                                extended = forecast.extended,
-                            )
-                    },
-            )
+            moduleValue(setting, collapsed, snapshot, sunDays, zone, forecast, conventions)
         },
+    )
+
+/**
+ * One module as the glance would draw it under this config, whether or not it
+ * is shown — Customize's preview, which draws a module while its settings are
+ * being chosen, including before it is switched on. Drawn open: the preview is
+ * of what the module shows, and a folded module shows only its name.
+ *
+ * The same mapping [render] uses, so the preview cannot drift from the glance.
+ * Null for a module this config does not list.
+ */
+fun ViewConfig.renderModule(
+    module: ModuleKey,
+    snapshot: WeatherSnapshot,
+    sunDays: List<SunDay> = emptyList(),
+    zone: TimeZone = TimeZone.currentSystemDefault(),
+    forecast: ForecastData = ForecastData(),
+    conventions: Conventions,
+): ModuleValue? =
+    items.firstOrNull { it.module == module }
+        ?.let { moduleValue(it, collapsed = false, snapshot, sunDays, zone, forecast, conventions) }
+
+private fun ViewConfig.moduleValue(
+    setting: ModuleSetting,
+    collapsed: Boolean,
+    snapshot: WeatherSnapshot,
+    sunDays: List<SunDay>,
+    zone: TimeZone,
+    forecast: ForecastData,
+    conventions: Conventions,
+): ModuleValue =
+    ModuleValue(
+        module = setting.module,
+        label = setting.label,
+        size = if (collapsed) ModuleSize.CELL else setting.size,
+        collapsible = setting.collapsible,
+        collapsed = collapsed,
+        content =
+            when (val module = setting.module) {
+                is ModuleKey.Reading ->
+                    ModuleContent.Reading(module.field.format(snapshot, conventions) ?: "—")
+                // The rows were computed to the horizon (SunDays.MAX);
+                // the user's setting says how many of them the tile
+                // draws, so changing it never recomputes anything.
+                ModuleKey.Sun -> ModuleContent.Sun(sunDays.take(this.sunDays), zone)
+                ModuleKey.Forecast ->
+                    ModuleContent.Forecast(
+                        hours = forecast.hours,
+                        periods = forecast.periods,
+                        error = forecast.error,
+                        mode = forecast.mode,
+                        dailyStyle = dailyStyle,
+                        hourlyHours = hourlyHours,
+                        dailyDays = dailyDays,
+                        elements = forecastElements,
+                        layout = forecastTileLayout,
+                        zone = zone,
+                        placeZone = forecast.placeZone,
+                        extended = forecast.extended,
+                    )
+            },
     )

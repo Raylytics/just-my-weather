@@ -22,6 +22,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -29,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.raylytics.justmyweather.resources.Res
@@ -49,6 +52,8 @@ import io.raylytics.justmyweather.resources.customize_order_hint
 import io.raylytics.justmyweather.resources.customize_order_hint_full_width
 import io.raylytics.justmyweather.resources.customize_order_hint_hidden
 import io.raylytics.justmyweather.resources.customize_preview
+import io.raylytics.justmyweather.resources.customize_preview_module
+import io.raylytics.justmyweather.resources.customize_preview_waiting
 import io.raylytics.justmyweather.resources.customize_safety_alerts
 import io.raylytics.justmyweather.resources.customize_show_fields_care_about
 import io.raylytics.justmyweather.resources.customize_show_times_in
@@ -59,6 +64,12 @@ import io.raylytics.justmyweather.resources.customize_whole_observation_behind_r
 import io.raylytics.justmyweather.resources.customize_width
 import io.raylytics.justmyweather.ui.dismissKeyboardOnTap
 import io.raylytics.justmyweather.ui.home.DensityPreview
+import io.raylytics.justmyweather.ui.home.HomeUiState
+import io.raylytics.justmyweather.ui.home.ModulePreview
+import io.raylytics.justmyweather.ui.home.displayZone
+import io.raylytics.justmyweather.ui.home.forecastData
+import io.raylytics.justmyweather.ui.home.spec
+import io.raylytics.justmyweather.ui.theme.LocalConventions
 import io.raylytics.justmyweather.ui.theme.subtleBorder
 import io.raylytics.justmyweather.ui.theme.textButtonColors
 import io.raylytics.justmyweather.view.AlertBannerPosition
@@ -74,6 +85,7 @@ import io.raylytics.justmyweather.view.ThemeConfig
 import io.raylytics.justmyweather.view.TimesIn
 import io.raylytics.justmyweather.view.ViewConfig
 import io.raylytics.justmyweather.view.canCollapse
+import io.raylytics.justmyweather.view.renderModule
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 
@@ -98,6 +110,9 @@ private const val RELABEL_DEBOUNCE_MS = 400L
 @Composable
 fun CustomizeScreen(
     config: ViewConfig,
+    /** The glance's latest weather, which the module previews draw with;
+     * null until a reading has loaded. */
+    weather: HomeUiState.Ready?,
     onToggle: (ModuleKey) -> Unit,
     onRelabel: (ModuleKey, String?) -> Unit,
     onResize: (ModuleKey, ModuleSize) -> Unit,
@@ -140,6 +155,11 @@ fun CustomizeScreen(
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
 
+            // Which modules' previews are switched on. Kept for as long as the
+            // screen is open, not saved: a preview is a look, not a setting,
+            // and here it survives folding and reopening the module.
+            val previewing = remember { mutableStateMapOf<ModuleKey, Boolean>() }
+
             // Everything below the header scrolls as one page — the option
             // sections have outgrown a fixed header on small screens.
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
@@ -160,6 +180,15 @@ fun CustomizeScreen(
                             onSetCollapsible = { onSetCollapsible(setting.module, it) },
                             onMoveUp = { onStepUp(setting.module) },
                             onMoveDown = { onStepDown(setting.module) },
+                            preview = {
+                                ModulePreviewPane(
+                                    module = setting.module,
+                                    config = config,
+                                    weather = weather,
+                                    on = previewing[setting.module] == true,
+                                    onSet = { previewing[setting.module] = it },
+                                )
+                            },
                         ) {
                             // A module's own options live in its fold, with
                             // its name and size: "everything about the
@@ -437,6 +466,9 @@ private fun FieldRow(
     onSetCollapsible: (Boolean) -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    /** The Preview switch and, when it is on, the module as drawn: first in
+     * the fold, so every change below it is seen as it is made. */
+    preview: @Composable () -> Unit,
     moduleSettings: @Composable ColumnScope.() -> Unit,
 ) {
     // testTags (per field key) give UI tests a stable handle on controls
@@ -461,6 +493,7 @@ private fun FieldRow(
             )
         },
     ) {
+        preview()
         NameField(setting = setting, onRelabel = onRelabel)
         // Reorder controls. Arrows as text keep us off an icon dependency;
         // the outline says they are buttons, which a bare arrow did not.
@@ -532,6 +565,72 @@ private fun FieldRow(
     }
 }
 
+/**
+ * The module as the canvas would draw it, with this config and the glance's
+ * current weather, behind a switch. Rendered through the glance's own render
+ * and tile ([renderModule], [ModulePreview]), and from [config] — the same
+ * flow every edit here writes to — so it redraws as each setting changes and
+ * cannot show something the glance would not.
+ *
+ * Previewed open even when the module rests folded: folded it is only its
+ * name. The forecast previews in its saved default framing, which its chips
+ * here can flip for a look without saving anything.
+ */
+@Composable
+private fun ModulePreviewPane(
+    module: ModuleKey,
+    config: ViewConfig,
+    weather: HomeUiState.Ready?,
+    on: Boolean,
+    onSet: (Boolean) -> Unit,
+) {
+    val key = module.key
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(Res.string.customize_preview),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Switch(checked = on, onCheckedChange = onSet, modifier = Modifier.testTag("previewToggle_$key"))
+    }
+    if (!on) return
+    if (weather == null) {
+        Text(
+            text = stringResource(Res.string.customize_preview_waiting),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp).testTag("previewWaiting_$key"),
+        )
+        return
+    }
+    var mode by remember(config.defaultForecastMode) { mutableStateOf(config.defaultForecastMode) }
+    val value =
+        config.renderModule(
+            module = module,
+            snapshot = weather.snapshot,
+            sunDays = weather.sunDays,
+            zone = config.displayZone(weather.zone),
+            forecast = weather.forecastData(mode),
+            conventions = LocalConventions.current,
+        ) ?: return
+    val description = stringResource(Res.string.customize_preview_module, value.label)
+    ModulePreview(
+        module = value,
+        spec = config.density.spec(),
+        onSetForecastMode = { mode = it },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .semantics { contentDescription = description }
+                .testTag("preview_$key"),
+    )
+}
+
 /** The name a module shows under on the glance; empty means its default. */
 @Composable
 private fun NameField(
@@ -571,6 +670,6 @@ private fun NameField(
         placeholder = { Text(setting.module.defaultLabel) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("name_${setting.module.key}"),
     )
 }
