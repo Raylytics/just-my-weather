@@ -727,6 +727,17 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `opening the preview again fetches nothing it already has`() = runTest(dispatcher) {
+        val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
+        advanceUntilIdle()
+        val fetches = h.transport.dailyFetches
+        h.vm.previewVsYesterday()
+        h.vm.previewVsYesterday()
+        advanceUntilIdle()
+        assertEquals(fetches, h.transport.dailyFetches)
+    }
+
+    @Test
     fun `a refresh of the same place keeps the comparison on screen`() = runTest(dispatcher) {
         val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
         advanceUntilIdle()

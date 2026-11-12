@@ -540,7 +540,13 @@ class HomeViewModel(
     /** Customize's preview of the vs. yesterday module, switched on or not:
      * load its comparison, which the glance loads only while it shows. */
     fun previewVsYesterday() {
-        viewModelScope.launch { loadVsYesterday(currentLocation()) }
+        viewModelScope.launch {
+            val location = currentLocation()
+            // Already loaded for this place (the glance shows it, or an
+            // earlier look did): nothing to fetch.
+            if (vsYesterday.value != null && vsYesterdayKey == PointCacheKey.of(location)) return@launch
+            loadVsYesterday(location)
+        }
     }
 
     /**

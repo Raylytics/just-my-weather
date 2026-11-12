@@ -68,6 +68,25 @@ class ObservationFillTest {
     }
 
     @Test
+    fun `another station's wind chill never sits beside this station's air`() {
+        val windyAirport = obs(temperatureF = 48.0, feelsLikeF = 44.0, conditions = "Clear")
+        assertEquals(54.0, ObservationFill.fill(backyard, listOf(windyAirport)).feelsLikeF)
+        // With no temperature of its own, both come from the same station.
+        val filled = ObservationFill.fill(obs(), listOf(windyAirport))
+        assertEquals(48.0, filled.temperatureF)
+        assertEquals(44.0, filled.feelsLikeF)
+    }
+
+    @Test
+    fun `a dry hour is only believed from the station whose sky is shown`() {
+        val showering = obs(conditions = "Light Rain")
+        val cloudyDry = obs(conditions = "Cloudy", reportsNoWeather = true)
+        val filled = ObservationFill.fill(backyard, listOf(showering, cloudyDry))
+        assertEquals("Light Rain", filled.conditions)
+        assertNull(filled.precipitationIn, "not 0 beside Light Rain")
+    }
+
+    @Test
     fun `a complete reading has no gaps to fill`() {
         assertTrue(ObservationFill.hasGaps(backyard))
         assertFalse(ObservationFill.hasGaps(paloAlto.copy(precipitationIn = 0.0)))

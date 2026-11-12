@@ -45,10 +45,21 @@ object ObservationFill {
             }
 
         fun <T> first(pick: (CurrentObservation) -> T?): T? = usable.firstNotNullOfOrNull(pick)
+        // Temperature and feels-like travel together: NWS works a heat index
+        // or wind chill out from a station's own temperature and wind, so
+        // another station's would sit wrong beside this one's air. Only when
+        // the nearest station has no temperature are both borrowed, from the
+        // same station.
+        val warmth = if (primary.temperatureF != null) primary else usable.firstOrNull { it.temperatureF != null }
+        // Likewise "dry" is only believed from the station whose sky is shown
+        // (or the nearest one): another station's clear hour says nothing
+        // about rain this one's description reports.
+        val sky = if (primary.conditions != null) primary else usable.firstOrNull { it.conditions != null }
         val filled =
             primary.copy(
-                temperatureF = primary.temperatureF ?: first { it.temperatureF },
-                conditions = primary.conditions ?: first { it.conditions },
+                temperatureF = warmth?.temperatureF,
+                feelsLikeF = warmth?.let { it.feelsLikeF ?: it.temperatureF },
+                conditions = sky?.conditions,
                 visibilityMi = primary.visibilityMi ?: first { it.visibilityMi },
                 pressureInHg = primary.pressureInHg ?: first { it.pressureInHg },
                 relativeHumidityPercent = primary.relativeHumidityPercent ?: first { it.relativeHumidityPercent },
@@ -56,12 +67,8 @@ object ObservationFill {
                 windMph = primary.windMph ?: first { it.windMph },
                 windDirectionDegrees = primary.windDirectionDegrees ?: first { it.windDirectionDegrees },
                 precipitationIn = primary.precipitationIn ?: first { it.precipitationIn },
-                feelsLikeF = primary.feelsLikeF ?: first { it.feelsLikeF },
             )
-        val dry = filled.precipitationIn == null && (primary.reportsNoWeather || usable.any { it.reportsNoWeather })
-        return filled.copy(
-            precipitationIn = filled.precipitationIn ?: if (dry) 0.0 else null,
-            feelsLikeF = filled.feelsLikeF ?: filled.temperatureF,
-        )
+        val dry = primary.reportsNoWeather || sky?.reportsNoWeather == true
+        return filled.copy(precipitationIn = filled.precipitationIn ?: if (dry) 0.0 else null)
     }
 }

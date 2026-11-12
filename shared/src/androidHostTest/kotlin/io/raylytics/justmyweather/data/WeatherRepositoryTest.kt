@@ -28,6 +28,11 @@ class WeatherRepositoryTest {
         /** What /points answers with; 404 + [NOT_NWS] is a place abroad. */
         private val pointsStatus: Int = 200,
         private val metNo: String = MET_NO,
+        /** What /stations answers with, nearest first; null fails it. */
+        var stations: String? = STATIONS,
+        /** Each station's latest reading by id; a missing id gets
+         * [OBSERVATION], a null fails that station. */
+        private val readings: Map<String, String?> = emptyMap(),
     ) : HttpTransport {
         val requested = mutableListOf<String>()
 
@@ -38,9 +43,12 @@ class WeatherRepositoryTest {
             }
             val body =
                 when {
-                    "/observations/latest" in url -> OBSERVATION
+                    "/observations/latest" in url -> {
+                        val id = url.substringAfter("/stations/").substringBefore("/")
+                        if (id in readings) readings[id] ?: return HttpResult(500, "boom", null) else OBSERVATION
+                    }
                     "/alerts/active" in url -> ALERTS
-                    url.endsWith("/stations") -> STATIONS
+                    url.endsWith("/stations") -> stations ?: return HttpResult(500, "boom", null)
                     "/points/" in url -> points
                     "api.met.no" in url -> metNo
                     else -> error("unexpected url $url")
@@ -68,6 +76,41 @@ class WeatherRepositoryTest {
         metNo = metNo,
         nearest = nearest,
     )
+
+    @Test
+    fun `a backyard station's gaps come from the next two stations, listed once a session`() = runTest {
+        fun station(id: String) = """{"properties":{"stationIdentifier":"$id"}}"""
+        val transport =
+            RoutingTransport(
+                stations = """{"features":[${listOf("AW020", "KNUQ", "KPAO", "KSJC").joinToString(",") {
+                    station(it)
+                }}]}""",
+                readings =
+                    mapOf(
+                        "AW020" to """{"properties":{"timestamp":"2026-06-24T18:00:00Z",
+                            "temperature":{"value":12.0,"unitCode":"wmoUnit:degC"}}}""",
+                        "KNUQ" to null,
+                        "KPAO" to """{"properties":{"timestamp":"2026-06-24T17:47:00Z","textDescription":"Clear",
+                            "presentWeather":[],"visibility":{"value":16090,"unitCode":"wmoUnit:m"}}}""",
+                    ),
+            )
+        val repository = repo(transport)
+        val first = repository.load(WeatherLocation.DEFAULT)
+        assertEquals(12.0 * 9 / 5 + 32, first.temperatureF!!, 0.01, "the nearest station's own reading")
+        assertEquals("Clear", first.conditions, "KNUQ failed, so from KPAO")
+        assertEquals(0.0, first.precipitationIn, "a full station's dry hour")
+        assertTrue(transport.requested.none { "KSJC" in it }, "two backups at most")
+        val lists = transport.requested.count { it.endsWith("/stations") }
+        repository.load(WeatherLocation.DEFAULT)
+        assertEquals(lists, transport.requested.count { it.endsWith("/stations") }, "the list is kept")
+
+        // No list at all: the reading is still the nearest station's.
+        val noList = RoutingTransport(readings = mapOf("KNYC" to OBSERVATION))
+        val cached = InMemoryPointCache()
+        repo(noList, cache = cached).load(WeatherLocation.DEFAULT)
+        noList.stations = null
+        assertEquals("Partly Cloudy", repo(noList, cache = cached).load(WeatherLocation.DEFAULT).conditions)
+    }
 
     @Test
     fun `extended days are cut in the place's calendar, which the NWS point knows`() = runTest {
