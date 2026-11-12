@@ -16,21 +16,31 @@ import kotlin.math.roundToInt
  * screen always checks out (68 against 63 reads 5, never a rounded 4.6), and
  * a difference in °C is a °C difference without a separate delta conversion.
  * No change reads a plain 0°, with no arrow. A side with no value reads "—".
+ * The tile draws [rows] in columns so the values and changes line up.
  */
 object VsYesterday {
-    fun format(comparison: DayComparison?, conventions: Conventions): String {
-        val today = comparison?.today ?: return "—"
+    fun format(comparison: DayComparison?, conventions: Conventions): String =
+        rows(comparison, conventions)?.joinToString("\n") { row -> row.filter(String::isNotEmpty).joinToString(" ") }
+            ?: "—"
+
+    /**
+     * The same, as a table the tile draws in columns: name, today's value,
+     * its change ("" when today has no value). Null when there is no
+     * comparison at all, which the tile draws as a single dash.
+     */
+    fun rows(comparison: DayComparison?, conventions: Conventions): List<List<String>>? {
+        val today = comparison?.today ?: return null
         val yesterday = comparison.yesterday
         return listOf(
-            line("High", today.highF, yesterday?.highF, conventions),
-            line("Low", today.lowF, yesterday?.lowF, conventions),
-        ).joinToString("\n")
+            row("High", today.highF, yesterday?.highF, conventions),
+            row("Low", today.lowF, yesterday?.lowF, conventions),
+        )
     }
 
-    private fun line(name: String, todayF: Double?, yesterdayF: Double?, conventions: Conventions): String {
-        val today = todayF?.let { shown(it, conventions) } ?: return "$name —"
+    private fun row(name: String, todayF: Double?, yesterdayF: Double?, conventions: Conventions): List<String> {
+        val today = todayF?.let { shown(it, conventions) } ?: return listOf(name, "—", "")
         val change = yesterdayF?.let { shown(it, conventions) }?.let { today - it }
-        return "$name $today° ${difference(change)}"
+        return listOf(name, "$today°", difference(change))
     }
 
     private fun difference(change: Int?): String =

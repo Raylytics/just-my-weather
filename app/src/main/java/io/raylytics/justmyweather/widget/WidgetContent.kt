@@ -150,6 +150,19 @@ internal fun WidgetContent(config: WidgetConfig, data: WidgetData?, now: Instant
                             spec = spec,
                             size = inner,
                         )
+                    // Not offered as a widget (vs. yesterday); drawn as
+                    // its one-line text should a config ever carry it.
+                    is ModuleContent.Table ->
+                        ReadingWidget(
+                            value = value,
+                            text = content.text,
+                            snapshot = data.snapshot,
+                            observedZone = config.observedZone(data),
+                            now = now,
+                            palette = palette,
+                            spec = spec,
+                            size = inner,
+                        )
                     is ModuleContent.Sun ->
                         SunWidget(value, content, palette, spec, inner)
                     is ModuleContent.Forecast ->

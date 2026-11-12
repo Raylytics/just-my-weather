@@ -53,6 +53,8 @@ object Details {
             is ModuleContent.Reading ->
                 if (module.module == ModuleKey.VsYesterday) null else ofObservation(module, snapshot, zone, conventions)
             is ModuleContent.Sun -> ofSun(module.label, content.days, content.zone, conventions)
+            // Only vs. yesterday draws as a table, and it opens nothing (yet).
+            is ModuleContent.Table -> null
             is ModuleContent.Forecast -> null
         }
 

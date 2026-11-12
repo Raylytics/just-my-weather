@@ -26,6 +26,13 @@ sealed interface ModuleContent {
     data class Reading(val text: String) : ModuleContent
 
     /**
+     * A few short readings in rows, drawn in columns so they line up: a
+     * name, then values ("High | 73° | ↑5°"). [text] is the same as one
+     * reading, for what speaks or prints it rather than draws it.
+     */
+    data class Table(val rows: List<List<String>>, val text: String) : ModuleContent
+
+    /**
      * Sun times, today first, with the zone they are to be read in — the
      * PLACE's, not the device's. The zone travels with the days because they
      * are instants: the same sunrise formats as two different clock times
@@ -204,6 +211,9 @@ private fun ViewConfig.moduleValue(
                         placeZone = forecast.placeZone,
                         extended = forecast.extended,
                     )
-                ModuleKey.VsYesterday -> ModuleContent.Reading(VsYesterday.format(forecast.vsYesterday, conventions))
+                ModuleKey.VsYesterday ->
+                    VsYesterday.rows(forecast.vsYesterday, conventions)
+                        ?.let { ModuleContent.Table(it, VsYesterday.format(forecast.vsYesterday, conventions)) }
+                        ?: ModuleContent.Reading("—")
             },
     )

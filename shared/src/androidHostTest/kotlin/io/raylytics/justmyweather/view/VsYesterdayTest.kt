@@ -32,4 +32,12 @@ class VsYesterdayTest {
             VsYesterday.format(DayComparison(DayRange(today, highF = 68.0), null), Conventions.US),
         )
     }
+
+    @Test
+    fun `the tile's rows are name, value and change, for columns`() {
+        val c = DayComparison(DayRange(today, 73.0, 55.0), DayRange(yesterday, 73.0, 49.0))
+        val rows = VsYesterday.rows(c, Conventions.US)
+        assertEquals(listOf(listOf("High", "73°", "0°"), listOf("Low", "55°", "↑6°")), rows)
+        assertEquals(null, VsYesterday.rows(null, Conventions.US))
+    }
 }

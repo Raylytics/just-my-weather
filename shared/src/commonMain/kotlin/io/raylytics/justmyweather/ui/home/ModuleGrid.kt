@@ -1006,6 +1006,7 @@ private fun ModuleTile(
                         zone = content.zone,
                         arranging = arranging,
                     )
+                is ModuleContent.Table -> TableModuleContent(content.rows)
                 // Handled above: the forecast takes the whole shell.
                 is ModuleContent.Forecast -> Unit
             }
