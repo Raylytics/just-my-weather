@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 /**
  * Exercises the client's parsing + retry against a fake transport — no network.
@@ -144,6 +145,23 @@ class NwsClientTest {
                 e
             }
         assertEquals(404, ex?.status)
+    }
+
+    @Test
+    fun `getObservedTemperatures asks for the range and keeps reports with a time and a temperature`() = runTest {
+        val body =
+            """{"features":[
+                {"properties":{"timestamp":"2026-11-11T20:00:00+00:00","temperature":{"value":20.0,"unitCode":"wmoUnit:degC"}}},
+                {"properties":{"timestamp":"2026-11-11T19:00:00+00:00","temperature":{"value":null,"unitCode":"wmoUnit:degC"}}},
+                {"properties":{"temperature":{"value":10.0,"unitCode":"wmoUnit:degC"}}},
+                {"properties":{"timestamp":"2026-11-12T09:00:00+00:00","temperature":{"value":0.0,"unitCode":"wmoUnit:degC"}}}
+            ]}"""
+        val (client, transport) = client(HttpResult(200, body, null))
+        val start = Instant.parse("2026-11-11T08:00:00Z")
+        val end = Instant.parse("2026-11-12T08:00:00Z")
+        val readings = client.getObservedTemperatures("AW020", start, end)
+        assertEquals(listOf(ObservedTemperature(Instant.parse("2026-11-11T20:00:00Z"), 68.0)), readings)
+        assertTrue(transport.requested.last().endsWith("/stations/AW020/observations?start=$start&end=$end"))
     }
 
     @Test

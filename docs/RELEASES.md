@@ -153,9 +153,12 @@ dropped "Today" (just-my-weather-292); decide before production.
   glance would, with the current weather, redrawn on every edit
   (just-my-weather-8g8).
 - Vs. yesterday module: today's forecast high and low, each with its change
-  from yesterday's. Yesterday's comes from the app's own record of past
-  forecasts (new store `day_ranges`, in PreferencesCompatibilityTest's codec
-  map), so it fills in from the second day. Hidden from widget pickers
+  from yesterday's. In NWS territory yesterday is what the place's station
+  measured (its observations for that local day, if they cover at least 18
+  hours), fetched once and kept in the app's record (new store `day_ranges`,
+  in PreferencesCompatibilityTest's codec map). Abroad, or without a usable
+  station day, it is the forecast the record kept while yesterday was ahead,
+  so it fills in from the second day. Hidden from widget pickers
   (just-my-weather-ala).
 
 ### Fixed (from 0.4.2)

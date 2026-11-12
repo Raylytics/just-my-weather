@@ -1,10 +1,11 @@
 # Vs. yesterday: switched on in Customize, the module lands on the glance
 # with today's forecast high and low.
 #
-# A fresh install has no yesterday yet (the app keeps its own record of past
-# forecasts, from the first day the module is on), so the changes read "—".
-# What this checks is that the module is offered, that switching it on
-# fetches its data, and that it draws its two lines.
+# In NWS territory yesterday is what the station measured, so even a fresh
+# install can show the changes; abroad, or with a station that covered too
+# little of yesterday, they read "—" until the app's own record has a day.
+# That depends on live data, so this checks only that the module is offered,
+# that switching it on fetches its data, and that it draws its two lines.
 appId: io.raylytics.justmyweather
 ---
 - launchApp:
@@ -33,7 +34,7 @@ appId: io.raylytics.justmyweather
 - extendedWaitUntil:
     visible: "Vs. yesterday"
     timeout: 10000
-# Today's high and low, each with its change (a dash on the first day).
+# Today's high and low, each with its change (or a dash, see above).
 - extendedWaitUntil:
     visible: "High .*"
     timeout: 20000

@@ -54,6 +54,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -115,6 +116,11 @@ class HomeViewModelTest {
         var gateDaily: CompletableDeferred<Unit>? = null
         var gateObservation: CompletableDeferred<Unit>? = null
 
+        /** The station's reports over a range: yesterday's, for vs. yesterday. */
+        var observedRange = """{"features":[]}"""
+        var observedRangeFetches = 0
+        var failObservedRange = false
+
         override suspend fun get(url: String, headers: Map<String, String>): HttpResult {
             val body =
                 when {
@@ -125,6 +131,11 @@ class HomeViewModelTest {
                         }
                         if (failObservation) return HttpResult(500, "boom", null)
                         OBSERVATION
+                    }
+                    "/observations?" in url -> {
+                        observedRangeFetches++
+                        if (failObservedRange) return HttpResult(500, "boom", null)
+                        observedRange
                     }
                     url.endsWith("/stations") -> STATIONS
                     "/points/" in url -> {
@@ -616,6 +627,57 @@ class HomeViewModelTest {
         )
     }
 
+    /** A record holding only today, at the default location: as if the app
+     * were first opened this morning, with no yesterday of its own. */
+    private suspend fun todayOnlyHistory(): DayRangeHistory {
+        val history = DayRangeHistory(FakePreferencesDataStore())
+        history.record(
+            PointCacheKey.of(WeatherLocation.DEFAULT),
+            listOf(DayRange(LocalDate(2026, 7, 31), 81.0, 70.0)),
+            LocalDate(2026, 7, 31),
+        )
+        return history
+    }
+
+    @Test
+    fun `yesterday comes from what the station measured, even on the first day`() = runTest(dispatcher) {
+        val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = todayOnlyHistory())
+        h.transport.observedRange = YESTERDAY_OBSERVED
+        h.vm.refresh()
+        advanceUntilIdle()
+        assertEquals(DayRange(LocalDate(2026, 7, 30), 86.0, 68.0, observed = true), h.vm.ready().vsYesterday?.yesterday)
+    }
+
+    @Test
+    fun `a measured yesterday outranks the recorded forecast, and is fetched once`() = runTest(dispatcher) {
+        val h = harness(dayHistory = recordedHistory())
+        h.transport.observedRange = YESTERDAY_OBSERVED
+        advanceUntilIdle()
+        h.configRepository.update { it.toggle(ModuleKey.VsYesterday) }
+        advanceUntilIdle()
+        assertEquals(DayRange(LocalDate(2026, 7, 30), 86.0, 68.0, observed = true), h.vm.ready().vsYesterday?.yesterday)
+        val fetches = h.transport.observedRangeFetches
+        h.vm.refresh()
+        advanceUntilIdle()
+        assertEquals(fetches, h.transport.observedRangeFetches, "a finished day is not fetched again")
+    }
+
+    @Test
+    fun `with no measurement the record's own yesterday stands in`() = runTest(dispatcher) {
+        val failing = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
+        failing.transport.failObservedRange = true
+        failing.vm.refresh()
+        advanceUntilIdle()
+        assertEquals(DayRange(LocalDate(2026, 7, 30), 84.0, 66.0), failing.vm.ready().vsYesterday?.yesterday)
+
+        // A station that reported only part of the day is no better.
+        val partial = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
+        partial.transport.observedRange = observedFor(hours = 8..20)
+        partial.vm.refresh()
+        advanceUntilIdle()
+        assertEquals(DayRange(LocalDate(2026, 7, 30), 84.0, 66.0), partial.vm.ready().vsYesterday?.yesterday)
+    }
+
     @Test
     fun `a refresh of the same place keeps the comparison on screen`() = runTest(dispatcher) {
         val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory())
@@ -1067,6 +1129,22 @@ class HomeViewModelTest {
         /** What NWS answers for a point outside its territory. */
         const val NOT_NWS =
             """{"type":"https://api.weather.gov/problems/InvalidPoint","status":404}"""
+
+        /** KNYC's reports for July 30 in New York (UTC-4): one an hour over
+         * the local [hours], 30 °C (86 °F) at 3pm, 20 °C (68 °F) at 5am, 25 °C
+         * otherwise. */
+        fun observedFor(hours: IntRange = 0..23): String =
+            hours.joinToString(",", prefix = """{"features":[""", postfix = "]}") { hour ->
+                val at = Instant.parse("2026-07-30T04:00:00Z") + hour.hours
+                val c = when (hour) {
+                    15 -> 30.0
+                    5 -> 20.0
+                    else -> 25.0
+                }
+                """{"properties":{"timestamp":"$at","temperature":{"value":$c,"unitCode":"wmoUnit:degC"}}}"""
+            }
+
+        val YESTERDAY_OBSERVED = observedFor()
 
         const val DAILY =
             """{"properties":{"periods":[{"name":"Today","isDaytime":true,

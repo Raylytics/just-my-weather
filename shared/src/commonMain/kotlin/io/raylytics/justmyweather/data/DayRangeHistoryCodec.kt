@@ -20,13 +20,17 @@ object DayRangeHistoryCodec {
         val date: String = "",
         val highF: Double? = null,
         val lowF: Double? = null,
+        /** Added in 0.5.0 before it shipped; false (absent) is a forecast. */
+        val observed: Boolean = false,
     )
 
     private val json = Json { ignoreUnknownKeys = true }
 
     fun encode(history: Map<String, List<DayRange>>): String =
         json.encodeToString(
-            history.mapValues { (_, days) -> days.map { StoredDay(it.date.toString(), it.highF, it.lowF) } },
+            history.mapValues { (_, days) ->
+                days.map { StoredDay(it.date.toString(), it.highF, it.lowF, it.observed) }
+            },
         )
 
     fun decode(stored: String?): Map<String, List<DayRange>> {
@@ -34,7 +38,9 @@ object DayRangeHistoryCodec {
         val raw = runCatching { json.decodeFromString<Map<String, List<StoredDay>>>(stored) }.getOrNull()
         return raw.orEmpty().mapValues { (_, days) ->
             days.mapNotNull { day ->
-                runCatching { LocalDate.parse(day.date) }.getOrNull()?.let { DayRange(it, day.highF, day.lowF) }
+                runCatching {
+                    LocalDate.parse(day.date)
+                }.getOrNull()?.let { DayRange(it, day.highF, day.lowF, day.observed) }
             }
         }
     }

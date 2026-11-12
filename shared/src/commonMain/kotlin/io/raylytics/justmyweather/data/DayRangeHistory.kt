@@ -11,9 +11,11 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
 /**
- * The app's own record of each day's forecast high and low, per place — the
- * "yesterday" of the vs. yesterday module, which no free source serves after
- * the fact, in NWS territory or out of it.
+ * The app's own record of each day's high and low, per place — the
+ * "yesterday" of the vs. yesterday module. In NWS territory yesterday is
+ * what the station measured, fetched once and kept here ([DayRange.observed]);
+ * abroad, or when that fetch fails, it is the forecast recorded while
+ * yesterday was still ahead, since MET Norway serves no history.
  *
  * The days AHEAD are kept too, not only the past ones, because a fetch does
  * not always say anything about today: abroad, MET Norway's daily fold drops
@@ -46,6 +48,12 @@ class DayRangeHistory(
         }
         return result
     }
+
+    /** Whether the record already holds what a station measured on [date]
+     * at [placeKey]: a finished day does not change, so it is fetched once. */
+    suspend fun hasObserved(placeKey: String, date: LocalDate): Boolean =
+        DayRangeHistoryCodec.decode(dataStore.data.first()[KEY])[placeKey].orEmpty()
+            .any { it.date == date && it.observed }
 
     companion object {
         private val KEY = stringPreferencesKey("day_ranges")

@@ -2,12 +2,18 @@ package io.raylytics.justmyweather.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import io.raylytics.justmyweather.data.nws.DailyPeriod
+import io.raylytics.justmyweather.data.nws.ObservedTemperature
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import okio.Path.Companion.toOkioPath
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -108,10 +114,75 @@ class DayRangeTest {
         )
     }
 
+    /** One reading an hour across [date] in Louisville, local hours [hours],
+     * warmest at 3pm and coolest at 6am. */
+    private fun hourly(date: LocalDate, hours: IntRange = 0..23): List<ObservedTemperature> =
+        hours.map { hour ->
+            val at = LocalDateTime(date, LocalTime(hour, 0)).toInstant(louisville)
+            val f = when (hour) {
+                15 -> 73.0
+                6 -> 49.0
+                else -> 60.0
+            }
+            ObservedTemperature(at, f)
+        }
+
+    @Test
+    fun `a station's day is its warmest and coolest reading, in the place's calendar`() {
+        // The evening before and the morning after, in UTC terms inside the
+        // fetch, must not count: only Nov 11 local.
+        val readings =
+            hourly(nov11) +
+                ObservedTemperature(Instant.parse("2026-11-11T04:30:00Z"), 99.0) +
+                ObservedTemperature(Instant.parse("2026-11-12T05:30:00Z"), 10.0)
+        assertEquals(
+            DayRange(nov11, 73.0, 49.0, observed = true),
+            DayRanges.fromObservations(readings, nov11, louisville),
+        )
+    }
+
+    @Test
+    fun `a station that covered too little of the day says nothing`() {
+        assertNull(DayRanges.fromObservations(hourly(nov11, 6..20), nov11, louisville))
+        assertNull(DayRanges.fromObservations(emptyList(), nov11, louisville))
+    }
+
+    @Test
+    fun `what was measured outranks any forecast for the day, and only a measurement replaces it`() {
+        val measured = DayRange(nov10, 73.0, 49.0, observed = true)
+        val forecast = DayRange(nov10, 70.0, 45.0)
+        assertEquals(measured, forecast.updatedBy(measured))
+        assertEquals(measured, measured.updatedBy(DayRange(nov10, lowF = 44.0)))
+        val remeasured = DayRange(nov10, 74.0, 48.0, observed = true)
+        assertEquals(remeasured, measured.updatedBy(remeasured))
+    }
+
+    @Test
+    fun `the record knows a measured day once it holds one`(
+        @TempDir dir: File,
+    ) = runTest {
+        val store = PreferenceDataStoreFactory.createWithPath(produceFile = {
+            File(dir, "o.preferences_pb").toOkioPath()
+        })
+        val history = DayRangeHistory(store)
+        assertFalse(history.hasObserved("k", nov10))
+        history.record("k", listOf(DayRange(nov10, 70.0, 45.0)), nov11)
+        assertFalse(history.hasObserved("k", nov10), "a forecast is not a measurement")
+        val measured = DayRange(nov10, 73.0, 49.0, observed = true)
+        val compared = history.record("k", listOf(DayRange(nov11, 68.0, 41.0), measured), nov11)
+        assertTrue(history.hasObserved("k", nov10))
+        assertEquals(measured, compared?.yesterday)
+    }
+
     @Test
     fun `the codec round-trips and survives garbage`() {
         val history = mapOf("38.25,-85.76" to listOf(DayRange(nov10, 63.0, null), DayRange(nov11, 68.0, 41.0)))
         assertEquals(history, DayRangeHistoryCodec.decode(DayRangeHistoryCodec.encode(history)))
+        // A forecast day writes no `observed` field, so a record written
+        // before the field existed reads and writes back the same bytes.
+        assertFalse("observed" in DayRangeHistoryCodec.encode(history))
+        val measured = mapOf("k" to listOf(DayRange(nov10, 73.0, 49.0, observed = true)))
+        assertEquals(measured, DayRangeHistoryCodec.decode(DayRangeHistoryCodec.encode(measured)))
         assertEquals(emptyMap<String, List<DayRange>>(), DayRangeHistoryCodec.decode("{not json"))
         assertEquals(emptyMap<String, List<DayRange>>(), DayRangeHistoryCodec.decode(null))
         // A day with an unreadable date is dropped; its neighbours stay.

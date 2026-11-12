@@ -37,7 +37,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import okio.IOException
 import kotlin.time.Clock
@@ -273,7 +275,19 @@ class HomeViewModel(
                 val placeZone = placeTimes.value.zone ?: zone()
                 val today = clock().toLocalDateTime(placeZone).date
                 val ranges = runCatching { repository.loadDayRanges(location, placeZone) }.getOrDefault(emptyList())
-                val comparison = runCatching { history.record(key, ranges, today) }.getOrNull()
+                // Yesterday as the station measured it, when there is a
+                // station and it covered the day; otherwise the record's own
+                // forecast for yesterday stands in. Fetched once per day.
+                val yesterday = today.minus(DatePeriod(days = 1))
+                val observed =
+                    if (runCatching { history.hasObserved(key, yesterday) }.getOrDefault(false)) {
+                        null
+                    } else {
+                        runCatching { repository.loadObservedDay(location, yesterday, placeZone) }.getOrNull()
+                    }
+                val comparison = runCatching {
+                    history.record(key, ranges + listOfNotNull(observed), today)
+                }.getOrNull()
                 // runCatching also swallows the cancellation a newer load
                 // sends; a cut-short load must publish nothing, not its null.
                 ensureActive()

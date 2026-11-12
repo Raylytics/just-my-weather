@@ -136,6 +136,23 @@ class NwsClient(
         }
     }
 
+    /**
+     * Every temperature [stationId] reported from [start] (inclusive) to
+     * [end] (exclusive). NWS keeps only the last few days, which is all the
+     * vs. yesterday module asks for. Reports with no temperature or no time
+     * are dropped; the order is whatever NWS sends (newest first).
+     */
+    suspend fun getObservedTemperatures(stationId: String, start: Instant, end: Instant): List<ObservedTemperature> {
+        val body = getJson<NwsObservationsResponse>("/stations/$stationId/observations?start=$start&end=$end")
+        return body.features.mapNotNull { feature ->
+            val props = feature.properties ?: return@mapNotNull null
+            val at = props.timestamp?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return@mapNotNull null
+            val temp = props.temperature
+            val f = Units.toFahrenheit(temp?.value, temp?.unitCode ?: "") ?: return@mapNotNull null
+            ObservedTemperature(at, f).takeIf { at >= start && at < end }
+        }
+    }
+
     /** The daily forecast: half-day periods NWS pre-names ("Tonight",
      * "Friday"), a daytime high or overnight low each. Periods missing a name
      * are dropped — the name is the whole point of this framing. */

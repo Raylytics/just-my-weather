@@ -62,6 +62,18 @@ data class NwsStationsResponse(
     )
 }
 
+/** A station's observations over a time range, newest first: one feature
+ * per report, each with the same properties as the latest one. */
+@Serializable
+data class NwsObservationsResponse(
+    val features: List<Feature> = emptyList(),
+) {
+    @Serializable
+    data class Feature(
+        val properties: NwsObservationResponse.ObservationProps? = null,
+    )
+}
+
 @Serializable
 data class NwsObservationResponse(
     val properties: ObservationProps? = null,

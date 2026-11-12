@@ -31,6 +31,10 @@ data class RelativeLocation(
     val state: String,
 )
 
+/** One temperature a station reported, and when: the raw material for a
+ * past day's actual high and low. */
+data class ObservedTemperature(val at: Instant, val temperatureF: Double)
+
 /** Latest station observation, normalised to American units. */
 data class CurrentObservation(
     /** When the station reported this; null if it omitted the timestamp. */

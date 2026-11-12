@@ -10,7 +10,11 @@ import io.raylytics.justmyweather.data.nws.NwsHttpException
 import io.raylytics.justmyweather.data.places.Place
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.plus
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -261,6 +265,20 @@ class WeatherRepository(
                 resolved.point.let { DayRanges.fromPeriods(nws.getDailyForecast(it.gridId, it.gridX, it.gridY), zone) }
             ResolvedPoint.OutsideNws -> DayRanges.fromExtended(loadExtendedDaily(location))
         }
+
+    /**
+     * What the place's station actually measured on [date], in [zone]'s
+     * calendar — the vs. yesterday module's preferred yesterday. Null abroad
+     * (MET Norway serves no history) and when the station covered too little
+     * of the day ([DayRanges.fromObservations]); a failed fetch throws.
+     */
+    suspend fun loadObservedDay(location: WeatherLocation, date: LocalDate, zone: TimeZone): DayRange? {
+        val resolved = resolve(location) as? ResolvedPoint.Nws ?: return null
+        val start = date.atStartOfDayIn(zone)
+        val end = date.plus(DatePeriod(days = 1)).atStartOfDayIn(zone)
+        val readings = nws.getObservedTemperatures(resolved.point.observationStationId, start, end)
+        return DayRanges.fromObservations(readings, date, zone)
+    }
 
     /** MET Norway's daily forecast for [location], or empty with no extended
      * source configured. The caller decides which of these days NWS already
