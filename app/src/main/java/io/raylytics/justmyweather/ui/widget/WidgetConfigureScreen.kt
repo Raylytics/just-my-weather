@@ -74,7 +74,7 @@ fun WidgetConfigureScreen(
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text("Shows", style = MaterialTheme.typography.labelMedium)
                 ChipRow(
-                    options = ModuleKey.catalog,
+                    options = ModuleKey.widgetable,
                     selected = config.module,
                     label = { it.defaultLabel },
                     onSelect = onShow,

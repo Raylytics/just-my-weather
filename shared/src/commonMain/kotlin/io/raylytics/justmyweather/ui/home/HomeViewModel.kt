@@ -3,6 +3,9 @@ package io.raylytics.justmyweather.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.raylytics.justmyweather.alerts.SafetyAlerts
+import io.raylytics.justmyweather.data.DayComparison
+import io.raylytics.justmyweather.data.DayRangeHistory
+import io.raylytics.justmyweather.data.PointCacheKey
 import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.SunTimes
 import io.raylytics.justmyweather.data.ViewConfigRepository
@@ -25,6 +28,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -74,6 +80,9 @@ class HomeViewModel(
     /** Injected alongside the clock: which local day it is decides which rows
      * the glance shows, and that answer is a zone away from the instant. */
     private val zone: () -> TimeZone = TimeZone::currentSystemDefault,
+    /** The app's record of past days' forecast ranges, for the vs. yesterday
+     * module. Null (tests, mostly) leaves that module showing a dash. */
+    private val dayHistory: DayRangeHistory? = null,
 ) : ViewModel() {
     private val weather = MutableStateFlow<WeatherLoad>(WeatherLoad.Loading)
     private val forecasts = MutableStateFlow(ForecastLoad())
@@ -118,6 +127,10 @@ class HomeViewModel(
      * folded is a collapsible module's resting form (HomeUiState.expanded). */
     private val expanded = MutableStateFlow<Set<ModuleKey>>(emptySet())
 
+    /** Today's forecast range against yesterday's, for the vs. yesterday
+     * module; fetched only while that module is on the grid. */
+    private val vsYesterday = MutableStateFlow<DayComparison?>(null)
+
     // One fetch per framing at a time; re-entering a mode whose data already
     // arrived is a no-op, so chip-hopping never stampedes the API. Declared
     // before `init` — the collect launched there can call ensureForecast
@@ -147,12 +160,19 @@ class HomeViewModel(
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** Bundled so the five-flow limit of the typed [combine] still fits: these
-     * three are the "what to show for right now" half of the screen. */
-    private val glance = combine(weather, placeTimes, expanded) { load, times, open -> Triple(load, times, open) }
+     * are the "what to show for right now" half of the screen. */
+    private val glance = combine(weather, placeTimes, expanded, vsYesterday, ::Glance)
+
+    private data class Glance(
+        val load: WeatherLoad,
+        val times: PlaceTimes,
+        val open: Set<ModuleKey>,
+        val vsYesterday: DayComparison?,
+    )
 
     val state: StateFlow<HomeUiState> =
         combine(glance, configRepository.config, forecast, forecasts, safetyAlerts) {
-                (load, times, open), config, forecastChoice, forecasts, alerts ->
+                (load, times, open, comparison), config, forecastChoice, forecasts, alerts ->
             // Before the stored config lands, fall back to what it will say:
             // the config flow itself has already emitted by the time a Ready
             // state can exist, so this only covers the first frame.
@@ -197,6 +217,7 @@ class HomeViewModel(
                         // ObservedLine).
                         zone = times.zone ?: zone(),
                         expanded = open,
+                        vsYesterday = if (config.shows(ModuleKey.VsYesterday)) comparison else null,
                     )
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)
@@ -210,6 +231,28 @@ class HomeViewModel(
         viewModelScope.launch {
             forecast.collect { ensureForecast(it) }
         }
+        // Switching the module on mid-session fetches its data then, not at
+        // the next refresh. (The first emission is the stored config, which
+        // refresh() above has already covered — loading twice is harmless.)
+        viewModelScope.launch {
+            configRepository.config.map { it.shows(ModuleKey.VsYesterday) }.distinctUntilChanged().collect { shown ->
+                if (shown) loadVsYesterday(currentLocation())
+            }
+        }
+    }
+
+    /**
+     * Fetch the days ahead, fold them into the app's record, and publish
+     * today against yesterday. Best effort: a failed fetch still compares
+     * what the record already holds for today, and failing that the module
+     * shows a dash — never an error over the glance.
+     */
+    private suspend fun loadVsYesterday(location: WeatherLocation) {
+        val history = dayHistory ?: return
+        val placeZone = placeTimes.value.zone ?: zone()
+        val today = clock().toLocalDateTime(placeZone).date
+        val ranges = runCatching { repository.loadDayRanges(location, placeZone) }.getOrDefault(emptyList())
+        vsYesterday.value = runCatching { history.record(PointCacheKey.of(location), ranges, today) }.getOrNull()
     }
 
     /**
@@ -333,6 +376,10 @@ class HomeViewModel(
                 runCatching { SafetyAlerts.filter(repository.loadActiveAlerts(location)) }
                     .getOrDefault(emptyList())
             ensureForecast(forecast.value)
+            // A refresh may be a new place or a new day: either way the
+            // comparison on screen is no longer the one to show.
+            vsYesterday.value = null
+            if (configRepository.config.first().shows(ModuleKey.VsYesterday)) loadVsYesterday(location)
         }
     }
 

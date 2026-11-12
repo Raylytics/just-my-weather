@@ -248,6 +248,20 @@ class WeatherRepository(
             ResolvedPoint.OutsideNws -> emptyList()
         }
 
+    /**
+     * The forecast high and low for each day ahead at [location], today
+     * first, for the vs. yesterday module. From the same source as the rest
+     * of the forecast there: NWS's periods in its territory, cut into days in
+     * the place's zone, and MET Norway's days outside it. Empty when neither
+     * has anything to say.
+     */
+    suspend fun loadDayRanges(location: WeatherLocation, zone: TimeZone): List<DayRange> =
+        when (val resolved = resolve(location)) {
+            is ResolvedPoint.Nws ->
+                resolved.point.let { DayRanges.fromPeriods(nws.getDailyForecast(it.gridId, it.gridX, it.gridY), zone) }
+            ResolvedPoint.OutsideNws -> DayRanges.fromExtended(loadExtendedDaily(location))
+        }
+
     /** MET Norway's daily forecast for [location], or empty with no extended
      * source configured. The caller decides which of these days NWS already
      * covers. The days are cut in the place's calendar, which the (cached)

@@ -1,5 +1,6 @@
 package io.raylytics.justmyweather.view
 
+import io.raylytics.justmyweather.data.DayComparison
 import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.metno.ExtendedDay
@@ -82,6 +83,9 @@ data class ForecastData(
     /** The place's zone, whatever clock the screen reads in. */
     val placeZone: TimeZone = TimeZone.currentSystemDefault(),
     val extended: List<ExtendedDay>? = null,
+    /** Today's forecast range beside yesterday's, for the vs. yesterday
+     * module; null until loaded, or when today has no range. */
+    val vsYesterday: DayComparison? = null,
 )
 
 /**
@@ -200,5 +204,6 @@ private fun ViewConfig.moduleValue(
                         placeZone = forecast.placeZone,
                         extended = forecast.extended,
                     )
+                ModuleKey.VsYesterday -> ModuleContent.Reading(VsYesterday.format(forecast.vsYesterday, conventions))
             },
     )

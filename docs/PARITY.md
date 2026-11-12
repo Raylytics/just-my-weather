@@ -48,6 +48,7 @@ iPhone 16 simulator, iOS 27, 8/9 passed. Last Android run: Pixel 7, API 35,
 | Forecast module: Hourly / Daily toggle, up to nine days | shared `ui/home/ForecastModule`; NWS plus MET Norway | same code | parity | — | `07-forecast` |
 | Customize: which modules, sizes, collapsible modules, look + density, which clock | shared `ui/customize/` | same code | parity | — | `01-customize` |
 | Customize: live module preview (a Preview switch in each module's fold draws it with the current weather) | shared `ui/customize/`, `ui/home/ModuleGrid.kt` `ModulePreview` | same code | parity | — | `10-module-preview` |
+| Vs. yesterday module (today's forecast high/low against yesterday's, from the app's own record `data/DayRangeHistory`) | shared `data/DayRange*.kt`, `view/VsYesterday.kt` | same code | parity; not offered as a widget | — | `11-vs-yesterday` |
 | Themes: light/dark/system, accent, typeface | shared `ui/theme/` | same code, but the "system sans" typeface is bundled Roboto on iOS (ledger: `sansFamily`) | parity | — | `01-customize` |
 | Places: offline gazetteer search, saved places | shared `ui/places/`; `places.tsv` from assets (`AssetPlaceSource`) | same code; the same `places.tsv` bundled (`BundlePlaceSource`) | parity | — | `08-places` |
 | Region & units | shared `region/`; clues from `AndroidRegionSignals` | shared `region/`; clues from `IosRegionSignals` (storefront, fix, place, Region setting, time zone) | parity, platform-shaped (see docs/REGIONS.md "On iOS") | — | — (unit-tested: `RegionResolverTest`, `StorefrontsTest`) |

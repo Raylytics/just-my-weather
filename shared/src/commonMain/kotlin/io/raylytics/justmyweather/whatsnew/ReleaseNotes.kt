@@ -5,10 +5,12 @@ import io.raylytics.justmyweather.resources.whats_new_0_4_1_modules_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_modules_title
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_units_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_1_units_title
-import io.raylytics.justmyweather.resources.whats_new_0_4_2_caret_body
-import io.raylytics.justmyweather.resources.whats_new_0_4_2_caret_title
 import io.raylytics.justmyweather.resources.whats_new_0_4_2_restore_body
 import io.raylytics.justmyweather.resources.whats_new_0_4_2_restore_title
+import io.raylytics.justmyweather.resources.whats_new_0_5_0_preview_body
+import io.raylytics.justmyweather.resources.whats_new_0_5_0_preview_title
+import io.raylytics.justmyweather.resources.whats_new_0_5_0_yesterday_body
+import io.raylytics.justmyweather.resources.whats_new_0_5_0_yesterday_title
 import org.jetbrains.compose.resources.StringResource
 
 /*
@@ -38,15 +40,21 @@ data class ReleaseNote(val version: AppVersion, val highlights: List<Highlight>)
 object ReleaseNotes {
     val all: List<ReleaseNote> =
         listOf(
-            // 0.5.0 absorbed 0.4.2, which never reached Play: its two fixes
-            // ride here (the Restore purchases row is the one App Review
-            // asked for, so the sheet says where it is). The strings keep
-            // their 0_4_2 names; resource names are not persisted state.
+            // 0.5.0 absorbed 0.4.2, which never reached Play. Its Restore
+            // purchases row (the one App Review asked for) rides here beside
+            // the two new features; the caret fix is in docs/RELEASES.md.
+            // Those strings keep their 0_4_2 names: resource names are not
+            // persisted state.
             ReleaseNote(
                 AppVersion(0, 5, 0),
                 listOf(
+                    Highlight(
+                        Res.string.whats_new_0_5_0_preview_title,
+                        Res.string.whats_new_0_5_0_preview_body,
+                        HighlightAction.CUSTOMIZE,
+                    ),
+                    Highlight(Res.string.whats_new_0_5_0_yesterday_title, Res.string.whats_new_0_5_0_yesterday_body),
                     Highlight(Res.string.whats_new_0_4_2_restore_title, Res.string.whats_new_0_4_2_restore_body),
-                    Highlight(Res.string.whats_new_0_4_2_caret_title, Res.string.whats_new_0_4_2_caret_body),
                 ),
             ),
             ReleaseNote(

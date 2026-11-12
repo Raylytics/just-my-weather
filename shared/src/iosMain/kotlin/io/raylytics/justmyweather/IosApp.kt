@@ -90,6 +90,7 @@ class IosApp(private val platform: IosPlatform) {
                     // Gadgetbridge is Android-only (docs/PARITY.md, "Dropped").
                     {},
                     onPlaceResolved = { graph.regionRepository.refresh(graph.locationResolver.resolveKnown()) },
+                    dayHistory = graph.dayRangeHistory,
                 ),
             customize = CustomizeViewModel(graph.viewConfigRepository),
             appSettings = AppSettingsViewModel(graph.gadgetbridgeSettingsRepository, graph.removeAdsManager),

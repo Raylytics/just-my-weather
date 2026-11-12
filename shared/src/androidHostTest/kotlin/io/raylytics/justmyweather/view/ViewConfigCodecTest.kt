@@ -186,6 +186,24 @@ class ViewConfigCodecTest {
     }
 
     @Test
+    fun `a config from before vs yesterday existed gains it hidden, last, and keeps everything else`() {
+        // What 0.4.x wrote: no vs_yesterday entry.
+        val stored =
+            """{"items":[
+                {"key":"temperature","visible":true},
+                {"key":"wind","visible":true,"columns":2,"rows":1},
+                {"key":"forecast","visible":true}
+            ]}"""
+        val config = ViewConfigCodec.decode(stored)
+        assertFalse(config.shows(ModuleKey.VsYesterday))
+        assertEquals(ModuleKey.VsYesterday, config.items.last().module)
+        assertTrue(config.shows(ModuleKey.Reading(WeatherField.WIND)))
+        // And once switched on, it round-trips.
+        val on = config.toggle(ModuleKey.VsYesterday)
+        assertTrue(ViewConfigCodec.decode(ViewConfigCodec.encode(on)).shows(ModuleKey.VsYesterday))
+    }
+
+    @Test
     fun `unknown framing and daily-style keys fall back rather than failing the config`() {
         val unknown =
             """{"showForecast":true,"forecastMode":"biweekly","dailyStyle":"spiral",

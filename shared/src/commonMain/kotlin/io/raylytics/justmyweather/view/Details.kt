@@ -47,7 +47,11 @@ object Details {
      */
     fun ofModule(module: ModuleValue, snapshot: WeatherSnapshot, zone: TimeZone, conventions: Conventions): Detail? =
         when (val content = module.content) {
-            is ModuleContent.Reading -> ofObservation(module, snapshot, zone, conventions)
+            // Vs. yesterday is drawn as a reading but is not one: the
+            // station's observation is not what it compares, so it opens
+            // nothing (yet).
+            is ModuleContent.Reading ->
+                if (module.module == ModuleKey.VsYesterday) null else ofObservation(module, snapshot, zone, conventions)
             is ModuleContent.Sun -> ofSun(module.label, content.days, content.zone, conventions)
             is ModuleContent.Forecast -> null
         }

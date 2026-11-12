@@ -12,6 +12,7 @@ import io.raylytics.justmyweather.data.AlertSettingsRepository
 import io.raylytics.justmyweather.data.DataStoreLastLocationStore
 import io.raylytics.justmyweather.data.DataStorePointCache
 import io.raylytics.justmyweather.data.DataStoreSnapshotCache
+import io.raylytics.justmyweather.data.DayRangeHistory
 import io.raylytics.justmyweather.data.GadgetbridgeSettingsRepository
 import io.raylytics.justmyweather.data.ThemeConfigRepository
 import io.raylytics.justmyweather.data.ViewConfigRepository
@@ -87,6 +88,9 @@ open class AppGraph(
     // user to be, not to a default city. The background check is the caller
     // that most depends on it — it never gets a fix at all.
     val savedPlacesRepository = SavedPlacesRepository(dataStore)
+
+    /** Past days' forecast ranges, for the vs. yesterday module. */
+    val dayRangeHistory = DayRangeHistory(dataStore)
 
     // The region — units, dates, ads — and the user's choices about it. Its
     // clues are re-read on every refresh of the glance and the background

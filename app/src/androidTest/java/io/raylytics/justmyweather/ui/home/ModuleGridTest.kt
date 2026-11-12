@@ -111,7 +111,7 @@ class ModuleGridTest {
             size = ModuleSize(columns, rows),
             content =
                 when (key) {
-                    is ModuleKey.Reading -> ModuleContent.Reading("—")
+                    is ModuleKey.Reading, ModuleKey.VsYesterday -> ModuleContent.Reading("—")
                     ModuleKey.Sun -> ModuleContent.Sun(sunDays, TimeZone.currentSystemDefault())
                     ModuleKey.Forecast ->
                         ModuleContent.Forecast(

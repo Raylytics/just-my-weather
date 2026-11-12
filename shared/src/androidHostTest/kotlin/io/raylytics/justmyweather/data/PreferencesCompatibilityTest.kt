@@ -96,6 +96,7 @@ class PreferencesCompatibilityTest {
                     "last_snapshot" to { SnapshotCodec.encode(checkNotNull(SnapshotCodec.decode(it))) },
                     "region_settings" to { RegionCodec.encodeSettings(RegionCodec.decodeSettings(it)) },
                     "region_clues" to { RegionCodec.encodeClues(checkNotNull(RegionCodec.decodeClues(it))) },
+                    "day_ranges" to { DayRangeHistoryCodec.encode(DayRangeHistoryCodec.decode(it)) },
                 )
             var checked = 0
             for ((key, roundTrip) in codecs) {

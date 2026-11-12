@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
                     // The region refreshes from a place the user chose or a
                     // fix — never the fallback city (roborev 5424).
                     onPlaceResolved = { container.regionRepository.refresh(container.locationResolver.resolveKnown()) },
+                    dayHistory = container.dayRangeHistory,
                 )
             }
         }

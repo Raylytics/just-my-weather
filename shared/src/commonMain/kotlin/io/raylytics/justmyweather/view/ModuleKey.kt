@@ -81,10 +81,32 @@ sealed interface ModuleKey {
         override val minSize: ModuleSize get() = ModuleSize(2, 2)
     }
 
+    /**
+     * Today's forecast high and low against yesterday's. Not a station
+     * reading — yesterday's half comes from the app's own record of past
+     * forecasts (data/DayRangeHistory) — and not offered as a widget: the
+     * widget refresh does not keep that record.
+     */
+    data object VsYesterday : ModuleKey {
+        override val key: String get() = "vs_yesterday"
+        override val defaultLabel: String get() = "Vs. yesterday"
+
+        /** Two lines, "High 68° ↑5°" over "Low 41° ↓3°", in half the width. */
+        override val defaultSize: ModuleSize get() = ModuleSize(2, 1)
+
+        /** One cell cannot hold a line like "High 68° ↑5°" legibly. */
+        override val minSize: ModuleSize get() = ModuleSize(2, 1)
+    }
+
     companion object {
         /** Every module, in the order a fresh config lists them: the station's
-         * readings first, then the computed extras, then the forecast. */
-        val catalog: List<ModuleKey> = WeatherField.entries.map(::Reading) + Sun + Forecast
+         * readings first, then the computed extras, then the forecast. New
+         * modules go last, which is also where an upgrade appends them. */
+        val catalog: List<ModuleKey> = WeatherField.entries.map(::Reading) + Sun + Forecast + VsYesterday
+
+        /** The modules a home screen widget can show: all but those whose
+         * data the widget refresh does not fetch. */
+        val widgetable: List<ModuleKey> get() = catalog - VsYesterday
 
         fun byKey(key: String): ModuleKey? = catalog.firstOrNull { it.key == key }
     }

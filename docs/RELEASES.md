@@ -82,6 +82,30 @@ arrange-bar fix (nyt.13), the App Store product id
 
 # Android (Google Play)
 
+## 0.5.0 — unreleased (in progress on `release/0.5.0`)
+
+Opened 2026-11-11. Absorbs 0.4.2, which never reached Play (iOS 0.4.2
+build 4 went to App Review 2026-11-04).
+
+### Added
+- Customize: a Preview switch in each module's fold draws the module as the
+  glance would, with the current weather, redrawn on every edit
+  (just-my-weather-8g8).
+- Vs. yesterday module: today's forecast high and low, each with its change
+  from yesterday's. Yesterday's comes from the app's own record of past
+  forecasts (new store `day_ranges`, in PreferencesCompatibilityTest's codec
+  map), so it fills in from the second day. Hidden from widget pickers
+  (just-my-weather-ala).
+
+### Fixed (from 0.4.2)
+- A distinct Restore purchases row (iOS App Review).
+- The collapse caret shares the label line.
+
+### Before the cut
+- Settings gate rule 4: this release adds persisted state (`day_ranges`,
+  the `vs_yesterday` module key), so add a fixture from the current
+  production build (0.4.1) first.
+
 ## 0.4.1 — versionCode 12, Play internal 2026-10-18
 
 Cut from 13d2095 on `release/0.4.1` (PR #3) with Evan's go-ahead; CI green

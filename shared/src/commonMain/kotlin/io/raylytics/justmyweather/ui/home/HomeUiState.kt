@@ -1,5 +1,6 @@
 package io.raylytics.justmyweather.ui.home
 
+import io.raylytics.justmyweather.data.DayComparison
 import io.raylytics.justmyweather.data.SunDay
 import io.raylytics.justmyweather.data.WeatherSnapshot
 import io.raylytics.justmyweather.data.metno.ExtendedDay
@@ -82,6 +83,9 @@ sealed interface HomeUiState {
          * the next launch finds it folded again.
          */
         val expanded: Set<ModuleKey> = emptySet(),
+        /** Today's forecast range against yesterday's, while the vs.
+         * yesterday module is shown and its data has loaded. */
+        val vsYesterday: DayComparison? = null,
     ) : HomeUiState
 
     /** Network or NWS failure, with a short plain-language message. */

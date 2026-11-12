@@ -1,0 +1,37 @@
+# Vs. yesterday: switched on in Customize, the module lands on the glance
+# with today's forecast high and low.
+#
+# A fresh install has no yesterday yet (the app keeps its own record of past
+# forecasts, from the first day the module is on), so the changes read "—".
+# What this checks is that the module is offered, that switching it on
+# fetches its data, and that it draws its two lines.
+appId: io.raylytics.justmyweather
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible: "Customize"
+    timeout: 60000
+- assertNotVisible: "Vs. yesterday"
+
+- tapOn: "Customize"
+- scrollUntilVisible:
+    element:
+      id: "toggle_vs_yesterday"
+    direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "toggle_vs_yesterday"
+- tapOn: "Done"
+
+- extendedWaitUntil:
+    visible: "Vs. yesterday"
+    timeout: 10000
+# Today's high and low, each with its change (a dash on the first day).
+- extendedWaitUntil:
+    visible: "High .*"
+    timeout: 20000

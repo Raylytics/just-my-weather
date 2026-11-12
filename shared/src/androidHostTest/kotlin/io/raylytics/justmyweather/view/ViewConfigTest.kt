@@ -410,10 +410,10 @@ class ViewConfigTest {
 
     @Test
     fun `only a module that cannot shrink to a cell can be made collapsible`() {
-        // The phrase, the table and the forecast grid stop above one cell;
-        // every number already fits one.
+        // The phrase, the table, the forecast grid and the two-line
+        // comparison stop above one cell; every number already fits one.
         assertEquals(
-            listOf(reading(WeatherField.CONDITIONS), ModuleKey.Sun, ModuleKey.Forecast),
+            listOf(reading(WeatherField.CONDITIONS), ModuleKey.Sun, ModuleKey.Forecast, ModuleKey.VsYesterday),
             ModuleKey.catalog.filter { it.canCollapse },
         )
         val folded = ViewConfig.DEFAULT.setCollapsible(reading(WeatherField.CONDITIONS), true)
