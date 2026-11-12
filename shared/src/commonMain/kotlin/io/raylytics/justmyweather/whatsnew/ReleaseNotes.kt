@@ -38,10 +38,12 @@ data class ReleaseNote(val version: AppVersion, val highlights: List<Highlight>)
 object ReleaseNotes {
     val all: List<ReleaseNote> =
         listOf(
-            // 0.4.2 is two fixes, but the Restore purchases row is the one
-            // App Review asked for, so the sheet says where it is.
+            // 0.5.0 absorbed 0.4.2, which never reached Play: its two fixes
+            // ride here (the Restore purchases row is the one App Review
+            // asked for, so the sheet says where it is). The strings keep
+            // their 0_4_2 names; resource names are not persisted state.
             ReleaseNote(
-                AppVersion(0, 4, 2),
+                AppVersion(0, 5, 0),
                 listOf(
                     Highlight(Res.string.whats_new_0_4_2_restore_title, Res.string.whats_new_0_4_2_restore_body),
                     Highlight(Res.string.whats_new_0_4_2_caret_title, Res.string.whats_new_0_4_2_caret_body),
