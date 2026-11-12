@@ -25,6 +25,7 @@ import io.raylytics.justmyweather.view.ModuleSize
 import io.raylytics.justmyweather.view.SunDays
 import io.raylytics.justmyweather.view.ViewConfig
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -272,7 +273,11 @@ class HomeViewModel(
                 val placeZone = placeTimes.value.zone ?: zone()
                 val today = clock().toLocalDateTime(placeZone).date
                 val ranges = runCatching { repository.loadDayRanges(location, placeZone) }.getOrDefault(emptyList())
-                vsYesterday.value = runCatching { history.record(key, ranges, today) }.getOrNull()
+                val comparison = runCatching { history.record(key, ranges, today) }.getOrNull()
+                // runCatching also swallows the cancellation a newer load
+                // sends; a cut-short load must publish nothing, not its null.
+                ensureActive()
+                vsYesterday.value = comparison
             }
     }
 

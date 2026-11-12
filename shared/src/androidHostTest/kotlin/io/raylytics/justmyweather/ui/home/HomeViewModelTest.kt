@@ -595,8 +595,8 @@ class HomeViewModelTest {
 
     /** A record already holding NOW's day and the day before, at the
      * default location — as if the app had been opened yesterday. */
-    private suspend fun recordedHistory(): DayRangeHistory {
-        val history = DayRangeHistory(FakePreferencesDataStore())
+    private suspend fun recordedHistory(store: FakePreferencesDataStore = FakePreferencesDataStore()): DayRangeHistory {
+        val history = DayRangeHistory(store)
         val key = PointCacheKey.of(WeatherLocation.DEFAULT)
         history.record(key, listOf(DayRange(LocalDate(2026, 7, 30), 84.0, 66.0)), LocalDate(2026, 7, 30))
         history.record(key, listOf(DayRange(LocalDate(2026, 7, 31), 81.0, 70.0)), LocalDate(2026, 7, 30))
@@ -625,6 +625,30 @@ class HomeViewModelTest {
         val seen = mutableListOf<DayComparison?>()
         backgroundScope.launch { h.vm.state.collect { (it as? HomeUiState.Ready)?.let { r -> seen += r.vsYesterday } } }
         h.vm.refresh()
+        advanceUntilIdle()
+        assertTrue(seen.none { it == null }, "never blanked: $seen")
+        assertEquals(shown, h.vm.ready().vsYesterday)
+    }
+
+    @Test
+    fun `a load cut short by a newer one does not blank the comparison`() = runTest(dispatcher) {
+        val store = FakePreferencesDataStore()
+        val h = harness(config = ViewConfig.DEFAULT.toggle(ModuleKey.VsYesterday), dayHistory = recordedHistory(store))
+        advanceUntilIdle()
+        val shown = h.vm.ready().vsYesterday
+        assertTrue(shown != null)
+        val seen = mutableListOf<DayComparison?>()
+        backgroundScope.launch { h.vm.state.collect { (it as? HomeUiState.Ready)?.let { r -> seen += r.vsYesterday } } }
+        // The first refresh's load parks on its write to the record (a real
+        // DataStore suspends there too); the second refresh cancels it while
+        // it is genuinely in flight.
+        val gate = CompletableDeferred<Unit>()
+        store.gate = gate
+        h.vm.refresh()
+        advanceUntilIdle()
+        h.vm.refresh()
+        advanceUntilIdle()
+        gate.complete(Unit)
         advanceUntilIdle()
         assertTrue(seen.none { it == null }, "never blanked: $seen")
         assertEquals(shown, h.vm.ready().vsYesterday)
