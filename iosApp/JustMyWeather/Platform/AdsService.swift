@@ -1,7 +1,6 @@
 import AppTrackingTransparency
 import Appodeal
 import InMobiCMP
-import Network
 import OSLog
 import Shared
 import UIKit
@@ -45,10 +44,6 @@ final class AdsService: NSObject, AdsBridge {
     /// (IosApp re-reads `canRequestAds` and `privacyOptionsRequired` in it).
     private var listeners: [() -> Void] = []
     private var timeout: DispatchWorkItem?
-    /// Whether the device has a network, read when the first wait for the
-    /// CMP runs out (AdsRules.consentWait). Runs only while a request is in
-    /// flight.
-    private var network: NWPathMonitor?
     /// After the CMP loads, a short grace in which a form may still appear;
     /// if none does, there is nothing to wait for and the request settles.
     private var grace: DispatchWorkItem?
@@ -122,15 +117,10 @@ final class AdsService: NSObject, AdsBridge {
             // forever. Before an answer there are no ads, so settling early
             // is safe; the CMP keeps loading, and its answer, when it comes,
             // starts ads on this launch (the late-load branch of cmpDidLoad,
-            // or formClosed). With a network the CMP is only slow, so the wait
-            // runs on (AdsRules.consentWait): settling then would show the
-            // location prompt with the CMP's form arriving beneath it.
-            let monitor = NWPathMonitor()
-            monitor.start(queue: DispatchQueue(label: "ads.network"))
-            network = monitor
-            let item = DispatchWorkItem { [weak self] in self?.firstWaitOver() }
+            // or formClosed).
+            let item = DispatchWorkItem { [weak self] in self?.settle() }
             timeout = item
-            DispatchQueue.main.asyncAfter(deadline: .now() + AdsRules.consentFirstCheck, execute: item)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: item)
             ChoiceCmp.shared.startChoice(
                 pcode: pcode,
                 delegate: self,
@@ -140,19 +130,6 @@ final class AdsService: NSObject, AdsBridge {
                 style: nil
             )
         }
-    }
-
-    /// The first wait for the CMP ran out with no answer: settle now when
-    /// offline, or wait to the online backstop.
-    private func firstWaitOver() {
-        guard phase == .inFlight else { return }
-        let online = network?.currentPath.status == .satisfied
-        let more = AdsRules.consentWait(online: online) - AdsRules.consentFirstCheck
-        log.info("cmp not answered after \(AdsRules.consentFirstCheck)s: online=\(online); waiting \(more)s more")
-        guard more > 0 else { return settle() }
-        let item = DispatchWorkItem { [weak self] in self?.settle() }
-        timeout = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + more, execute: item)
     }
 
     /// What the CMP last said, persisted by it across launches in the IAB
@@ -225,8 +202,6 @@ final class AdsService: NSObject, AdsBridge {
         timeout = nil
         grace?.cancel()
         grace = nil
-        network?.cancel()
-        network = nil
         startAdsIfAllowed { [weak self] in self?.notifyListeners() }
     }
 

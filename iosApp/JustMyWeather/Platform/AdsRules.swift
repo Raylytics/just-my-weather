@@ -61,15 +61,6 @@ enum AdsRules {
         return false
     }
 
-    /// How long a launch waits for the CMP before the rest of the launch
-    /// (the location prompt) goes ahead without its answer. Offline the CMP
-    /// cannot answer, so the wait ends at the first check. Online a slow
-    /// load is still on its way, and moving on would put its form under the
-    /// location prompt, the confusing order App Review rejected 0.4.2 (4)
-    /// for on 2026-11-15, so the wait runs to a longer backstop instead.
-    static let consentFirstCheck: TimeInterval = 15
-    static func consentWait(online: Bool) -> TimeInterval { online ? 60 : consentFirstCheck }
-
     /// A "Privacy choices" entry is owed wherever a form applies: the TCF
     /// regions and the US states with an opt-out notice.
     static func privacyOptionsRequired(configured: Bool, gdprApplies: Bool?, usRegulationApplies: Bool) -> Bool {
