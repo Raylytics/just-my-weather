@@ -94,6 +94,18 @@ final class AdsRulesTests: XCTestCase {
                        "the CMP has not said; nothing to wait for beyond the grace")
     }
 
+    // MARK: How long a launch waits for the CMP
+
+    func testOfflineTheWaitEndsAtTheFirstCheck() {
+        XCTAssertEqual(AdsRules.consentWait(online: false), AdsRules.consentFirstCheck)
+    }
+
+    func testOnlineASlowLoadIsWaitedForLonger() {
+        XCTAssertGreaterThan(AdsRules.consentWait(online: true), AdsRules.consentFirstCheck,
+                             "moving on early puts the late form under the location prompt")
+        XCTAssertEqual(AdsRules.consentWait(online: true), 60)
+    }
+
     // MARK: The Privacy choices row
 
     func testPrivacyChoicesAreOwedWhereAFormApplies() {
