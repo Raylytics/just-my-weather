@@ -281,7 +281,7 @@ Just My Weather is a weather app that shows only the data points the user picks,
 
 5. ADS, CONSENT AND TRACKING. One banner at the bottom of the main screen, mediated by Appodeal. The order on first launch is fixed: (a) the InMobi consent platform decides which privacy rules apply, from the device's network location; (b) where a form applies it is shown first and the app waits for the user to close it; (c) only after that, and only if the choice allows ads, Apple's App Tracking Transparency request; (d) only then does the ad SDK start. The app never shows a consent form after the ATT request in this flow, and no ad SDK runs and nothing is tracked before both answers. If the consent platform is slow to load, the app waits for it rather than asking for tracking first.
    This differs by region:
-   - EEA, UK and Switzerland: the IAB TCF consent form, then the ATT request if the user consented.
+   - European Economic Area (as the consent platform locates the device): the IAB TCF consent form, then the ATT request if the user consented.
    - US states with a privacy law: a "Do not sell my data" notice, then the ATT request.
    - Elsewhere: no consent form; the ATT request only.
    To review a variation, test from a network in that region. App Settings > Privacy choices reopens whichever form applies at any time; it never re-shows the ATT request. The ad is never given the user's places, rules or weather.
