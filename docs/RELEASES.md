@@ -44,6 +44,35 @@ A version that reaches both stores gets an entry in each.
 
 # iOS (App Store)
 
+## 0.5.0 — build 6, App Store Connect 2026-11-15
+
+Delivery d972cbbf-0e39-4e4c-9c74-72535b928dff, cut from c328611 on
+`release/0.5.0` with Evan's go-ahead ("upload build 6"). The build for
+the resubmission after App Review rejected 0.4.2 (4) on 2026-11-15 under
+5.1.1(iv) (submission b4b3ba3e): the GDPR form appeared after the ATT
+request. Build 5 does not carry the fix. Over build 5:
+
+### Fixed
+- ATT and Appodeal start only after this launch's CMP answer, never on
+  the 15 s offline timeout (f54be1c, 239df2c, 37884bd): the cause of the
+  rejection, on build 4's slow first load.
+- A first launch asks for location before the consent flow (1904176):
+  the CMP's page asked WebKit for geolocation itself and put the system
+  prompt over its form. Order now: location, consent form, ATT, ad SDK.
+
+### Internal
+- Reviewer notes item 5 states the order and the regional variations
+  (EEA: TCF form; US privacy states: opt-out notice; elsewhere: ATT only).
+- Gates: verify.sh (603), `:shared:allTests`, App Store Connect
+  validation; consent flow checked on JMW iPhone (iOS 27) on a US network
+  with the CMP delayed past the timeout, and over a German VPN (agree,
+  reject, location granted and denied).
+
+Open: the TCF form's first-layer AGREE did not respond to Maestro taps on
+the simulator (just-my-weather-2c8); check by hand on this build over an
+EEA VPN before submitting. The InMobi consent region is a Premium trial
+feature until 2027-01-31 (just-my-weather-57r).
+
 ## 0.5.0 — build 5, TestFlight 2026-11-12
 
 Delivery b4769e9a-1875-40c4-b715-bb986462a784, cut from f928095 with Evan's
