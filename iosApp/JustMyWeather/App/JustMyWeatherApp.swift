@@ -39,10 +39,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         Self.platform.storeService.start()
         Self.platform.locationService.onFirstFix = { Self.app.locationGranted() }
-        // A first launch's location prompt waits for the consent flow
-        // (ComposeView), so it never lands on top of the consent form. Once
-        // answered, location starts here as before, background launches
-        // included (the alert check wants a fix and never shows a scene).
+        // A first launch's location prompt is asked from ComposeView, once
+        // the first screen is up, ahead of the consent flow. Once answered,
+        // location starts here, background launches included (the alert
+        // check wants a fix and never shows a scene).
         if !Self.platform.locationService.wouldPrompt { Self.platform.locationService.start() }
         Self.app.start()
         return true
@@ -62,18 +62,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let controller = AppDelegate.app.mainViewController()
-        // Consent prompts present over the first screen, once it is up; the
-        // app's own location prompt follows once they have settled, as on
-        // Android. (The CMP's US notice page asks WebKit for geolocation
-        // itself, which surfaces the same system prompt over the form on a
-        // first launch; that one is InMobi's, not ours, and once answered
-        // the deferred start() below has nothing left to ask.)
+        // Once the first screen is up: the location prompt first, then the
+        // consent form, then Apple's tracking prompt (AdsService). The
+        // reverse of Android, on purpose: the InMobi CMP's page asks WebKit
+        // for geolocation itself, so a location question still open put the
+        // system prompt over its consent form (seen 2026-11-15 over an EEA
+        // VPN). Answered first, nothing lands on the form. Off a first
+        // launch the question is already answered and consent starts at once.
         DispatchQueue.main.async {
-            AppDelegate.app.gatherConsent(host: controller) {
-                // start() is idempotent: this is the first call on a first
-                // launch (whether or not the CMP's own request already got
-                // the answer), a no-op when launch started it.
-                DispatchQueue.main.async { AppDelegate.platform.locationService.start() }
+            AppDelegate.platform.locationService.start {
+                AppDelegate.app.gatherConsent(host: controller) {}
             }
         }
         return controller

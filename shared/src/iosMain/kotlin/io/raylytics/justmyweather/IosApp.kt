@@ -137,10 +137,11 @@ class IosApp(private val platform: IosPlatform) {
     }
 
     /** Asks the consent platform once the first screen is up (its form
-     * presents over it), then runs [then] once that has settled: the host's
-     * own first-launch prompt (location) waits behind the consent form and
-     * the tracking alert, as it does on Android. An owner of Remove Ads
-     * skips straight to [then]. */
+     * presents over it), then runs [then] once that has settled. On iOS the
+     * host asks for location BEFORE this (unlike Android): the CMP's page
+     * asks WebKit for geolocation itself, and an open location question put
+     * the system prompt over its form. An owner of Remove Ads skips
+     * straight to [then]. */
     fun gatherConsent(
         host: UIViewController,
         then: () -> Unit,

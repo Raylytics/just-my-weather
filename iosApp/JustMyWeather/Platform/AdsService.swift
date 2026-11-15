@@ -113,8 +113,7 @@ final class AdsService: NSObject, AdsBridge {
             }
             phase = .inFlight
             // No network on a first launch: the CMP cannot answer, and the
-            // rest of the launch sequence (the location prompt) must not wait
-            // forever. Before an answer there are no ads, so settling early
+            // `gather` callers must not wait forever. Before an answer there are no ads, so settling early
             // is safe; the CMP keeps loading, and its answer, when it comes,
             // starts ads on this launch (the late-load branch of cmpDidLoad,
             // or formClosed).
@@ -192,8 +191,8 @@ final class AdsService: NSObject, AdsBridge {
 
     /// Once per request: the CMP has answered (or cannot). Where ads may run
     /// the tracking prompt follows, then the SDK starts; the callers waiting
-    /// on `gather` run after that, so a first launch's other prompts queue
-    /// behind the consent form and the ATT alert.
+    /// on `gather` run after that, so they read the answer the ATT prompt
+    /// left (the location prompt was asked before all of it, ComposeView).
     private func settle() {
         guard phase == .inFlight else { return }
         log.info("consent settled: canRequestAds=\(self.canRequestAds())")
